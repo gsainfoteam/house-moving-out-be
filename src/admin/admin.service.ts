@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AdminRepository } from './admin.repository';
 import { JwtToken } from './dto/jwtToken.dto';
+import { Admin } from 'generated/prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -22,5 +23,9 @@ export class AdminService {
       access_token: this.jwtService.sign({}, { subject: userinfo.uuid }),
     };
     return { ...tokens };
+  }
+
+  async findAdmin(uuid: string): Promise<Admin> {
+    return this.adminRepository.findAdmin(uuid);
   }
 }
