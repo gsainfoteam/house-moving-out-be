@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import {
   Injectable,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { IdpUserInfoResponse } from './types/idp.type';
@@ -12,6 +13,9 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class InfoteamIdpService {
+  private readonly logger = new Logger(InfoteamIdpService.name, {
+    timestamp: true,
+  });
   private readonly idpUrl: string;
   constructor(
     private readonly httpService: HttpService,
@@ -31,8 +35,10 @@ export class InfoteamIdpService {
         .pipe(
           catchError((error: AxiosError) => {
             if (error instanceof AxiosError && error.response?.status === 401) {
+              this.logger.debug('Invalid refresh token');
               throw new UnauthorizedException();
             }
+            this.logger.error(error.message);
             throw new InternalServerErrorException();
           }),
         ),
