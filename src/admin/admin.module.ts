@@ -6,6 +6,7 @@ import { PrismaModule } from '@lib/prisma';
 import { InfoteamIdpModule } from '@lib/infoteam-idp';
 import { JwtModule } from '@nestjs/jwt';
 import ms, { StringValue } from 'ms';
+import { AdminRepository } from './admin.repository';
 
 @Module({
   imports: [
@@ -16,18 +17,19 @@ import ms, { StringValue } from 'ms';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('ADMIN_JWT_SECRET'),
         signOptions: {
           expiresIn:
-            ms(configService.getOrThrow<StringValue>('JWT_EXPIRE')) / 1000,
+            ms(configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE')) /
+            1000,
           algorithm: 'HS256',
-          audience: configService.get<string>('JWT_AUDIENCE'),
-          issuer: configService.get<string>('JWT_ISSUER'),
+          audience: configService.get<string>('ADMIN_JWT_AUDIENCE'),
+          issuer: configService.get<string>('ADMIN_JWT_ISSUER'),
         },
       }),
     }),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, AdminRepository],
 })
 export class AdminModule {}
