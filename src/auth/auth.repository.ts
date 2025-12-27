@@ -15,12 +15,12 @@ import ms, { StringValue } from 'ms';
 @Injectable()
 export class AuthRepository {
   private readonly logger = new Logger(AuthRepository.name);
-  private readonly refreshTokenExpire: number;
+  private readonly adminRefreshTokenExpire: number;
   constructor(
     private readonly prismaService: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    this.refreshTokenExpire = ms(
+    this.adminRefreshTokenExpire = ms(
       this.configService.getOrThrow<StringValue>('ADMIN_REFRESH_TOKEN_EXPIRE'),
     );
   }
@@ -52,7 +52,7 @@ export class AuthRepository {
         data: {
           adminId: id,
           refreshToken,
-          expiredAt: new Date(Date.now() + this.refreshTokenExpire),
+          expiredAt: new Date(Date.now() + this.adminRefreshTokenExpire),
         },
       })
       .catch((error) => {

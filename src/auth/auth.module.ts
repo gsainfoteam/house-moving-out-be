@@ -5,7 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '@lib/prisma';
 import { InfoteamIdpModule } from '@lib/infoteam-idp';
 import { JwtModule } from '@nestjs/jwt';
-import ms, { StringValue } from 'ms';
+import { StringValue } from 'ms';
 import { AuthRepository } from './auth.repository';
 import { AdminGuard } from './guard/admin.guard';
 import { AdminStrategy } from './guard/admin.strategy';
@@ -19,14 +19,12 @@ import { AdminStrategy } from './guard/admin.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('ADMIN_JWT_SECRET'),
+        secret: configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
         signOptions: {
-          expiresIn:
-            ms(configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE')) /
-            1000,
+          expiresIn: configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
           algorithm: 'HS256',
-          audience: configService.get<string>('ADMIN_JWT_AUDIENCE'),
-          issuer: configService.get<string>('ADMIN_JWT_ISSUER'),
+          audience: configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
+          issuer: configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
         },
       }),
     }),

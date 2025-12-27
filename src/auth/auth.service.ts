@@ -1,6 +1,5 @@
 import { InfoteamIdpService } from '@lib/infoteam-idp';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthRepository } from './auth.repository';
 import { Admin } from 'generated/prisma/client';
@@ -11,7 +10,6 @@ import { JwtToken } from './dto/jwtToken.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly configService: ConfigService,
     private readonly infoteamIdpService: InfoteamIdpService,
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,

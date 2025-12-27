@@ -10,6 +10,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
   ApiOAuth2,
   ApiOkResponse,
   ApiOperation,
@@ -80,10 +81,12 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Logout',
-    description: 'Logout the user from the cookie and idp',
+    description:
+      'Logout the admin from the cookie. Delete the refresh token from DB.',
   })
-  @ApiCreatedResponse({ description: 'Return jwt token' })
+  @ApiOkResponse({ description: 'Logout' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @Post('admin/logout')
@@ -94,6 +97,7 @@ export class AuthController {
   ): Promise<void> {
     const refreshToken = req.cookies['refresh_token'] as string;
     res.clearCookie('refresh_token');
+
     return await this.authService.adminLogout(refreshToken);
   }
 }
