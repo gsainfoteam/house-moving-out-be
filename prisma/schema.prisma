@@ -15,7 +15,24 @@ datasource db {
 }
 
 model Admin {
-  uuid      String  @id @default(uuid())
-  name      String
-  email     String  @unique
+  id            String  @id @default(uuid())
+  name          String
+  email         String  @unique
+  phoneNumber   String? @map("phone_number")
+
+  adminRefreshTokens AdminRefreshToken[]
+
+  @@map("admin")
+}
+
+model AdminRefreshToken {
+  id            String    @id @default(uuid())
+  adminId       String    @map("admin_uuid")
+  refreshToken  String    @unique @map("refresh_token")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  expiredAt     DateTime  @map("expired_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_refresh_token")
 }

@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { AdminController } from './admin.controller';
-import { AdminService } from './admin.service';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '@lib/prisma';
 import { InfoteamIdpModule } from '@lib/infoteam-idp';
 import { JwtModule } from '@nestjs/jwt';
 import ms, { StringValue } from 'ms';
-import { AdminRepository } from './admin.repository';
+import { AuthRepository } from './auth.repository';
 
 @Module({
   imports: [
@@ -29,7 +29,7 @@ import { AdminRepository } from './admin.repository';
       }),
     }),
   ],
-  controllers: [AdminController],
-  providers: [AdminService, AdminRepository],
+  controllers: [AuthController],
+  providers: [AuthService, AuthRepository],
 })
-export class AdminModule {}
+export class AuthModule {}

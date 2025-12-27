@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AdminModule } from './admin/admin.module';
+import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -9,7 +9,7 @@ import { ConfigModule } from '@nestjs/config';
       envFilePath: '.env',
       cache: true,
     }),
-    AdminModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [],

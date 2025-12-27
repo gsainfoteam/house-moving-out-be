@@ -2,13 +2,13 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { JwtPayload } from 'jsonwebtoken';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { AdminService } from '../admin.service';
+import { AuthService } from '../auth.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
-    private readonly adminService: AdminService,
+    private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {
     super({
@@ -21,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate({ sub }: JwtPayload) {
     if (!sub) throw new UnauthorizedException('invalid token');
-    return await this.adminService.findAdmin(sub).catch(() => {
+    return await this.authService.findAdmin(sub).catch(() => {
       throw new UnauthorizedException();
     });
   }

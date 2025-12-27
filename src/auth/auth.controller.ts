@@ -1,0 +1,77 @@
+import {
+  Controller,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
+  ApiOAuth2,
+  ApiOkResponse,
+  ApiOperation,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { JwtToken } from './dto/jwtToken.dto';
+import { Request, Response } from 'express';
+import { AuthService } from './auth.service';
+import { ConfigService } from '@nestjs/config';
+import ms, { StringValue } from 'ms';
+
+@Controller('auth')
+export class AuthController {
+  private readonly adminRefreshTokenExpire: number;
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {
+    this.adminRefreshTokenExpire = ms(
+      this.configService.getOrThrow<StringValue>('ADMIN_REFRESH_TOKEN_EXPIRE'),
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Login',
+    description: 'Issue admin JWT token',
+  })
+  @ApiOkResponse({ description: 'Return jwt token' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiOAuth2(['email', 'profile', 'openid'], 'oauth2')
+  @Post('admin/login')
+  async adminLogin(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<JwtToken> {
+    const auth = req.headers['authorization'];
+    if (!auth) throw new UnauthorizedException();
+
+    const { access_token, refresh_token } =
+      await this.authService.adminLogin(auth);
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      expires: new Date(Date.now() + this.adminRefreshTokenExpire),
+      path: '/auth',
+    });
+
+    return { access_token };
+  }
+
+  @ApiOperation({
+    summary: 'Refresh token',
+    description: 'Refresh the access token for admin',
+  })
+  @ApiCreatedResponse({ type: JwtToken, description: 'Return jwt token' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @Post('admin/refresh')
+  async adminRefresh(@Req() req: Request): Promise<JwtToken> {
+    const refreshToken = req.cookies['refresh_token'] as string;
+    if (!refreshToken) throw new UnauthorizedException();
+
+    return await this.authService.adminRefresh(refreshToken);
+  }
+}
