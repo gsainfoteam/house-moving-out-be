@@ -36,6 +36,10 @@ export class AuthService {
     };
   }
 
+  async adminLogout(refreshToken: string): Promise<void> {
+    await this.authRepository.deleteAdminRefreshToken(refreshToken);
+  }
+
   private generateOpaqueToken(): string {
     return crypto
       .randomBytes(32)

@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -83,6 +84,29 @@ export class AuthRepository {
           if (error.code === 'P2025') {
             this.logger.debug(`refreshToken not found: ${refreshToken}`);
             throw new UnauthorizedException();
+          }
+          this.logger.error(
+            `findAdminRefreshToken prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findAdminRefreshToken error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteAdminRefreshToken(refreshToken: string): Promise<void> {
+    await this.prismaService.adminRefreshToken
+      .delete({
+        where: {
+          refreshToken,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('refreshToken not found');
+            throw new NotFoundException();
           }
           this.logger.error(
             `findAdminRefreshToken prisma error: ${error.message}`,

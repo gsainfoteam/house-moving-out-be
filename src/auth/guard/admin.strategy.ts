@@ -6,16 +6,16 @@ import { AuthService } from '../auth.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
-      issuer: configService.getOrThrow<string>('JWT_ISSUER'),
-      audience: configService.getOrThrow<string>('JWT_AUDIENCE'),
+      secretOrKey: configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
+      issuer: configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
+      audience: configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
     });
   }
 

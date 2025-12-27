@@ -7,6 +7,8 @@ import { InfoteamIdpModule } from '@lib/infoteam-idp';
 import { JwtModule } from '@nestjs/jwt';
 import ms, { StringValue } from 'ms';
 import { AuthRepository } from './auth.repository';
+import { AdminGuard } from './guard/admin.guard';
+import { AdminStrategy } from './guard/admin.strategy';
 
 @Module({
   imports: [
@@ -30,6 +32,6 @@ import { AuthRepository } from './auth.repository';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository],
+  providers: [AuthService, AuthRepository, AdminGuard, AdminStrategy],
 })
 export class AuthModule {}

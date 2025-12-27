@@ -4,8 +4,10 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiOAuth2,
@@ -18,6 +20,7 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
+import { AdminGuard } from './guard/admin.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -33,7 +36,7 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Login',
-    description: 'Issue admin JWT token',
+    description: 'Issue JWT token for admin',
   })
   @ApiOkResponse({ description: 'Return jwt token' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -73,5 +76,24 @@ export class AuthController {
     if (!refreshToken) throw new UnauthorizedException();
 
     return await this.authService.adminRefresh(refreshToken);
+  }
+
+  @ApiOperation({
+    summary: 'Logout',
+    description: 'Logout the user from the cookie and idp',
+  })
+  @ApiCreatedResponse({ description: 'Return jwt token' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @Post('admin/logout')
+  @UseGuards(AdminGuard)
+  async adminLogout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const refreshToken = req.cookies['refresh_token'] as string;
+    res.clearCookie('refresh_token');
+    return await this.authService.adminLogout(refreshToken);
   }
 }
