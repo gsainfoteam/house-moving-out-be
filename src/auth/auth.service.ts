@@ -34,8 +34,8 @@ export class AuthService {
     };
   }
 
-  async adminLogout(refreshToken: string): Promise<void> {
-    await this.authRepository.deleteAdminRefreshToken(refreshToken);
+  async adminLogout(adminId: string, refreshToken: string): Promise<void> {
+    await this.authRepository.deleteAdminRefreshToken(adminId, refreshToken);
   }
 
   private generateOpaqueToken(): string {

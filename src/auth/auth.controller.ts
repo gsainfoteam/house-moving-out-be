@@ -22,6 +22,8 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
 import { AdminGuard } from './guard/admin.guard';
+import { GetAdmin } from './decorator/getAdmin.decorator';
+import { Admin } from 'generated/prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -92,12 +94,15 @@ export class AuthController {
   @Post('admin/logout')
   @UseGuards(AdminGuard)
   async adminLogout(
+    @GetAdmin() admin: Admin,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     const refreshToken = req.cookies['refresh_token'] as string;
-    res.clearCookie('refresh_token');
-
-    return await this.authService.adminLogout(refreshToken);
+    if (!refreshToken) throw new UnauthorizedException();
+    await this.authService.adminLogout(admin.id, refreshToken);
+    res.clearCookie('refresh_token', {
+      path: '/auth',
+    });
   }
 }

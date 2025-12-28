@@ -74,6 +74,7 @@ export class AuthRepository {
       .findUniqueOrThrow({
         where: {
           refreshToken,
+          expiredAt: { gt: new Date() },
         },
         select: {
           adminId: true,
@@ -95,10 +96,14 @@ export class AuthRepository {
       });
   }
 
-  async deleteAdminRefreshToken(refreshToken: string): Promise<void> {
+  async deleteAdminRefreshToken(
+    adminId: string,
+    refreshToken: string,
+  ): Promise<void> {
     await this.prismaService.adminRefreshToken
       .delete({
         where: {
+          adminId,
           refreshToken,
         },
       })
