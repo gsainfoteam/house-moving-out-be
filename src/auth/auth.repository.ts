@@ -122,4 +122,23 @@ export class AuthRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+
+  async deleteExpiredAdminRefreshTokens(): Promise<void> {
+    await this.prismaService.adminRefreshToken
+      .deleteMany({
+        where: {
+          expiredAt: { lt: new Date() },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `deleteAdminRefreshToken prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteAdminRefreshToken error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }

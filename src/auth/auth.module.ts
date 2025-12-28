@@ -9,6 +9,7 @@ import { StringValue } from 'ms';
 import { AuthRepository } from './auth.repository';
 import { AdminGuard } from './guard/admin.guard';
 import { AdminStrategy } from './guard/admin.strategy';
+import { RefreshTokenScheduler } from './scheduler/refreshToken.scheduler';
 
 @Module({
   imports: [
@@ -30,6 +31,12 @@ import { AdminStrategy } from './guard/admin.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository, AdminGuard, AdminStrategy],
+  providers: [
+    AuthService,
+    AuthRepository,
+    AdminGuard,
+    AdminStrategy,
+    RefreshTokenScheduler,
+  ],
 })
 export class AuthModule {}

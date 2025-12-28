@@ -99,10 +99,11 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     const refreshToken = req.cookies['refresh_token'] as string;
-    if (!refreshToken) throw new UnauthorizedException();
-    await this.authService.adminLogout(admin.id, refreshToken);
-    res.clearCookie('refresh_token', {
-      path: '/auth',
-    });
+    if (refreshToken) {
+      await this.authService.adminLogout(admin.id, refreshToken);
+      res.clearCookie('refresh_token', {
+        path: '/auth',
+      });
+    }
   }
 }

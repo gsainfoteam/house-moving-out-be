@@ -38,6 +38,11 @@ export class AuthService {
     await this.authRepository.deleteAdminRefreshToken(adminId, refreshToken);
   }
 
+  async deleteExpiredRefreshTokens(): Promise<void> {
+    await this.authRepository.deleteExpiredAdminRefreshTokens();
+    // TODO: 일반 사용자용 토큰도 삭제
+  }
+
   private generateOpaqueToken(): string {
     return crypto.randomBytes(32).toString('base64').replace(/[+/=]/g, '');
   }
