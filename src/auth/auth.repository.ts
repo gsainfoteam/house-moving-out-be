@@ -109,11 +109,11 @@ export class AuthRepository {
             throw new NotFoundException();
           }
           this.logger.error(
-            `findAdminRefreshToken prisma error: ${error.message}`,
+            `deleteAdminRefreshToken prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findAdminRefreshToken error: ${error}`);
+        this.logger.error(`deleteAdminRefreshToken error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
