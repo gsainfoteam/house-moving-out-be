@@ -123,10 +123,11 @@ export class AuthRepository {
       });
   }
 
-  async deleteExpiredAdminRefreshTokens(): Promise<void> {
+  async deleteExpiredAdminRefreshTokens(adminId: string): Promise<void> {
     await this.prismaService.adminRefreshToken
       .deleteMany({
         where: {
+          adminId,
           expiredAt: { lt: new Date() },
         },
       })

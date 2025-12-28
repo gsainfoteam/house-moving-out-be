@@ -19,6 +19,7 @@ export class AuthService {
     const idpToken = auth.split(' ')[1];
     const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
     await this.authRepository.findAdmin(userinfo.id);
+    await this.authRepository.deleteExpiredAdminRefreshTokens(userinfo.id);
     return await this.issueTokens(userinfo.id);
   }
 
@@ -36,11 +37,6 @@ export class AuthService {
 
   async adminLogout(adminId: string, refreshToken: string): Promise<void> {
     await this.authRepository.deleteAdminRefreshToken(adminId, refreshToken);
-  }
-
-  async deleteExpiredRefreshTokens(): Promise<void> {
-    await this.authRepository.deleteExpiredAdminRefreshTokens();
-    // TODO: 일반 사용자용 토큰도 삭제
   }
 
   private generateOpaqueToken(): string {
