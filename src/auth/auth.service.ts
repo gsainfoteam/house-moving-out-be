@@ -18,12 +18,12 @@ export class AuthService {
   async adminLogin(auth: string): Promise<IssueTokenType> {
     const idpToken = auth.split(' ')[1];
     const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
-    await this.authRepository.findAdmin(userinfo.uuid);
-    return await this.issueTokens(userinfo.uuid);
+    await this.authRepository.findAdmin(userinfo.id);
+    return await this.issueTokens(userinfo.id);
   }
 
-  async findAdmin(uuid: string): Promise<Admin> {
-    return this.authRepository.findAdmin(uuid);
+  async findAdmin(id: string): Promise<Admin> {
+    return this.authRepository.findAdmin(id);
   }
 
   async adminRefresh(refreshToken: string): Promise<JwtToken> {
@@ -45,11 +45,11 @@ export class AuthService {
       .replace(/[+//=]/g, '');
   }
 
-  private async issueTokens(uuid: string): Promise<IssueTokenType> {
+  private async issueTokens(id: string): Promise<IssueTokenType> {
     const refresh_token: string = this.generateOpaqueToken();
-    await this.authRepository.setAdminRefreshToken(uuid, refresh_token);
+    await this.authRepository.setAdminRefreshToken(id, refresh_token);
     return {
-      access_token: this.jwtService.sign({}, { subject: uuid }),
+      access_token: this.jwtService.sign({}, { subject: id }),
       refresh_token,
     };
   }
