@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": false,
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*",
+    "libs/**/*",
+    "generated/**/*"
+  ],
+  "exclude": []
+}

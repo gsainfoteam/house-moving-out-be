@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id            String  @id
+  name          String
+  email         String  @unique
+  phoneNumber   String? @map("phone_number")
+
+  adminRefreshTokens AdminRefreshToken[]
+
+  @@map("admin")
+}
+
+model AdminRefreshToken {
+  id            String    @id @default(uuid())
+  adminId       String    @map("admin_uuid")
+  refreshToken  String    @unique @map("refresh_token")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  expiredAt     DateTime  @map("expired_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_refresh_token")
+}
