@@ -1,11 +1,11 @@
 -- CreateTable
-CREATE TABLE "Admin" (
+CREATE TABLE "admin" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone_number" TEXT,
 
-    CONSTRAINT "Admin_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "admin_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -20,10 +20,10 @@ CREATE TABLE "admin_refresh_token" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Admin_email_key" ON "Admin"("email");
+CREATE UNIQUE INDEX "admin_email_key" ON "admin"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "admin_refresh_token_refresh_token_key" ON "admin_refresh_token"("refresh_token");
 
 -- AddForeignKey
-ALTER TABLE "admin_refresh_token" ADD CONSTRAINT "admin_refresh_token_admin_uuid_fkey" FOREIGN KEY ("admin_uuid") REFERENCES "Admin"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "admin_refresh_token" ADD CONSTRAINT "admin_refresh_token_admin_uuid_fkey" FOREIGN KEY ("admin_uuid") REFERENCES "admin"("id") ON DELETE CASCADE ON UPDATE CASCADE;
