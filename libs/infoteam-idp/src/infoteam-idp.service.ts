@@ -21,7 +21,7 @@ export class InfoteamIdpService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.idpUrl = this.configService.get<string>('IDP_URL') as string;
+    this.idpUrl = this.configService.getOrThrow<string>('IDP_URL');
   }
 
   async getUserInfo(accessToken: string): Promise<UserInfo> {

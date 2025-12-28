@@ -21,8 +21,6 @@ export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
 
   async validate({ sub }: JwtPayload) {
     if (!sub) throw new UnauthorizedException('invalid token');
-    return await this.authService.findAdmin(sub).catch(() => {
-      throw new UnauthorizedException();
-    });
+    return await this.authService.findAdmin(sub);
   }
 }

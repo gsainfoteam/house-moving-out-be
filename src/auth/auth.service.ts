@@ -39,10 +39,7 @@ export class AuthService {
   }
 
   private generateOpaqueToken(): string {
-    return crypto
-      .randomBytes(32)
-      .toString('base64')
-      .replace(/[+//=]/g, '');
+    return crypto.randomBytes(32).toString('base64').replace(/[+/=]/g, '');
   }
 
   private async issueTokens(id: string): Promise<IssueTokenType> {

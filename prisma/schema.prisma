@@ -15,7 +15,7 @@ datasource db {
 }
 
 model Admin {
-  id            String  @id @default(uuid())
+  id            String  @id
   name          String
   email         String  @unique
   phoneNumber   String? @map("phone_number")
