@@ -41,7 +41,7 @@ export class AuthController {
     summary: 'Login',
     description: 'Issue JWT token for admin',
   })
-  @ApiOkResponse({ description: 'Return jwt token' })
+  @ApiOkResponse({ type: JwtToken, description: 'Return jwt token' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiOAuth2(['email', 'profile', 'openid'], 'oauth2')
