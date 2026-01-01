@@ -36,3 +36,55 @@ model AdminRefreshToken {
 
   @@map("admin_refresh_token")
 }
+
+model User {
+  id              String    @id
+  name            String
+  email           String    @unique
+  phoneNumber     String    @map("phone_number")
+  studentNumber   String    @map("student_number")
+  
+  termsAgreedAt   DateTime? @map("terms_agreed_at")
+  privacyAgreedAt DateTime? @map("privacy_agreed_at")
+  
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  userRefreshTokens UserRefreshToken[]
+  userConsents      UserConsent[]
+  
+  @@map("user")
+}
+
+model UserRefreshToken {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  refreshToken  String    @unique @map("refresh_token")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  expiredAt     DateTime  @map("expired_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_refresh_token")
+}
+
+model UserConsent {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  consentType   ConsentType @map("consent_type")
+  version       String
+  agreedAt      DateTime    @default(now()) @map("agreed_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_consent")
+  @@index([userId, consentType])
+}
+
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  
+  @@map("consent_type")
+}
