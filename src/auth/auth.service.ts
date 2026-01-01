@@ -6,6 +6,8 @@ import { Admin } from 'generated/prisma/client';
 import * as crypto from 'crypto';
 import { IssueTokenType } from './types/jwtToken.type';
 import { JwtToken } from './dto/jwtToken.dto';
+import { ConfigService } from '@nestjs/config';
+import { StringValue } from 'ms';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +15,7 @@ export class AuthService {
     private readonly infoteamIdpService: InfoteamIdpService,
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async adminLogin(auth: string): Promise<IssueTokenType> {
@@ -31,7 +34,18 @@ export class AuthService {
     const { adminId } =
       await this.authRepository.findAdminRefreshToken(refreshToken);
     return {
-      access_token: this.jwtService.sign({}, { subject: adminId }),
+      access_token: this.jwtService.sign(
+        {},
+        {
+          subject: adminId,
+          secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
+          expiresIn:
+            this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
+          algorithm: 'HS256',
+          audience: this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
+          issuer: this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
+        },
+      ),
     };
   }
 
@@ -47,7 +61,18 @@ export class AuthService {
     const refresh_token: string = this.generateOpaqueToken();
     await this.authRepository.setAdminRefreshToken(id, refresh_token);
     return {
-      access_token: this.jwtService.sign({}, { subject: id }),
+      access_token: this.jwtService.sign(
+        {},
+        {
+          subject: id,
+          secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
+          expiresIn:
+            this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
+          algorithm: 'HS256',
+          audience: this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
+          issuer: this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
+        },
+      ),
       refresh_token,
     };
   }
