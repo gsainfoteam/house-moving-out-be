@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
-import { IsDate, IsString, IsBoolean, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsString } from 'class-validator';
 
 export class CreateMoveOutScheduleDto {
   @ApiProperty({
