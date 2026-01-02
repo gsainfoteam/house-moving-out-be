@@ -24,12 +24,12 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error('createMoveOutSchedule error');
-          this.logger.debug(error);
+          this.logger.error(
+            `createMoveOutSchedule prisma error: ${error.message}`,
+          );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error('createMoveOutSchedule error');
-        this.logger.debug(error);
+        this.logger.error(`createMoveOutSchedule error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -42,16 +42,15 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            throw new NotFoundException(
-              `MoveOutSchedule with ID ${id} not found`,
-            );
+            this.logger.debug(`MoveOutSchedule not found: ${id}`);
+            throw new NotFoundException(`Not Found Error`);
           }
-          this.logger.error('findMoveOutScheduleById error');
-          this.logger.debug(error);
+          this.logger.error(
+            `findMoveOutScheduleById prisma error: ${error.message}`,
+          );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error('findMoveOutScheduleById Unknown Error');
-        this.logger.debug(error);
+        this.logger.error(`findMoveOutScheduleById error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -68,17 +67,15 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`MoveOutSchedule with id ${id} not found`);
-            throw new NotFoundException(
-              `MoveOutSchedule with id ${id} not found`,
-            );
+            this.logger.debug(`MoveOutSchedule not found: ${id}`);
+            throw new NotFoundException(`Not Found Error`);
           }
-          this.logger.error('updateMoveOutSchedule error');
-          this.logger.debug(error);
+          this.logger.error(
+            `updateMoveOutSchedule prisma error: ${error.message}`,
+          );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error('updateMoveOutSchedule Unknown Error');
-        this.logger.debug(error);
+        this.logger.error(`updateMoveOutSchedule error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
