@@ -12,16 +12,6 @@ export class CreateMoveOutScheduleDto {
   title: string;
 
   @ApiProperty({
-    example: 'true',
-    description: '일정 활성화 여부, 기본값 false',
-    required: false,
-  })
-  @Transform(({ value }) => value === 'true' || value === true)
-  @IsBoolean()
-  @IsOptional()
-  isActive: boolean;
-
-  @ApiProperty({
     example: '2025-12-01',
     description: '신청 시작 날짜',
     required: true,

@@ -40,7 +40,6 @@ model AdminRefreshToken {
 model MoveOutSchedule {
   id                   Int      @id @default(autoincrement())
   title                String
-  isActive             Boolean  @default(false) @map("is_active")
   applicationStartDate DateTime @map("application_start_date") @db.Date
   applicationEndDate   DateTime @map("application_end_date") @db.Date
   inspectionStartDate  DateTime @map("inspection_start_date") @db.Date
