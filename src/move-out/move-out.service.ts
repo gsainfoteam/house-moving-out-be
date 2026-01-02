@@ -12,12 +12,7 @@ export class MoveOutService {
   async createMoveOutSchedule(
     createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    const moveOutScheduleDates: MoveOutScheduleDates = {
-      applicationStartDate: createMoveOutScheduleDto.applicationStartDate,
-      applicationEndDate: createMoveOutScheduleDto.applicationEndDate,
-      inspectionStartDate: createMoveOutScheduleDto.inspectionStartDate,
-      inspectionEndDate: createMoveOutScheduleDto.inspectionEndDate,
-    };
+    const { title, ...moveOutScheduleDates } = createMoveOutScheduleDto;
 
     this.validateScheduleDates(moveOutScheduleDates);
 
@@ -30,21 +25,18 @@ export class MoveOutService {
     id: number,
     updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    const Schedule = await this.moveOutRepository.findMoveOutScheduleById(id);
+    const schedule = await this.moveOutRepository.findMoveOutScheduleById(id);
+    const {
+      id: _id,
+      title: _title,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      ...baseScheduleDates
+    } = schedule;
 
     const updatedMoveOutScheduleDates: MoveOutScheduleDates = {
-      applicationStartDate:
-        updateMoveOutScheduleDto.applicationStartDate ??
-        Schedule.applicationStartDate,
-      applicationEndDate:
-        updateMoveOutScheduleDto.applicationEndDate ??
-        Schedule.applicationEndDate,
-      inspectionStartDate:
-        updateMoveOutScheduleDto.inspectionStartDate ??
-        Schedule.inspectionStartDate,
-      inspectionEndDate:
-        updateMoveOutScheduleDto.inspectionEndDate ??
-        Schedule.inspectionEndDate,
+      ...baseScheduleDates,
+      ...updateMoveOutScheduleDto,
     };
 
     this.validateScheduleDates(updatedMoveOutScheduleDates);
