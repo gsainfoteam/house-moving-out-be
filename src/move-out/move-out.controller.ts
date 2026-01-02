@@ -18,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
-import { UpdateMoveOutScheduleDto } from './dto/req/updateSchedule.dto';
+import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
 import { MoveOutSchedule } from 'generated/prisma/client';
 
 @Controller('move-out')

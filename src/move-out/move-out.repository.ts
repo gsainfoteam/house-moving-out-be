@@ -8,7 +8,7 @@ import { PrismaService } from '@lib/prisma';
 import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
 import { MoveOutSchedule } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { UpdateMoveOutScheduleDto } from './dto/req/updateSchedule.dto';
+import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
 
 @Injectable()
 export class MoveOutRepository {

@@ -3,7 +3,7 @@ import { MoveOutRepository } from './move-out.repository';
 import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
 import { MoveOutSchedule } from 'generated/prisma/client';
 import { MoveOutScheduleDates } from './types/moveOutScheduleDates.type';
-import { UpdateMoveOutScheduleDto } from './dto/req/updateSchedule.dto';
+import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
 
 @Injectable()
 export class MoveOutService {
@@ -72,6 +72,12 @@ export class MoveOutService {
     if (inspectionStartDate >= inspectionEndDate) {
       throw new BadRequestException(
         'Inspection start date must be before inspection end date',
+      );
+    }
+
+    if (applicationStartDate > inspectionStartDate) {
+      throw new BadRequestException(
+        'Application start date cannot be after inspection start date',
       );
     }
 
