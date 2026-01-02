@@ -6,6 +6,8 @@ import {
   Patch,
   Param,
   ParseIntPipe,
+  UseInterceptors,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { MoveOutService } from './move-out.service';
 import {
@@ -20,8 +22,9 @@ import {
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
 import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
-import { MoveOutSchedule } from 'generated/prisma/client';
+import { MoveOutScheduleResDto } from './dto/res/moveOutScheduleRes.dto';
 
+@UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
 export class MoveOutController {
   constructor(private readonly moveOutService: MoveOutService) {}
@@ -32,6 +35,7 @@ export class MoveOutController {
   })
   @ApiCreatedResponse({
     description: 'The move out schedule has been successfully created.',
+    type: MoveOutScheduleResDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
@@ -41,8 +45,11 @@ export class MoveOutController {
   @Post()
   async createMoveOutSchedule(
     @Body() createMoveOutScheduleDto: CreateMoveOutScheduleDto,
-  ): Promise<MoveOutSchedule> {
-    return this.moveOutService.createMoveOutSchedule(createMoveOutScheduleDto);
+  ): Promise<MoveOutScheduleResDto> {
+    const schedule = await this.moveOutService.createMoveOutSchedule(
+      createMoveOutScheduleDto,
+    );
+    return new MoveOutScheduleResDto(schedule);
   }
 
   @ApiOperation({
@@ -52,6 +59,7 @@ export class MoveOutController {
   })
   @ApiOkResponse({
     description: 'The move out schedule has been successfully updated.',
+    type: MoveOutScheduleResDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
@@ -62,10 +70,11 @@ export class MoveOutController {
   async updateMoveOutSchedule(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
-  ): Promise<MoveOutSchedule> {
-    return this.moveOutService.updateMoveOutSchedule(
+  ): Promise<MoveOutScheduleResDto> {
+    const updatedSchedule = await this.moveOutService.updateMoveOutSchedule(
       id,
       updateMoveOutScheduleDto,
     );
+    return new MoveOutScheduleResDto(updatedSchedule);
   }
 }
