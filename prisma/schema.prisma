@@ -82,6 +82,18 @@ model UserConsent {
   @@index([userId, consentType])
 }
 
+model PolicyVersion {
+  id          String      @id @default(uuid())
+  type        ConsentType
+  version     String
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  
+  @@map("policy_version")
+  @@unique([type, version])
+  @@index([type, isActive])
+}
+
 enum ConsentType {
   TERMS_OF_SERVICE
   PRIVACY_POLICY
