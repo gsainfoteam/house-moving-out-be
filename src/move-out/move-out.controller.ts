@@ -45,10 +45,9 @@ export class MoveOutController {
   async createMoveOutSchedule(
     @Body() createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutScheduleResDto> {
-    const schedule = await this.moveOutService.createMoveOutSchedule(
+    return await this.moveOutService.createMoveOutSchedule(
       createMoveOutScheduleDto,
     );
-    return new MoveOutScheduleResDto(schedule);
   }
 
   @ApiOperation({
