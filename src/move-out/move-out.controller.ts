@@ -70,10 +70,9 @@ export class MoveOutController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutScheduleResDto> {
-    const updatedSchedule = await this.moveOutService.updateMoveOutSchedule(
+    return await this.moveOutService.updateMoveOutSchedule(
       id,
       updateMoveOutScheduleDto,
     );
-    return new MoveOutScheduleResDto(updatedSchedule);
   }
 }
