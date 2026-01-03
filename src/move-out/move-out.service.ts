@@ -46,15 +46,15 @@ export class MoveOutService {
       inspectionEndDate,
     } = moveOutScheduleDates;
 
-    if (applicationStartDate >= applicationEndDate) {
+    if (applicationStartDate > applicationEndDate) {
       throw new BadRequestException(
-        'Application start date must be before application end date',
+        'Application start date cannot be after application end date',
       );
     }
 
-    if (inspectionStartDate >= inspectionEndDate) {
+    if (inspectionStartDate > inspectionEndDate) {
       throw new BadRequestException(
-        'Inspection start date must be before inspection end date',
+        'Inspection start date cannot be after inspection end date',
       );
     }
 
