@@ -1,0 +1,29 @@
+name: Update Database (Dev)
+
+on:
+  push:
+    paths:
+      - 'prisma/schema.prisma'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Migrate Database
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Prisma
+        run: bun install
+
+      - name: Migrate Database
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.STG_DATABASE_URL }}
