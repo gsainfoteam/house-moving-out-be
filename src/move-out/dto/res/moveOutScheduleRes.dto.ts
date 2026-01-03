@@ -2,12 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
 
 export class MoveOutScheduleResDto {
-  @Exclude()
-  createdAt: Date;
-
-  @Exclude()
-  updatedAt: Date;
-
   @Expose()
   @ApiProperty({
     description: '퇴사 검사 일정 고유 ID',
@@ -49,6 +43,19 @@ export class MoveOutScheduleResDto {
     example: '2025-12-15',
   })
   inspectionEndDate: Date;
+  @Expose()
+  @ApiProperty({
+    description: '생성 날짜',
+    example: '2025-12-01T00:00:00.000Z',
+  })
+  createdAt: Date;
+
+  @Expose()
+  @ApiProperty({
+    description: '업데이트 날짜',
+    example: '2025-12-01T00:00:00.000Z',
+  })
+  updatedAt: Date;
 
   constructor(partial: Partial<MoveOutScheduleResDto>) {
     Object.assign(this, partial);
