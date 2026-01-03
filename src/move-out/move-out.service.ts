@@ -12,9 +12,7 @@ export class MoveOutService {
   async createMoveOutSchedule(
     createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    const { title, ...moveOutScheduleDates } = createMoveOutScheduleDto;
-
-    this.validateScheduleDates(moveOutScheduleDates);
+    this.validateScheduleDates(createMoveOutScheduleDto);
 
     return await this.moveOutRepository.createMoveOutSchedule(
       createMoveOutScheduleDto,
@@ -26,16 +24,12 @@ export class MoveOutService {
     updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
     const schedule = await this.moveOutRepository.findMoveOutScheduleById(id);
-    const {
-      id: _id,
-      title: _title,
-      createdAt: _createdAt,
-      updatedAt: _updatedAt,
-      ...baseScheduleDates
-    } = schedule;
 
     const updatedMoveOutScheduleDates: MoveOutScheduleDates = {
-      ...baseScheduleDates,
+      applicationStartDate: schedule.applicationStartDate,
+      applicationEndDate: schedule.applicationEndDate,
+      inspectionStartDate: schedule.inspectionStartDate,
+      inspectionEndDate: schedule.inspectionEndDate,
       ...updateMoveOutScheduleDto,
     };
 
