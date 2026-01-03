@@ -26,10 +26,7 @@ export class MoveOutService {
     const schedule = await this.moveOutRepository.findMoveOutScheduleById(id);
 
     const updatedMoveOutScheduleDates: MoveOutScheduleDates = {
-      applicationStartDate: schedule.applicationStartDate,
-      applicationEndDate: schedule.applicationEndDate,
-      inspectionStartDate: schedule.inspectionStartDate,
-      inspectionEndDate: schedule.inspectionEndDate,
+      ...schedule,
       ...updateMoveOutScheduleDto,
     };
 

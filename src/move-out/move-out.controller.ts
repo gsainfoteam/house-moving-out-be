@@ -8,9 +8,12 @@ import {
   ParseIntPipe,
   UseInterceptors,
   ClassSerializerInterceptor,
+  ValidationPipe,
+  UsePipes,
 } from '@nestjs/common';
 import { MoveOutService } from './move-out.service';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
@@ -37,6 +40,7 @@ export class MoveOutController {
     description: 'The move out schedule has been successfully created.',
     type: MoveOutScheduleResDto,
   })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
@@ -59,12 +63,21 @@ export class MoveOutController {
     description: 'The move out schedule has been successfully updated.',
     type: MoveOutScheduleResDto,
   })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Patch(':id')
+  @UsePipes(
+    new ValidationPipe({
+      skipMissingProperties: true,
+      transformOptions: {
+        exposeUnsetFields: false,
+      },
+    }),
+  )
   async updateMoveOutSchedule(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
