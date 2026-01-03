@@ -3,13 +3,24 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
+import expressBasicAuth from 'express-basic-auth';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
+  app.use(
+    ['/api', '/api-json'],
+    expressBasicAuth({
+      challenge: true,
+      users: {
+        [configService.getOrThrow<string>('SWAGGER_USER')]:
+          configService.getOrThrow<string>('SWAGGER_PASSWORD'),
+      },
+    }),
+  );
 
   app.use(cookieParser());
-
-  const configService = app.get(ConfigService);
 
   const config = new DocumentBuilder()
     .setTitle('House Moving Out API')
@@ -31,8 +42,9 @@ async function bootstrap() {
               configService.getOrThrow<string>('SWAGGER_AUTH_URL'),
             tokenUrl: configService.getOrThrow<string>('SWAGGER_TOKEN_URL'),
             scopes: {
-              openid: 'openid',
               email: 'email',
+              student_id: 'student_id',
+              phone_number: 'phone_number',
               profile: 'profile',
             },
           },
@@ -56,17 +68,16 @@ async function bootstrap() {
         name: 'JWT',
         in: 'header',
       },
-      'jwt',
+      'user',
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {
     swaggerOptions: {
       displayRequestDuration: true,
-      oauth2RedirectUrl: `${configService.get<string>('API_URL')}/api/oauth2-redirect.html`,
+      oauth2RedirectUrl: `${configService.getOrThrow<string>('API_URL')}/api/oauth2-redirect.html`,
       initOAuth: {
         usePkceWithAuthorizationCodeGrant: true,
-        additionalQueryStringParams: { nonce: 'help' },
       },
     },
   });
