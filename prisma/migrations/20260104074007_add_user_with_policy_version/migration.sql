@@ -8,8 +8,6 @@ CREATE TABLE "user" (
     "email" TEXT NOT NULL,
     "phone_number" TEXT NOT NULL,
     "student_number" TEXT NOT NULL,
-    "terms_agreed_at" TIMESTAMP(3),
-    "privacy_agreed_at" TIMESTAMP(3),
     "deleted_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -39,6 +37,17 @@ CREATE TABLE "user_consent" (
     CONSTRAINT "user_consent_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "policy_version" (
+    "id" TEXT NOT NULL,
+    "type" "consent_type" NOT NULL,
+    "version" TEXT NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "policy_version_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
@@ -47,6 +56,12 @@ CREATE UNIQUE INDEX "user_refresh_token_refresh_token_key" ON "user_refresh_toke
 
 -- CreateIndex
 CREATE INDEX "user_consent_user_id_consent_type_idx" ON "user_consent"("user_id", "consent_type");
+
+-- CreateIndex
+CREATE INDEX "policy_version_type_is_active_idx" ON "policy_version"("type", "is_active");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "policy_version_type_version_key" ON "policy_version"("type", "version");
 
 -- AddForeignKey
 ALTER TABLE "user_refresh_token" ADD CONSTRAINT "user_refresh_token_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
