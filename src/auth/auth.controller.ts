@@ -136,10 +136,7 @@ export class AuthController {
   async createNewPolicyVersion(
     @Body() createNewPolicyDto: CreateNewPolicyDto,
   ): Promise<CreateNewPolicyResponseDto> {
-    return await this.authService.createNewPolicyVersion(
-      createNewPolicyDto.type,
-      createNewPolicyDto.version,
-    );
+    return await this.authService.createNewPolicyVersion(createNewPolicyDto);
   }
 
   @ApiOperation({
@@ -172,10 +169,7 @@ export class AuthController {
 
     const { access_token, refresh_token } = await this.authService.userLogin(
       auth,
-      body?.agreedToTerms,
-      body?.agreedToPrivacy,
-      body?.termsVersion,
-      body?.privacyVersion,
+      body,
     );
 
     res.cookie('user_refresh_token', refresh_token, {

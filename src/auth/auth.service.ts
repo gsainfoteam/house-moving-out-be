@@ -18,6 +18,8 @@ import {
 import { PrismaTransaction } from '../common/types';
 import { PrismaService } from '@lib/prisma';
 import { CreateNewPolicyResponseDto } from './dto/res/createNewPolicyResponse.dto';
+import { UserLoginDto } from './dto/req/userLogin.dto';
+import { CreateNewPolicyDto } from './dto/req/createNewPolicy.dto';
 
 @Injectable()
 export class AuthService {
@@ -66,34 +68,21 @@ export class AuthService {
     await this.authRepository.deleteAllAdminRefreshTokens(adminId);
   }
 
-  async userLogin(
-    auth: string,
-    agreedToTerms?: boolean,
-    agreedToPrivacy?: boolean,
-    termsVersion?: string,
-    privacyVersion?: string,
-  ): Promise<IssueTokenType> {
+  async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
     const idpToken = auth.split(' ')[1];
     if (!idpToken) throw new UnauthorizedException();
     const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
 
     const consentData: ConsentData = {
-      agreedToTerms,
-      agreedToPrivacy,
-      termsVersion,
-      privacyVersion,
+      agreedToTerms: body?.agreedToTerms,
+      agreedToPrivacy: body?.agreedToPrivacy,
+      termsVersion: body?.termsVersion,
+      privacyVersion: body?.privacyVersion,
     };
 
     const { refreshToken, sessionId } = await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        const user = await this.authRepository.upsertUserInTx(
-          userinfo.id,
-          userinfo.name,
-          userinfo.email,
-          userinfo.phoneNumber,
-          userinfo.studentNumber,
-          tx,
-        );
+        const user = await this.authRepository.upsertUserInTx(userinfo, tx);
 
         await this.validateAndHandleConsentsInTransaction(
           user,
@@ -413,10 +402,10 @@ export class AuthService {
     await this.authRepository.deleteAllUserRefreshTokens(userId);
   }
 
-  async createNewPolicyVersion(
-    type: ConsentType,
-    version: string,
-  ): Promise<CreateNewPolicyResponseDto> {
-    return await this.authRepository.createNewPolicyVersion(type, version);
+  async createNewPolicyVersion({
+    type,
+    version,
+  }: CreateNewPolicyDto): Promise<CreateNewPolicyResponseDto> {
+    return await this.authRepository.createNewPolicyVersion({ type, version });
   }
 }

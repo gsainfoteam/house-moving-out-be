@@ -12,6 +12,7 @@ import { AdminRefreshToken, UserRefreshToken } from 'generated/prisma/browser';
 import { Admin, ConsentType, User } from 'generated/prisma/client';
 import ms, { StringValue } from 'ms';
 import { PrismaTransaction } from '../common/types';
+import { UserInfo } from '@lib/infoteam-idp/types/userInfo.type';
 
 @Injectable()
 export class AuthRepository {
@@ -151,11 +152,7 @@ export class AuthRepository {
   }
 
   async upsertUserInTx(
-    id: string,
-    name: string,
-    email: string,
-    phoneNumber: string,
-    studentNumber: string,
+    { id, name, email, phoneNumber, studentNumber }: UserInfo,
     tx: PrismaTransaction,
   ): Promise<User> {
     return await tx.user
@@ -420,10 +417,13 @@ export class AuthRepository {
       });
   }
 
-  async createNewPolicyVersion(
-    type: ConsentType,
-    version: string,
-  ): Promise<{
+  async createNewPolicyVersion({
+    type,
+    version,
+  }: {
+    type: ConsentType;
+    version: string;
+  }): Promise<{
     id: string;
     type: ConsentType;
     version: string;
