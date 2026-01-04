@@ -188,4 +188,19 @@ export class AuthController {
 
     return { access_token };
   }
+
+  @ApiOperation({
+    summary: 'Refresh token',
+    description: 'Refresh the access token for user',
+  })
+  @ApiCreatedResponse({ type: JwtToken, description: 'Return jwt token' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @Post('user/refresh')
+  async userRefresh(@Req() req: Request): Promise<JwtToken> {
+    const refreshToken = req.cookies['user_refresh_token'] as string;
+    if (!refreshToken) throw new UnauthorizedException();
+
+    return await this.authService.userRefresh(refreshToken);
+  }
 }

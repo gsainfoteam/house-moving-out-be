@@ -350,6 +350,25 @@ export class AuthService {
     };
   }
 
+  async userRefresh(refreshToken: string): Promise<JwtToken> {
+    const { userId } =
+      await this.authRepository.findUserRefreshToken(refreshToken);
+    return {
+      access_token: this.jwtService.sign(
+        {},
+        {
+          subject: userId,
+          secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
+          expiresIn:
+            this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE'),
+          algorithm: 'HS256',
+          audience: this.configService.getOrThrow<string>('USER_JWT_AUDIENCE'),
+          issuer: this.configService.getOrThrow<string>('USER_JWT_ISSUER'),
+        },
+      ),
+    };
+  }
+
   async createNewPolicyVersion(
     type: ConsentType,
     version: string,

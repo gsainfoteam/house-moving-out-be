@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { AdminRefreshToken } from 'generated/prisma/browser';
+import { AdminRefreshToken, UserRefreshToken } from 'generated/prisma/browser';
 import { Admin, ConsentType, User } from 'generated/prisma/client';
 import ms, { StringValue } from 'ms';
 import { PrismaTransaction } from '../common/types';
@@ -227,6 +227,35 @@ export class AuthRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`setUserRefreshTokenInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findUserRefreshToken(
+    refreshToken: string,
+  ): Promise<Pick<UserRefreshToken, 'userId'>> {
+    return await this.prismaService.userRefreshToken
+      .findUniqueOrThrow({
+        where: {
+          refreshToken,
+          expiredAt: { gt: new Date() },
+        },
+        select: {
+          userId: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`refreshToken not found: ${refreshToken}`);
+            throw new UnauthorizedException();
+          }
+          this.logger.error(
+            `findUserRefreshToken prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findUserRefreshToken error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
