@@ -43,8 +43,9 @@ export class AuthService {
   }
 
   async adminRefresh(refreshToken: string): Promise<JwtToken> {
+    const hashedToken = this.hashRefreshToken(refreshToken);
     const { adminId, sessionId } =
-      await this.authRepository.findAdminRefreshToken(refreshToken);
+      await this.authRepository.findAdminByRefreshToken(hashedToken);
     return {
       access_token: this.jwtService.sign(
         { sessionId },
@@ -104,9 +105,10 @@ export class AuthService {
 
         const token = this.generateOpaqueToken();
         const sessionId = this.generateSessionId();
+        const hashedToken = this.hashRefreshToken(token);
         await this.authRepository.setUserRefreshTokenInTx(
           user.id,
-          token,
+          hashedToken,
           sessionId,
           tx,
         );
@@ -338,16 +340,20 @@ export class AuthService {
     return crypto.randomBytes(16).toString('hex');
   }
 
+  private hashRefreshToken(token: string): string {
+    const secret = this.configService.getOrThrow<string>(
+      'REFRESH_TOKEN_HMAC_SECRET',
+    );
+    return crypto.createHmac('sha256', secret).update(token).digest('hex');
+  }
+
   private async issueAdminTokens(
     id: string,
     sessionId: string,
   ): Promise<IssueTokenType> {
     const refresh_token: string = this.generateOpaqueToken();
-    await this.authRepository.setAdminRefreshToken(
-      id,
-      refresh_token,
-      sessionId,
-    );
+    const hashedToken = this.hashRefreshToken(refresh_token);
+    await this.authRepository.setAdminRefreshToken(id, hashedToken, sessionId);
     return {
       access_token: this.jwtService.sign(
         { sessionId },
@@ -384,8 +390,9 @@ export class AuthService {
   }
 
   async userRefresh(refreshToken: string): Promise<JwtToken> {
+    const hashedToken = this.hashRefreshToken(refreshToken);
     const { userId, sessionId } =
-      await this.authRepository.findUserRefreshToken(refreshToken);
+      await this.authRepository.findUserByRefreshToken(hashedToken);
     return {
       access_token: this.jwtService.sign(
         { sessionId },

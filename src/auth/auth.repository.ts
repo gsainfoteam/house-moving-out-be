@@ -53,14 +53,14 @@ export class AuthRepository {
 
   async setAdminRefreshToken(
     id: string,
-    refreshToken: string,
+    hashedRefreshToken: string,
     sessionId: string,
   ): Promise<void> {
     await this.prismaService.adminRefreshToken
       .create({
         data: {
           adminId: id,
-          refreshToken,
+          refreshToken: hashedRefreshToken,
           sessionId,
           expiredAt: new Date(Date.now() + this.adminRefreshTokenExpire),
         },
@@ -77,13 +77,13 @@ export class AuthRepository {
       });
   }
 
-  async findAdminRefreshToken(
-    refreshToken: string,
+  async findAdminByRefreshToken(
+    hashedRefreshToken: string,
   ): Promise<Pick<AdminRefreshToken, 'adminId' | 'sessionId'>> {
     return await this.prismaService.adminRefreshToken
       .findUniqueOrThrow({
         where: {
-          refreshToken,
+          refreshToken: hashedRefreshToken,
           expiredAt: { gt: new Date() },
         },
         select: {
@@ -98,11 +98,11 @@ export class AuthRepository {
             throw new UnauthorizedException();
           }
           this.logger.error(
-            `findAdminRefreshToken prisma error: ${error.message}`,
+            `findAdminByRefreshToken prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findAdminRefreshToken error: ${error}`);
+        this.logger.error(`findAdminByRefreshToken error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -228,7 +228,7 @@ export class AuthRepository {
 
   async setUserRefreshTokenInTx(
     id: string,
-    refreshToken: string,
+    hashedRefreshToken: string,
     sessionId: string,
     tx: PrismaTransaction,
   ): Promise<void> {
@@ -236,7 +236,7 @@ export class AuthRepository {
       .create({
         data: {
           userId: id,
-          refreshToken,
+          refreshToken: hashedRefreshToken,
           sessionId,
           expiredAt: new Date(Date.now() + this.userRefreshTokenExpire),
         },
@@ -253,13 +253,13 @@ export class AuthRepository {
       });
   }
 
-  async findUserRefreshToken(
-    refreshToken: string,
+  async findUserByRefreshToken(
+    hashedRefreshToken: string,
   ): Promise<Pick<UserRefreshToken, 'userId' | 'sessionId'>> {
     return await this.prismaService.userRefreshToken
       .findUniqueOrThrow({
         where: {
-          refreshToken,
+          refreshToken: hashedRefreshToken,
           expiredAt: { gt: new Date() },
         },
         select: {
@@ -274,11 +274,11 @@ export class AuthRepository {
             throw new UnauthorizedException();
           }
           this.logger.error(
-            `findUserRefreshToken prisma error: ${error.message}`,
+            `findUserByRefreshToken prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findUserRefreshToken error: ${error}`);
+        this.logger.error(`findUserByRefreshToken error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
