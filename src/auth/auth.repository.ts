@@ -1,5 +1,6 @@
 import { PrismaService } from '@lib/prisma';
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -385,9 +386,7 @@ export class AuthRepository {
               this.logger.debug(
                 `Policy version already exists: ${type} ${version}`,
               );
-              throw new InternalServerErrorException(
-                'Policy version already exists',
-              );
+              throw new ConflictException('Policy version already exists');
             }
             this.logger.error(
               `createNewPolicyVersion prisma error: ${error.message}`,

@@ -10,6 +10,7 @@ import {
 import {
   ApiBody,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -127,6 +128,7 @@ export class AuthController {
     description: 'Policy version created successfully',
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiConflictResponse({ description: 'Policy version already exists' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @Post('admin/policy')
