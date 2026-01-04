@@ -178,7 +178,7 @@ export class AuthController {
       body?.privacyVersion,
     );
 
-    res.cookie('refresh_token', refresh_token, {
+    res.cookie('user_refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
