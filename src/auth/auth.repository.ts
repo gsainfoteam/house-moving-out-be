@@ -252,9 +252,10 @@ export class AuthRepository {
 
   async findUser(id: string): Promise<User> {
     return await this.prismaService.user
-      .findUniqueOrThrow({
+      .findFirstOrThrow({
         where: {
           id,
+          deletedAt: null,
         },
       })
       .catch((error) => {
