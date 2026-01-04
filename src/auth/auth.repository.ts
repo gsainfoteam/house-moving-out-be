@@ -3,7 +3,6 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -101,49 +100,21 @@ export class AuthRepository {
       });
   }
 
-  async deleteAdminRefreshToken(
-    adminId: string,
-    refreshToken: string,
-  ): Promise<void> {
-    await this.prismaService.adminRefreshToken
-      .delete({
-        where: {
-          adminId,
-          refreshToken,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug('refreshToken not found');
-            throw new NotFoundException();
-          }
-          this.logger.error(
-            `deleteAdminRefreshToken prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`deleteAdminRefreshToken error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async deleteExpiredAdminRefreshTokens(adminId: string): Promise<void> {
+  async deleteAllAdminRefreshTokens(adminId: string): Promise<void> {
     await this.prismaService.adminRefreshToken
       .deleteMany({
         where: {
           adminId,
-          expiredAt: { lt: new Date() },
         },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `deleteAdminRefreshToken prisma error: ${error.message}`,
+            `deleteAllAdminRefreshTokens prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`deleteAdminRefreshToken error: ${error}`);
+        this.logger.error(`deleteAllAdminRefreshTokens error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -183,7 +154,26 @@ export class AuthRepository {
       });
   }
 
-  async deleteExpiredUserRefreshTokensInTx(
+  async deleteAllUserRefreshTokens(userId: string): Promise<void> {
+    await this.prismaService.userRefreshToken
+      .deleteMany({
+        where: {
+          userId,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `deleteAllUserRefreshTokens prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteAllUserRefreshTokens error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteAllUserRefreshTokensInTx(
     userId: string,
     tx: PrismaTransaction,
   ): Promise<void> {
@@ -191,17 +181,16 @@ export class AuthRepository {
       .deleteMany({
         where: {
           userId,
-          expiredAt: { lt: new Date() },
         },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `deleteExpiredUserRefreshTokensInTx prisma error: ${error.message}`,
+            `deleteAllUserRefreshTokensInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`deleteExpiredUserRefreshTokensInTx error: ${error}`);
+        this.logger.error(`deleteAllUserRefreshTokensInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -277,33 +266,6 @@ export class AuthRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findUser error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async deleteUserRefreshToken(
-    userId: string,
-    refreshToken: string,
-  ): Promise<void> {
-    await this.prismaService.userRefreshToken
-      .delete({
-        where: {
-          userId,
-          refreshToken,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug('refreshToken not found');
-            throw new NotFoundException();
-          }
-          this.logger.error(
-            `deleteUserRefreshToken prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`deleteUserRefreshToken error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

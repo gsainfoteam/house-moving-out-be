@@ -108,16 +108,12 @@ export class AuthController {
   @UseGuards(AdminGuard)
   async adminLogout(
     @GetAdmin() admin: Admin,
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    const refreshToken = req.cookies['refresh_token'] as string;
-    if (refreshToken) {
-      await this.authService.adminLogout(admin.id, refreshToken);
-      res.clearCookie('refresh_token', {
-        path: '/auth',
-      });
-    }
+    await this.authService.adminLogout(admin.id);
+    res.clearCookie('refresh_token', {
+      path: '/auth',
+    });
   }
 
   @ApiOperation({
@@ -219,15 +215,11 @@ export class AuthController {
   @UseGuards(UserGuard)
   async userLogout(
     @GetUser() user: User,
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    const refreshToken = req.cookies['user_refresh_token'] as string;
-    if (refreshToken) {
-      await this.authService.userLogout(user.id, refreshToken);
-      res.clearCookie('user_refresh_token', {
-        path: '/auth',
-      });
-    }
+    await this.authService.userLogout(user.id);
+    res.clearCookie('user_refresh_token', {
+      path: '/auth',
+    });
   }
 }

@@ -33,7 +33,7 @@ export class AuthService {
     const idpToken = auth.split(' ')[1];
     const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
     await this.authRepository.findAdmin(userinfo.id);
-    await this.authRepository.deleteExpiredAdminRefreshTokens(userinfo.id);
+    await this.authRepository.deleteAllAdminRefreshTokens(userinfo.id);
     return await this.issueAdminTokens(userinfo.id);
   }
 
@@ -60,8 +60,8 @@ export class AuthService {
     };
   }
 
-  async adminLogout(adminId: string, refreshToken: string): Promise<void> {
-    await this.authRepository.deleteAdminRefreshToken(adminId, refreshToken);
+  async adminLogout(adminId: string): Promise<void> {
+    await this.authRepository.deleteAllAdminRefreshTokens(adminId);
   }
 
   async userLogin(
@@ -99,10 +99,7 @@ export class AuthService {
           tx,
         );
 
-        await this.authRepository.deleteExpiredUserRefreshTokensInTx(
-          user.id,
-          tx,
-        );
+        await this.authRepository.deleteAllUserRefreshTokensInTx(user.id, tx);
 
         const token = this.generateOpaqueToken();
         await this.authRepository.setUserRefreshTokenInTx(user.id, token, tx);
@@ -373,8 +370,8 @@ export class AuthService {
     };
   }
 
-  async userLogout(userId: string, refreshToken: string): Promise<void> {
-    await this.authRepository.deleteUserRefreshToken(userId, refreshToken);
+  async userLogout(userId: string): Promise<void> {
+    await this.authRepository.deleteAllUserRefreshTokens(userId);
   }
 
   async createNewPolicyVersion(
