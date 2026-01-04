@@ -29,12 +29,14 @@ model AdminRefreshToken {
   id            String    @id @default(uuid())
   adminId       String    @map("admin_uuid")
   refreshToken  String    @unique @map("refresh_token")
+  sessionId     String    @map("session_id")
   createdAt     DateTime  @default(now()) @map("created_at")
   expiredAt     DateTime  @map("expired_at")
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("admin_refresh_token")
+  @@index([adminId, sessionId])
 }
 
 model User {
@@ -58,12 +60,14 @@ model UserRefreshToken {
   id            String    @id @default(uuid())
   userId        String    @map("user_id")
   refreshToken  String    @unique @map("refresh_token")
+  sessionId     String    @map("session_id")
   createdAt     DateTime  @default(now()) @map("created_at")
   expiredAt     DateTime  @map("expired_at")
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("user_refresh_token")
+  @@index([userId, sessionId])
 }
 
 model UserConsent {

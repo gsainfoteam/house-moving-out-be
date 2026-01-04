@@ -19,8 +19,18 @@ export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
     });
   }
 
-  async validate({ sub }: JwtPayload) {
+  async validate(payload: JwtPayload & { sessionId?: string }) {
+    const { sub, sessionId } = payload;
     if (!sub) throw new UnauthorizedException('invalid token');
-    return await this.authService.findAdmin(sub);
+    if (!sessionId) throw new UnauthorizedException('sessionId missing');
+
+    const admin = await this.authService.findAdmin(sub);
+    const refreshToken =
+      await this.authService.findAdminRefreshTokenBySessionId(sub, sessionId);
+    if (!refreshToken) {
+      throw new UnauthorizedException('invalid session');
+    }
+
+    return admin;
   }
 }

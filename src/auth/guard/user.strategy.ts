@@ -19,8 +19,20 @@ export class UserStrategy extends PassportStrategy(Strategy, 'user') {
     });
   }
 
-  async validate({ sub }: JwtPayload) {
+  async validate(payload: JwtPayload & { sessionId?: string }) {
+    const { sub, sessionId } = payload;
     if (!sub) throw new UnauthorizedException('invalid token');
-    return await this.authService.findUser(sub);
+    if (!sessionId) throw new UnauthorizedException('sessionId missing');
+
+    const user = await this.authService.findUser(sub);
+    const refreshToken = await this.authService.findUserRefreshTokenBySessionId(
+      sub,
+      sessionId,
+    );
+    if (!refreshToken) {
+      throw new UnauthorizedException('invalid session');
+    }
+
+    return user;
   }
 }

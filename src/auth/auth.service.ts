@@ -34,7 +34,8 @@ export class AuthService {
     const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
     await this.authRepository.findAdmin(userinfo.id);
     await this.authRepository.deleteAllAdminRefreshTokens(userinfo.id);
-    return await this.issueAdminTokens(userinfo.id);
+    const sessionId = this.generateSessionId();
+    return await this.issueAdminTokens(userinfo.id, sessionId);
   }
 
   async findAdmin(id: string): Promise<Admin> {
@@ -42,11 +43,11 @@ export class AuthService {
   }
 
   async adminRefresh(refreshToken: string): Promise<JwtToken> {
-    const { adminId } =
+    const { adminId, sessionId } =
       await this.authRepository.findAdminRefreshToken(refreshToken);
     return {
       access_token: this.jwtService.sign(
-        {},
+        { sessionId },
         {
           subject: adminId,
           secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
@@ -82,7 +83,7 @@ export class AuthService {
       privacyVersion,
     };
 
-    const refreshToken = await this.prismaService.$transaction(
+    const { refreshToken, sessionId } = await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const user = await this.authRepository.upsertUserInTx(
           userinfo.id,
@@ -102,14 +103,20 @@ export class AuthService {
         await this.authRepository.deleteAllUserRefreshTokensInTx(user.id, tx);
 
         const token = this.generateOpaqueToken();
-        await this.authRepository.setUserRefreshTokenInTx(user.id, token, tx);
+        const sessionId = this.generateSessionId();
+        await this.authRepository.setUserRefreshTokenInTx(
+          user.id,
+          token,
+          sessionId,
+          tx,
+        );
 
-        return token;
+        return { refreshToken: token, sessionId };
       },
     );
 
     const accessToken = this.jwtService.sign(
-      {},
+      { sessionId },
       {
         subject: userinfo.id,
         secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
@@ -327,12 +334,23 @@ export class AuthService {
     return crypto.randomBytes(32).toString('base64').replace(/[+/=]/g, '');
   }
 
-  private async issueAdminTokens(id: string): Promise<IssueTokenType> {
+  private generateSessionId(): string {
+    return crypto.randomBytes(16).toString('hex');
+  }
+
+  private async issueAdminTokens(
+    id: string,
+    sessionId: string,
+  ): Promise<IssueTokenType> {
     const refresh_token: string = this.generateOpaqueToken();
-    await this.authRepository.setAdminRefreshToken(id, refresh_token);
+    await this.authRepository.setAdminRefreshToken(
+      id,
+      refresh_token,
+      sessionId,
+    );
     return {
       access_token: this.jwtService.sign(
-        {},
+        { sessionId },
         {
           subject: id,
           secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
@@ -351,12 +369,26 @@ export class AuthService {
     return this.authRepository.findUser(id);
   }
 
+  async findAdminRefreshTokenBySessionId(adminId: string, sessionId: string) {
+    return this.authRepository.findAdminRefreshTokenBySessionId(
+      adminId,
+      sessionId,
+    );
+  }
+
+  async findUserRefreshTokenBySessionId(userId: string, sessionId: string) {
+    return this.authRepository.findUserRefreshTokenBySessionId(
+      userId,
+      sessionId,
+    );
+  }
+
   async userRefresh(refreshToken: string): Promise<JwtToken> {
-    const { userId } =
+    const { userId, sessionId } =
       await this.authRepository.findUserRefreshToken(refreshToken);
     return {
       access_token: this.jwtService.sign(
-        {},
+        { sessionId },
         {
           subject: userId,
           secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
