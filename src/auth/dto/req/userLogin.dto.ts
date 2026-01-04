@@ -1,40 +1,47 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, ValidateIf } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsDefined,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
 
 export class UserLoginDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether user agreed to terms of service',
-    required: false,
     example: true,
   })
   @IsBoolean()
   @IsOptional()
   agreedToTerms?: boolean;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether user agreed to privacy policy',
-    required: false,
     example: true,
   })
   @IsBoolean()
   @IsOptional()
   agreedToPrivacy?: boolean;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Version of terms of service',
-    required: false,
     example: '1.0.0',
   })
   @ValidateIf((o: UserLoginDto) => o.agreedToTerms === true)
+  @IsDefined()
+  @IsNotEmpty()
   @IsString()
   termsVersion?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Version of privacy policy',
-    required: false,
     example: '1.0.0',
   })
   @ValidateIf((o: UserLoginDto) => o.agreedToPrivacy === true)
+  @IsDefined()
+  @IsNotEmpty()
   @IsString()
   privacyVersion?: string;
 }

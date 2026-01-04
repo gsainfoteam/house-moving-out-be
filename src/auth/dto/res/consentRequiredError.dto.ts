@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class ConsentVersionInfo {
   @ApiProperty({
@@ -16,15 +16,13 @@ class ConsentVersionInfo {
 }
 
 class RequiredConsents {
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: ConsentVersionInfo,
-    required: false,
   })
   terms?: ConsentVersionInfo;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: ConsentVersionInfo,
-    required: false,
   })
   privacy?: ConsentVersionInfo;
 }
@@ -49,9 +47,8 @@ export class ConsentRequiredErrorDto {
   })
   statusCode: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: RequiredConsents,
-    required: false,
   })
   requiredConsents?: RequiredConsents;
 }
