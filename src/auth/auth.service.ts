@@ -350,6 +350,10 @@ export class AuthService {
     };
   }
 
+  async findUser(id: string): Promise<User> {
+    return this.authRepository.findUser(id);
+  }
+
   async userRefresh(refreshToken: string): Promise<JwtToken> {
     const { userId } =
       await this.authRepository.findUserRefreshToken(refreshToken);
@@ -367,6 +371,10 @@ export class AuthService {
         },
       ),
     };
+  }
+
+  async userLogout(userId: string, refreshToken: string): Promise<void> {
+    await this.authRepository.deleteUserRefreshToken(userId, refreshToken);
   }
 
   async createNewPolicyVersion(

@@ -30,7 +30,9 @@ import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
 import { AdminGuard } from './guard/admin.guard';
 import { GetAdmin } from './decorator/getAdmin.decorator';
-import { Admin } from 'generated/prisma/client';
+import { UserGuard } from './guard/user.guard';
+import { GetUser } from './decorator/getUser.decorator';
+import { Admin, User } from 'generated/prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -202,5 +204,30 @@ export class AuthController {
     if (!refreshToken) throw new UnauthorizedException();
 
     return await this.authService.userRefresh(refreshToken);
+  }
+
+  @ApiOperation({
+    summary: 'Logout',
+    description: 'Logout the user from the cookie. Delete the refresh token.',
+  })
+  @ApiOkResponse({ description: 'Logout' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @Post('user/logout')
+  @UseGuards(UserGuard)
+  async userLogout(
+    @GetUser() user: User,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const refreshToken = req.cookies['user_refresh_token'] as string;
+    if (refreshToken) {
+      await this.authService.userLogout(user.id, refreshToken);
+      res.clearCookie('user_refresh_token', {
+        path: '/auth',
+      });
+    }
   }
 }

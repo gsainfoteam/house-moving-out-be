@@ -260,6 +260,54 @@ export class AuthRepository {
       });
   }
 
+  async findUser(id: string): Promise<User> {
+    return await this.prismaService.user
+      .findUniqueOrThrow({
+        where: {
+          id,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`user not found: ${id}`);
+            throw new UnauthorizedException();
+          }
+          this.logger.error(`findUser prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findUser error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteUserRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
+    await this.prismaService.userRefreshToken
+      .delete({
+        where: {
+          userId,
+          refreshToken,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('refreshToken not found');
+            throw new NotFoundException();
+          }
+          this.logger.error(
+            `deleteUserRefreshToken prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteUserRefreshToken error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async createUserConsentsInTx(
     userId: string,
     consents: Array<{
