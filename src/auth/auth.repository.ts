@@ -281,13 +281,24 @@ export class AuthRepository {
     tx: PrismaTransaction,
   ): Promise<void> {
     if (consents.length > 0) {
-      await tx.userConsent.createMany({
-        data: consents.map((consent) => ({
-          userId,
-          consentType: consent.consentType,
-          version: consent.version,
-        })),
-      });
+      await tx.userConsent
+        .createMany({
+          data: consents.map((consent) => ({
+            userId,
+            consentType: consent.consentType,
+            version: consent.version,
+          })),
+        })
+        .catch((error) => {
+          if (error instanceof PrismaClientKnownRequestError) {
+            this.logger.error(
+              `createUserConsentsInTx prisma error: ${error.message}`,
+            );
+            throw new InternalServerErrorException('Database Error');
+          }
+          this.logger.error(`createUserConsentsInTx error: ${error}`);
+          throw new InternalServerErrorException('Unknown Error');
+        });
     }
   }
 
