@@ -5,8 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -15,10 +15,10 @@ datasource db {
 }
 
 model Admin {
-  id            String  @id
-  name          String
-  email         String  @unique
-  phoneNumber   String? @map("phone_number")
+  id          String  @id
+  name        String
+  email       String  @unique
+  phoneNumber String? @map("phone_number")
 
   adminRefreshTokens AdminRefreshToken[]
   auditLogs          AuditLog[]
@@ -27,73 +27,73 @@ model Admin {
 }
 
 model AdminRefreshToken {
-  id            String    @id @default(uuid())
-  adminId       String    @map("admin_uuid")
-  refreshToken  String    @unique @map("refresh_token")
-  sessionId     String    @map("session_id")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  expiredAt     DateTime  @map("expired_at")
+  id           String   @id @default(uuid())
+  adminId      String   @map("admin_uuid")
+  refreshToken String   @unique @map("refresh_token")
+  sessionId    String   @map("session_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiredAt    DateTime @map("expired_at")
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
-  @@map("admin_refresh_token")
   @@index([adminId, sessionId])
+  @@map("admin_refresh_token")
 }
 
 model User {
-  id              String    @id
-  name            String
-  email           String    @unique
-  phoneNumber     String    @map("phone_number")
-  studentNumber   String    @map("student_number")
-  
-  deletedAt       DateTime? @map("deleted_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  
+  id            String @id
+  name          String
+  email         String @unique
+  phoneNumber   String @map("phone_number")
+  studentNumber String @map("student_number")
+
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
   userRefreshTokens UserRefreshToken[]
   userConsents      UserConsent[]
-  
+
   @@map("user")
 }
 
 model UserRefreshToken {
-  id            String    @id @default(uuid())
-  userId        String    @map("user_id")
-  refreshToken  String    @unique @map("refresh_token")
-  sessionId     String    @map("session_id")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  expiredAt     DateTime  @map("expired_at")
-  
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  refreshToken String   @unique @map("refresh_token")
+  sessionId    String   @map("session_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiredAt    DateTime @map("expired_at")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("user_refresh_token")
+
   @@index([userId, sessionId])
+  @@map("user_refresh_token")
 }
 
 model UserConsent {
-  id            String      @id @default(uuid())
-  userId        String      @map("user_id")
-  consentType   ConsentType @map("consent_type")
-  version       String
-  agreedAt      DateTime    @default(now()) @map("agreed_at")
-  
+  id          String      @id @default(uuid())
+  userId      String      @map("user_id")
+  consentType ConsentType @map("consent_type")
+  version     String
+  agreedAt    DateTime    @default(now()) @map("agreed_at")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("user_consent")
+
   @@index([userId, consentType])
+  @@map("user_consent")
 }
 
 model PolicyVersion {
-  id          String      @id @default(uuid())
-  type        ConsentType
-  version     String
-  isActive    Boolean     @default(true) @map("is_active")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  
-  @@map("policy_version")
+  id        String      @id @default(uuid())
+  type      ConsentType
+  version   String
+  isActive  Boolean     @default(true) @map("is_active")
+  createdAt DateTime    @default(now()) @map("created_at")
+
   @@unique([type, version])
   @@index([type, isActive])
+  @@map("policy_version")
 }
 
 model AuditLog {
@@ -112,6 +112,19 @@ model AuditLog {
 enum ConsentType {
   TERMS_OF_SERVICE
   PRIVACY_POLICY
-  
+
   @@map("consent_type")
+}
+
+model MoveOutSchedule {
+  id                   Int      @id @default(autoincrement())
+  title                String
+  applicationStartDate DateTime @map("application_start_date") @db.Date
+  applicationEndDate   DateTime @map("application_end_date") @db.Date
+  inspectionStartDate  DateTime @map("inspection_start_date") @db.Date
+  inspectionEndDate    DateTime @map("inspection_end_date") @db.Date
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("move_out_schedule")
 }
