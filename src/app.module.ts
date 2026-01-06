@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { MoveOutModule } from './move-out/move-out.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { ConfigModule } from '@nestjs/config';
       cache: true,
     }),
     AuthModule,
+    MoveOutModule,
   ],
   controllers: [],
   providers: [],
