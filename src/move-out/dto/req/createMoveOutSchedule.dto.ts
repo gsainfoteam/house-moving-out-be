@@ -6,7 +6,6 @@ export class CreateMoveOutScheduleDto {
   @ApiProperty({
     example: '2025 가을학기 정규 퇴사검사',
     description: '퇴사 검사 일정 제목',
-    required: true,
   })
   @IsString()
   title: string;
@@ -14,7 +13,6 @@ export class CreateMoveOutScheduleDto {
   @ApiProperty({
     example: '2025-12-01',
     description: '신청 시작 날짜',
-    required: true,
   })
   @Type(() => Date)
   @IsDate()
@@ -23,7 +21,6 @@ export class CreateMoveOutScheduleDto {
   @ApiProperty({
     example: '2025-12-05',
     description: '신청 종료 날짜',
-    required: true,
   })
   @Type(() => Date)
   @IsDate()
@@ -32,7 +29,6 @@ export class CreateMoveOutScheduleDto {
   @ApiProperty({
     example: '2025-12-10',
     description: '검사 시작 날짜',
-    required: true,
   })
   @Type(() => Date)
   @IsDate()
@@ -41,7 +37,6 @@ export class CreateMoveOutScheduleDto {
   @ApiProperty({
     example: '2025-12-15',
     description: '검사 종료 날짜',
-    required: true,
   })
   @Type(() => Date)
   @IsDate()
