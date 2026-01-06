@@ -1,5 +1,11 @@
 import { PrismaService } from '@lib/prisma';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { PrismaTransaction } from 'src/common/types';
 
 @Injectable()
 export class AuditLogRepository {
@@ -7,4 +13,30 @@ export class AuditLogRepository {
     timestamp: true,
   });
   constructor(private readonly prismaService: PrismaService) {}
+
+  async createAuditLogInTx(
+    adminId: string,
+    action: string,
+    data: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    await tx.auditLog
+      .create({
+        data: {
+          adminId,
+          action,
+          data,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `createAuditLogInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`createAuditLogInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }

@@ -21,6 +21,7 @@ model Admin {
   phoneNumber   String? @map("phone_number")
 
   adminRefreshTokens AdminRefreshToken[]
+  auditLogs          AuditLog[]
 
   @@map("admin")
 }
@@ -93,6 +94,19 @@ model PolicyVersion {
   @@map("policy_version")
   @@unique([type, version])
   @@index([type, isActive])
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  action      String
+  data        String
+  adminId     String    @map("performed_by")
+  performedAt DateTime  @default(now()) @map("performed_at")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("audit_log")
+  @@index([performedAt])
 }
 
 enum ConsentType {
