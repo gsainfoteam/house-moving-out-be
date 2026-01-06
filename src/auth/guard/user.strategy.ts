@@ -6,16 +6,16 @@ import { AuthService } from '../auth.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
+export class UserStrategy extends PassportStrategy(Strategy, 'user') {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
-      issuer: configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
-      audience: configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
+      secretOrKey: configService.getOrThrow<string>('USER_JWT_SECRET'),
+      issuer: configService.getOrThrow<string>('USER_JWT_ISSUER'),
+      audience: configService.getOrThrow<string>('USER_JWT_AUDIENCE'),
     });
   }
 
@@ -24,13 +24,15 @@ export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
     if (!sub) throw new UnauthorizedException('invalid token');
     if (!sessionId) throw new UnauthorizedException('sessionId missing');
 
-    const admin = await this.authService.findAdmin(sub);
-    const refreshToken =
-      await this.authService.findAdminRefreshTokenBySessionId(sub, sessionId);
+    const user = await this.authService.findUser(sub);
+    const refreshToken = await this.authService.findUserRefreshTokenBySessionId(
+      sub,
+      sessionId,
+    );
     if (!refreshToken) {
       throw new UnauthorizedException('invalid session');
     }
 
-    return admin;
+    return user;
   }
 }
