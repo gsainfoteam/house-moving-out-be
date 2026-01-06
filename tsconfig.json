@@ -24,7 +24,9 @@
       "@lib/prisma": ["libs/prisma/src"],
       "@lib/prisma/*": ["libs/prisma/src/*"],
       "@lib/infoteam-idp": ["libs/infoteam-idp/src"],
-      "@lib/infoteam-idp/*": ["libs/infoteam-idp/src/*"]
+      "@lib/infoteam-idp/*": ["libs/infoteam-idp/src/*"],
+      "@lib/audit-log": ["libs/audit-log/src"],
+      "@lib/audit-log/*": ["libs/audit-log/src/*"]
     }
   }
 }
