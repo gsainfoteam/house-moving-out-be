@@ -100,7 +100,7 @@ model AuditLog {
   id          String    @id @default(uuid())
   action      String
   data        String
-  adminId     String    @map("performed_by")
+  adminId     String    @map("admin_id")
   performedAt DateTime  @default(now()) @map("performed_at")
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
