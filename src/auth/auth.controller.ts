@@ -126,7 +126,7 @@ export class AuthController {
     @GetAdmin() admin: Admin,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.adminLogout(admin.id);
+    await this.authService.adminLogout(admin.uuid);
     res.clearCookie('refresh_token', {
       path: '/auth',
     });
@@ -242,7 +242,7 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.userLogout(user.id);
+    await this.authService.userLogout(user.uuid);
     res.clearCookie('user_refresh_token', {
       path: '/auth',
     });

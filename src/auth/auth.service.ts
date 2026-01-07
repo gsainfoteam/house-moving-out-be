@@ -35,19 +35,19 @@ export class AuthService {
   async adminLogin(auth: string): Promise<IssueTokenType> {
     const idpToken = auth.split(' ')[1];
     const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
-    await this.authRepository.findAdmin(userinfo.id);
-    await this.authRepository.deleteAllAdminRefreshTokens(userinfo.id);
+    await this.authRepository.findAdmin(userinfo.uuid);
+    await this.authRepository.deleteAllAdminRefreshTokens(userinfo.uuid);
     const sessionId = this.generateSessionId();
-    return await this.issueAdminTokens(userinfo.id, sessionId);
+    return await this.issueAdminTokens(userinfo.uuid, sessionId);
   }
 
-  async findAdmin(id: string): Promise<Admin> {
-    return this.authRepository.findAdmin(id);
+  async findAdmin(uuid: string): Promise<Admin> {
+    return this.authRepository.findAdmin(uuid);
   }
 
   async adminRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
-    const { adminId, sessionId, expiredAt } =
+    const { adminUuid, sessionId, expiredAt } =
       await this.authRepository.findAdminByRefreshToken(hashedToken);
 
     await this.authRepository.deleteAdminRefreshToken(hashedToken);
@@ -55,7 +55,7 @@ export class AuthService {
     const newRefreshToken = this.generateOpaqueToken();
     const newHashedToken = this.hashRefreshToken(newRefreshToken);
     await this.authRepository.setAdminRefreshToken(
-      adminId,
+      adminUuid,
       newHashedToken,
       sessionId,
       expiredAt,
@@ -65,7 +65,7 @@ export class AuthService {
       access_token: this.jwtService.sign(
         { sessionId },
         {
-          subject: adminId,
+          subject: adminUuid,
           secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
           expiresIn:
             this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
@@ -78,8 +78,8 @@ export class AuthService {
     };
   }
 
-  async adminLogout(adminId: string): Promise<void> {
-    await this.authRepository.deleteAllAdminRefreshTokens(adminId);
+  async adminLogout(adminUuid: string): Promise<void> {
+    await this.authRepository.deleteAllAdminRefreshTokens(adminUuid);
   }
 
   async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
@@ -104,7 +104,7 @@ export class AuthService {
           tx,
         );
 
-        await this.authRepository.deleteAllUserRefreshTokensInTx(user.id, tx);
+        await this.authRepository.deleteAllUserRefreshTokensInTx(user.uuid, tx);
 
         const token = this.generateOpaqueToken();
         const sessionId = this.generateSessionId();
@@ -118,7 +118,7 @@ export class AuthService {
             ),
         );
         await this.authRepository.setUserRefreshTokenInTx(
-          user.id,
+          user.uuid,
           hashedToken,
           sessionId,
           expiredAt,
@@ -132,7 +132,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(
       { sessionId },
       {
-        subject: userinfo.id,
+        subject: userinfo.uuid,
         secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
         expiresIn:
           this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE'),
@@ -168,12 +168,12 @@ export class AuthService {
         tx,
       ),
       this.authRepository.getLatestUserConsentInTx(
-        user.id,
+        user.uuid,
         ConsentType.TERMS_OF_SERVICE,
         tx,
       ),
       this.authRepository.getLatestUserConsentInTx(
-        user.id,
+        user.uuid,
         ConsentType.PRIVACY_POLICY,
         tx,
       ),
@@ -337,7 +337,7 @@ export class AuthService {
 
     if (consentsToCreate.length > 0) {
       await this.authRepository.createUserConsentsInTx(
-        user.id,
+        user.uuid,
         consentsToCreate,
         tx,
       );
@@ -360,7 +360,7 @@ export class AuthService {
   }
 
   private async issueAdminTokens(
-    id: string,
+    uuid: string,
     sessionId: string,
   ): Promise<IssueTokenType> {
     const refresh_token: string = this.generateOpaqueToken();
@@ -374,7 +374,7 @@ export class AuthService {
         ),
     );
     await this.authRepository.setAdminRefreshToken(
-      id,
+      uuid,
       hashedToken,
       sessionId,
       expiredAt,
@@ -383,7 +383,7 @@ export class AuthService {
       access_token: this.jwtService.sign(
         { sessionId },
         {
-          subject: id,
+          subject: uuid,
           secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
           expiresIn:
             this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
@@ -396,27 +396,27 @@ export class AuthService {
     };
   }
 
-  async findUser(id: string): Promise<User> {
-    return this.authRepository.findUser(id);
+  async findUser(uuid: string): Promise<User> {
+    return this.authRepository.findUser(uuid);
   }
 
-  async findAdminRefreshTokenBySessionId(adminId: string, sessionId: string) {
+  async findAdminRefreshTokenBySessionId(adminUuid: string, sessionId: string) {
     return this.authRepository.findAdminRefreshTokenBySessionId(
-      adminId,
+      adminUuid,
       sessionId,
     );
   }
 
-  async findUserRefreshTokenBySessionId(userId: string, sessionId: string) {
+  async findUserRefreshTokenBySessionId(userUuid: string, sessionId: string) {
     return this.authRepository.findUserRefreshTokenBySessionId(
-      userId,
+      userUuid,
       sessionId,
     );
   }
 
   async userRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
-    const { userId, sessionId, expiredAt } =
+    const { userUuid, sessionId, expiredAt } =
       await this.authRepository.findUserByRefreshToken(hashedToken);
 
     await this.authRepository.deleteUserRefreshToken(hashedToken);
@@ -424,7 +424,7 @@ export class AuthService {
     const newRefreshToken = this.generateOpaqueToken();
     const newHashedToken = this.hashRefreshToken(newRefreshToken);
     await this.authRepository.setUserRefreshToken(
-      userId,
+      userUuid,
       newHashedToken,
       sessionId,
       expiredAt,
@@ -433,7 +433,7 @@ export class AuthService {
       access_token: this.jwtService.sign(
         { sessionId },
         {
-          subject: userId,
+          subject: userUuid,
           secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
           expiresIn:
             this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE'),
@@ -446,8 +446,8 @@ export class AuthService {
     };
   }
 
-  async userLogout(userId: string): Promise<void> {
-    await this.authRepository.deleteAllUserRefreshTokens(userId);
+  async userLogout(userUuid: string): Promise<void> {
+    await this.authRepository.deleteAllUserRefreshTokens(userUuid);
   }
 
   async createNewPolicyVersion({
