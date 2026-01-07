@@ -13,7 +13,9 @@ import { Admin, ConsentType, User } from 'generated/prisma/client';
 import ms, { StringValue } from 'ms';
 import { PrismaTransaction } from '../common/types';
 import { UserInfo } from '@lib/infoteam-idp/types/userInfo.type';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class AuthRepository {
   private readonly logger = new Logger(AuthRepository.name);

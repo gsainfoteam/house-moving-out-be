@@ -9,7 +9,9 @@ import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
 import { MoveOutSchedule } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class MoveOutRepository {
   private readonly logger = new Logger(MoveOutRepository.name);

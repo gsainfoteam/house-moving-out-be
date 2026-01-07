@@ -20,7 +20,9 @@ import { PrismaService } from '@lib/prisma';
 import { CreateNewPolicyResponseDto } from './dto/res/createNewPolicyResponse.dto';
 import { UserLoginDto } from './dto/req/userLogin.dto';
 import { CreateNewPolicyDto } from './dto/req/createNewPolicy.dto';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class AuthService {
   constructor(
