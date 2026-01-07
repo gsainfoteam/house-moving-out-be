@@ -5,9 +5,8 @@ import { AuthRepository } from './auth.repository';
 import { Admin, ConsentType, User } from 'generated/prisma/client';
 import * as crypto from 'crypto';
 import { IssueTokenType } from './types/jwtToken.type';
-import { JwtToken } from './dto/res/jwtToken.dto';
 import { ConfigService } from '@nestjs/config';
-import { StringValue } from 'ms';
+import ms, { StringValue } from 'ms';
 import { ConsentRequiredException } from './exceptions/consent-required.exception';
 import {
   PolicyVersion,
@@ -46,10 +45,22 @@ export class AuthService {
     return this.authRepository.findAdmin(id);
   }
 
-  async adminRefresh(refreshToken: string): Promise<JwtToken> {
+  async adminRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
-    const { adminId, sessionId } =
+    const { adminId, sessionId, expiredAt } =
       await this.authRepository.findAdminByRefreshToken(hashedToken);
+
+    await this.authRepository.deleteAdminRefreshToken(hashedToken);
+
+    const newRefreshToken = this.generateOpaqueToken();
+    const newHashedToken = this.hashRefreshToken(newRefreshToken);
+    await this.authRepository.setAdminRefreshToken(
+      adminId,
+      newHashedToken,
+      sessionId,
+      expiredAt,
+    );
+
     return {
       access_token: this.jwtService.sign(
         { sessionId },
@@ -63,6 +74,7 @@ export class AuthService {
           issuer: this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
         },
       ),
+      refresh_token: newRefreshToken,
     };
   }
 
@@ -97,10 +109,19 @@ export class AuthService {
         const token = this.generateOpaqueToken();
         const sessionId = this.generateSessionId();
         const hashedToken = this.hashRefreshToken(token);
+        const expiredAt = new Date(
+          Date.now() +
+            ms(
+              this.configService.getOrThrow<StringValue>(
+                'USER_REFRESH_TOKEN_EXPIRE',
+              ),
+            ),
+        );
         await this.authRepository.setUserRefreshTokenInTx(
           user.id,
           hashedToken,
           sessionId,
+          expiredAt,
           tx,
         );
 
@@ -344,7 +365,20 @@ export class AuthService {
   ): Promise<IssueTokenType> {
     const refresh_token: string = this.generateOpaqueToken();
     const hashedToken = this.hashRefreshToken(refresh_token);
-    await this.authRepository.setAdminRefreshToken(id, hashedToken, sessionId);
+    const expiredAt = new Date(
+      Date.now() +
+        ms(
+          this.configService.getOrThrow<StringValue>(
+            'ADMIN_REFRESH_TOKEN_EXPIRE',
+          ),
+        ),
+    );
+    await this.authRepository.setAdminRefreshToken(
+      id,
+      hashedToken,
+      sessionId,
+      expiredAt,
+    );
     return {
       access_token: this.jwtService.sign(
         { sessionId },
@@ -380,10 +414,21 @@ export class AuthService {
     );
   }
 
-  async userRefresh(refreshToken: string): Promise<JwtToken> {
+  async userRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
-    const { userId, sessionId } =
+    const { userId, sessionId, expiredAt } =
       await this.authRepository.findUserByRefreshToken(hashedToken);
+
+    await this.authRepository.deleteUserRefreshToken(hashedToken);
+
+    const newRefreshToken = this.generateOpaqueToken();
+    const newHashedToken = this.hashRefreshToken(newRefreshToken);
+    await this.authRepository.setUserRefreshToken(
+      userId,
+      newHashedToken,
+      sessionId,
+      expiredAt,
+    );
     return {
       access_token: this.jwtService.sign(
         { sessionId },
@@ -397,6 +442,7 @@ export class AuthService {
           issuer: this.configService.getOrThrow<string>('USER_JWT_ISSUER'),
         },
       ),
+      refresh_token: newRefreshToken,
     };
   }
 
