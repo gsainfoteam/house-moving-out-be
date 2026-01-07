@@ -22,6 +22,33 @@ async function bootstrap() {
   );
 
   app.use(cookieParser());
+
+  const corsWhitelist = configService
+    .getOrThrow<string>('CORS_ORIGINS')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin !== '');
+
+  app.enableCors({
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean | string) => void,
+    ) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      if (corsWhitelist.includes(origin)) {
+        callback(null, origin);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
