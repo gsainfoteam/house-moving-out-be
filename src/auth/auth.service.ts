@@ -75,6 +75,7 @@ export class AuthService {
         },
       ),
       refresh_token: newRefreshToken,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 
@@ -94,8 +95,8 @@ export class AuthService {
       privacyVersion: body?.privacyVersion,
     };
 
-    const { refreshToken, sessionId } = await this.prismaService.$transaction(
-      async (tx: PrismaTransaction) => {
+    const { refreshToken, sessionId, expiredAt } =
+      await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
         const user = await this.authRepository.upsertUserInTx(userinfo, tx);
 
         await this.validateAndHandleConsentsInTransaction(
@@ -125,9 +126,8 @@ export class AuthService {
           tx,
         );
 
-        return { refreshToken: token, sessionId };
-      },
-    );
+        return { refreshToken: token, sessionId, expiredAt };
+      });
 
     const accessToken = this.jwtService.sign(
       { sessionId },
@@ -145,6 +145,7 @@ export class AuthService {
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 
@@ -393,6 +394,7 @@ export class AuthService {
         },
       ),
       refresh_token,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 
@@ -443,6 +445,7 @@ export class AuthService {
         },
       ),
       refresh_token: newRefreshToken,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 

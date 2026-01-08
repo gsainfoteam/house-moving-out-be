@@ -28,8 +28,6 @@ import { CreateNewPolicyResponseDto } from './dto/res/createNewPolicyResponse.dt
 import { ConsentRequiredErrorDto } from './dto/res/consentRequiredError.dto';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { ConfigService } from '@nestjs/config';
-import ms, { StringValue } from 'ms';
 import { AdminGuard } from './guard/admin.guard';
 import { GetAdmin } from './decorator/getAdmin.decorator';
 import { UserGuard } from './guard/user.guard';
@@ -38,19 +36,7 @@ import { Admin, User } from 'generated/prisma/client';
 
 @Controller('auth')
 export class AuthController {
-  private readonly adminRefreshTokenExpire: number;
-  private readonly userRefreshTokenExpire: number;
-  constructor(
-    private readonly authService: AuthService,
-    private readonly configService: ConfigService,
-  ) {
-    this.adminRefreshTokenExpire = ms(
-      this.configService.getOrThrow<StringValue>('ADMIN_REFRESH_TOKEN_EXPIRE'),
-    );
-    this.userRefreshTokenExpire = ms(
-      this.configService.getOrThrow<StringValue>('USER_REFRESH_TOKEN_EXPIRE'),
-    );
-  }
+  constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({
     summary: 'Login',
@@ -68,13 +54,13 @@ export class AuthController {
     const auth = req.headers['authorization'];
     if (!auth) throw new UnauthorizedException();
 
-    const { access_token, refresh_token } =
+    const { access_token, refresh_token, refreshTokenExpiredAt } =
       await this.authService.adminLogin(auth);
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      expires: new Date(Date.now() + this.adminRefreshTokenExpire),
+      expires: refreshTokenExpiredAt,
       path: '/auth',
     });
 
@@ -98,12 +84,12 @@ export class AuthController {
 
     const result: IssueTokenType =
       await this.authService.adminRefresh(refreshToken);
-    const { access_token, refresh_token } = result;
+    const { access_token, refresh_token, refreshTokenExpiredAt } = result;
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      expires: new Date(Date.now() + this.adminRefreshTokenExpire),
+      expires: refreshTokenExpiredAt,
       path: '/auth',
     });
 
@@ -182,16 +168,14 @@ export class AuthController {
     const auth = req.headers['authorization'];
     if (!auth) throw new UnauthorizedException();
 
-    const { access_token, refresh_token } = await this.authService.userLogin(
-      auth,
-      body,
-    );
+    const { access_token, refresh_token, refreshTokenExpiredAt } =
+      await this.authService.userLogin(auth, body);
 
     res.cookie('user_refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      expires: new Date(Date.now() + this.userRefreshTokenExpire),
+      expires: refreshTokenExpiredAt,
       path: '/auth',
     });
 
@@ -215,12 +199,12 @@ export class AuthController {
 
     const result: IssueTokenType =
       await this.authService.userRefresh(refreshToken);
-    const { access_token, refresh_token } = result;
+    const { access_token, refresh_token, refreshTokenExpiredAt } = result;
     res.cookie('user_refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      expires: new Date(Date.now() + this.userRefreshTokenExpire),
+      expires: refreshTokenExpiredAt,
       path: '/auth',
     });
 
