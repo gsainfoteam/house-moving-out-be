@@ -82,9 +82,8 @@ export class AuthController {
     const refreshToken = req.cookies['refresh_token'] as string;
     if (!refreshToken) throw new UnauthorizedException();
 
-    const result: IssueTokenType =
+    const { access_token, refresh_token, refreshTokenExpiredAt } =
       await this.authService.adminRefresh(refreshToken);
-    const { access_token, refresh_token, refreshTokenExpiredAt } = result;
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,

@@ -24,13 +24,51 @@ import { Loggable } from '@lib/logger';
 @Loggable()
 @Injectable()
 export class AuthService {
+  private readonly adminJwtSecret: string;
+  private readonly adminJwtExpire: StringValue;
+  private readonly adminJwtAudience: string;
+  private readonly adminJwtIssuer: string;
+  private readonly adminRefreshTokenExpire: StringValue;
+  private readonly userJwtSecret: string;
+  private readonly userJwtExpire: StringValue;
+  private readonly userJwtAudience: string;
+  private readonly userJwtIssuer: string;
+  private readonly userRefreshTokenExpire: StringValue;
+  private readonly refreshTokenHmacSecret: string;
+
   constructor(
     private readonly infoteamIdpService: InfoteamIdpService,
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
-  ) {}
+  ) {
+    this.adminJwtSecret =
+      this.configService.getOrThrow<string>('ADMIN_JWT_SECRET');
+    this.adminJwtExpire =
+      this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE');
+    this.adminJwtAudience =
+      this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE');
+    this.adminJwtIssuer =
+      this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER');
+    this.adminRefreshTokenExpire = this.configService.getOrThrow<StringValue>(
+      'ADMIN_REFRESH_TOKEN_EXPIRE',
+    );
+    this.userJwtSecret =
+      this.configService.getOrThrow<string>('USER_JWT_SECRET');
+    this.userJwtExpire =
+      this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE');
+    this.userJwtAudience =
+      this.configService.getOrThrow<string>('USER_JWT_AUDIENCE');
+    this.userJwtIssuer =
+      this.configService.getOrThrow<string>('USER_JWT_ISSUER');
+    this.userRefreshTokenExpire = this.configService.getOrThrow<StringValue>(
+      'USER_REFRESH_TOKEN_EXPIRE',
+    );
+    this.refreshTokenHmacSecret = this.configService.getOrThrow<string>(
+      'REFRESH_TOKEN_HMAC_SECRET',
+    );
+  }
 
   async adminLogin(auth: string): Promise<IssueTokenType> {
     const idpToken = auth.split(' ')[1];
@@ -66,12 +104,11 @@ export class AuthService {
         { sessionId },
         {
           subject: adminUuid,
-          secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
-          expiresIn:
-            this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
+          secret: this.adminJwtSecret,
+          expiresIn: this.adminJwtExpire,
           algorithm: 'HS256',
-          audience: this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
-          issuer: this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
+          audience: this.adminJwtAudience,
+          issuer: this.adminJwtIssuer,
         },
       ),
       refresh_token: newRefreshToken,
@@ -111,12 +148,7 @@ export class AuthService {
         const sessionId = this.generateSessionId();
         const hashedToken = this.hashRefreshToken(token);
         const expiredAt = new Date(
-          Date.now() +
-            ms(
-              this.configService.getOrThrow<StringValue>(
-                'USER_REFRESH_TOKEN_EXPIRE',
-              ),
-            ),
+          Date.now() + ms(this.userRefreshTokenExpire),
         );
         await this.authRepository.setUserRefreshTokenInTx(
           user.uuid,
@@ -133,12 +165,11 @@ export class AuthService {
       { sessionId },
       {
         subject: userinfo.uuid,
-        secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
-        expiresIn:
-          this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE'),
+        secret: this.userJwtSecret,
+        expiresIn: this.userJwtExpire,
         algorithm: 'HS256',
-        audience: this.configService.getOrThrow<string>('USER_JWT_AUDIENCE'),
-        issuer: this.configService.getOrThrow<string>('USER_JWT_ISSUER'),
+        audience: this.userJwtAudience,
+        issuer: this.userJwtIssuer,
       },
     );
 
@@ -354,10 +385,10 @@ export class AuthService {
   }
 
   private hashRefreshToken(token: string): string {
-    const secret = this.configService.getOrThrow<string>(
-      'REFRESH_TOKEN_HMAC_SECRET',
-    );
-    return crypto.createHmac('sha256', secret).update(token).digest('hex');
+    return crypto
+      .createHmac('sha256', this.refreshTokenHmacSecret)
+      .update(token)
+      .digest('hex');
   }
 
   private async issueAdminTokens(
@@ -366,14 +397,7 @@ export class AuthService {
   ): Promise<IssueTokenType> {
     const refresh_token: string = this.generateOpaqueToken();
     const hashedToken = this.hashRefreshToken(refresh_token);
-    const expiredAt = new Date(
-      Date.now() +
-        ms(
-          this.configService.getOrThrow<StringValue>(
-            'ADMIN_REFRESH_TOKEN_EXPIRE',
-          ),
-        ),
-    );
+    const expiredAt = new Date(Date.now() + ms(this.adminRefreshTokenExpire));
     await this.authRepository.setAdminRefreshToken(
       uuid,
       hashedToken,
@@ -385,12 +409,11 @@ export class AuthService {
         { sessionId },
         {
           subject: uuid,
-          secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
-          expiresIn:
-            this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
+          secret: this.adminJwtSecret,
+          expiresIn: this.adminJwtExpire,
           algorithm: 'HS256',
-          audience: this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
-          issuer: this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
+          audience: this.adminJwtAudience,
+          issuer: this.adminJwtIssuer,
         },
       ),
       refresh_token,
@@ -436,12 +459,11 @@ export class AuthService {
         { sessionId },
         {
           subject: userUuid,
-          secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
-          expiresIn:
-            this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE'),
+          secret: this.userJwtSecret,
+          expiresIn: this.userJwtExpire,
           algorithm: 'HS256',
-          audience: this.configService.getOrThrow<string>('USER_JWT_AUDIENCE'),
-          issuer: this.configService.getOrThrow<string>('USER_JWT_ISSUER'),
+          audience: this.userJwtAudience,
+          issuer: this.userJwtIssuer,
         },
       ),
       refresh_token: newRefreshToken,
