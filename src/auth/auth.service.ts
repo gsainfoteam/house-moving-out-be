@@ -5,9 +5,8 @@ import { AuthRepository } from './auth.repository';
 import { Admin, ConsentType, User } from 'generated/prisma/client';
 import * as crypto from 'crypto';
 import { IssueTokenType } from './types/jwtToken.type';
-import { JwtToken } from './dto/res/jwtToken.dto';
 import { ConfigService } from '@nestjs/config';
-import { StringValue } from 'ms';
+import ms, { StringValue } from 'ms';
 import { ConsentRequiredException } from './exceptions/consent-required.exception';
 import {
   PolicyVersion,
@@ -20,52 +19,105 @@ import { PrismaService } from '@lib/prisma';
 import { CreateNewPolicyResponseDto } from './dto/res/createNewPolicyResponse.dto';
 import { UserLoginDto } from './dto/req/userLogin.dto';
 import { CreateNewPolicyDto } from './dto/req/createNewPolicy.dto';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class AuthService {
+  private readonly adminJwtSecret: string;
+  private readonly adminJwtExpire: StringValue;
+  private readonly adminJwtAudience: string;
+  private readonly adminJwtIssuer: string;
+  private readonly adminRefreshTokenExpire: StringValue;
+  private readonly userJwtSecret: string;
+  private readonly userJwtExpire: StringValue;
+  private readonly userJwtAudience: string;
+  private readonly userJwtIssuer: string;
+  private readonly userRefreshTokenExpire: StringValue;
+  private readonly refreshTokenHmacSecret: string;
+
   constructor(
     private readonly infoteamIdpService: InfoteamIdpService,
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
-  ) {}
+  ) {
+    this.adminJwtSecret =
+      this.configService.getOrThrow<string>('ADMIN_JWT_SECRET');
+    this.adminJwtExpire =
+      this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE');
+    this.adminJwtAudience =
+      this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE');
+    this.adminJwtIssuer =
+      this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER');
+    this.adminRefreshTokenExpire = this.configService.getOrThrow<StringValue>(
+      'ADMIN_REFRESH_TOKEN_EXPIRE',
+    );
+    this.userJwtSecret =
+      this.configService.getOrThrow<string>('USER_JWT_SECRET');
+    this.userJwtExpire =
+      this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE');
+    this.userJwtAudience =
+      this.configService.getOrThrow<string>('USER_JWT_AUDIENCE');
+    this.userJwtIssuer =
+      this.configService.getOrThrow<string>('USER_JWT_ISSUER');
+    this.userRefreshTokenExpire = this.configService.getOrThrow<StringValue>(
+      'USER_REFRESH_TOKEN_EXPIRE',
+    );
+    this.refreshTokenHmacSecret = this.configService.getOrThrow<string>(
+      'REFRESH_TOKEN_HMAC_SECRET',
+    );
+  }
 
   async adminLogin(auth: string): Promise<IssueTokenType> {
     const idpToken = auth.split(' ')[1];
     const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
-    await this.authRepository.findAdmin(userinfo.id);
-    await this.authRepository.deleteAllAdminRefreshTokens(userinfo.id);
+    await this.authRepository.findAdmin(userinfo.uuid);
+    await this.authRepository.deleteAllAdminRefreshTokens(userinfo.uuid);
     const sessionId = this.generateSessionId();
-    return await this.issueAdminTokens(userinfo.id, sessionId);
+    return await this.issueAdminTokens(userinfo.uuid, sessionId);
   }
 
-  async findAdmin(id: string): Promise<Admin> {
-    return this.authRepository.findAdmin(id);
+  async findAdmin(uuid: string): Promise<Admin> {
+    return this.authRepository.findAdmin(uuid);
   }
 
-  async adminRefresh(refreshToken: string): Promise<JwtToken> {
+  async adminRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
-    const { adminId, sessionId } =
+    const { adminUuid, sessionId, expiredAt } =
       await this.authRepository.findAdminByRefreshToken(hashedToken);
+
+    await this.authRepository.deleteAdminRefreshToken(hashedToken);
+
+    const newRefreshToken = this.generateOpaqueToken();
+    const newHashedToken = this.hashRefreshToken(newRefreshToken);
+    await this.authRepository.setAdminRefreshToken(
+      adminUuid,
+      newHashedToken,
+      sessionId,
+      expiredAt,
+    );
+
     return {
       access_token: this.jwtService.sign(
         { sessionId },
         {
-          subject: adminId,
-          secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
-          expiresIn:
-            this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
+          subject: adminUuid,
+          secret: this.adminJwtSecret,
+          expiresIn: this.adminJwtExpire,
           algorithm: 'HS256',
-          audience: this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
-          issuer: this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
+          audience: this.adminJwtAudience,
+          issuer: this.adminJwtIssuer,
         },
       ),
+      refresh_token: newRefreshToken,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 
-  async adminLogout(adminId: string): Promise<void> {
-    await this.authRepository.deleteAllAdminRefreshTokens(adminId);
+  async adminLogout(adminUuid: string): Promise<void> {
+    await this.authRepository.deleteAllAdminRefreshTokens(adminUuid);
   }
 
   async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
@@ -80,8 +132,8 @@ export class AuthService {
       privacyVersion: body?.privacyVersion,
     };
 
-    const { refreshToken, sessionId } = await this.prismaService.$transaction(
-      async (tx: PrismaTransaction) => {
+    const { refreshToken, sessionId, expiredAt } =
+      await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
         const user = await this.authRepository.upsertUserInTx(userinfo, tx);
 
         await this.validateAndHandleConsentsInTransaction(
@@ -90,38 +142,41 @@ export class AuthService {
           tx,
         );
 
-        await this.authRepository.deleteAllUserRefreshTokensInTx(user.id, tx);
+        await this.authRepository.deleteAllUserRefreshTokensInTx(user.uuid, tx);
 
         const token = this.generateOpaqueToken();
         const sessionId = this.generateSessionId();
         const hashedToken = this.hashRefreshToken(token);
+        const expiredAt = new Date(
+          Date.now() + ms(this.userRefreshTokenExpire),
+        );
         await this.authRepository.setUserRefreshTokenInTx(
-          user.id,
+          user.uuid,
           hashedToken,
           sessionId,
+          expiredAt,
           tx,
         );
 
-        return { refreshToken: token, sessionId };
-      },
-    );
+        return { refreshToken: token, sessionId, expiredAt };
+      });
 
     const accessToken = this.jwtService.sign(
       { sessionId },
       {
-        subject: userinfo.id,
-        secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
-        expiresIn:
-          this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE'),
+        subject: userinfo.uuid,
+        secret: this.userJwtSecret,
+        expiresIn: this.userJwtExpire,
         algorithm: 'HS256',
-        audience: this.configService.getOrThrow<string>('USER_JWT_AUDIENCE'),
-        issuer: this.configService.getOrThrow<string>('USER_JWT_ISSUER'),
+        audience: this.userJwtAudience,
+        issuer: this.userJwtIssuer,
       },
     );
 
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 
@@ -145,12 +200,12 @@ export class AuthService {
         tx,
       ),
       this.authRepository.getLatestUserConsentInTx(
-        user.id,
+        user.uuid,
         ConsentType.TERMS_OF_SERVICE,
         tx,
       ),
       this.authRepository.getLatestUserConsentInTx(
-        user.id,
+        user.uuid,
         ConsentType.PRIVACY_POLICY,
         tx,
       ),
@@ -314,7 +369,7 @@ export class AuthService {
 
     if (consentsToCreate.length > 0) {
       await this.authRepository.createUserConsentsInTx(
-        user.id,
+        user.uuid,
         consentsToCreate,
         tx,
       );
@@ -330,76 +385,94 @@ export class AuthService {
   }
 
   private hashRefreshToken(token: string): string {
-    const secret = this.configService.getOrThrow<string>(
-      'REFRESH_TOKEN_HMAC_SECRET',
-    );
-    return crypto.createHmac('sha256', secret).update(token).digest('hex');
+    return crypto
+      .createHmac('sha256', this.refreshTokenHmacSecret)
+      .update(token)
+      .digest('hex');
   }
 
   private async issueAdminTokens(
-    id: string,
+    uuid: string,
     sessionId: string,
   ): Promise<IssueTokenType> {
     const refresh_token: string = this.generateOpaqueToken();
     const hashedToken = this.hashRefreshToken(refresh_token);
-    await this.authRepository.setAdminRefreshToken(id, hashedToken, sessionId);
+    const expiredAt = new Date(Date.now() + ms(this.adminRefreshTokenExpire));
+    await this.authRepository.setAdminRefreshToken(
+      uuid,
+      hashedToken,
+      sessionId,
+      expiredAt,
+    );
     return {
       access_token: this.jwtService.sign(
         { sessionId },
         {
-          subject: id,
-          secret: this.configService.getOrThrow<string>('ADMIN_JWT_SECRET'),
-          expiresIn:
-            this.configService.getOrThrow<StringValue>('ADMIN_JWT_EXPIRE'),
+          subject: uuid,
+          secret: this.adminJwtSecret,
+          expiresIn: this.adminJwtExpire,
           algorithm: 'HS256',
-          audience: this.configService.getOrThrow<string>('ADMIN_JWT_AUDIENCE'),
-          issuer: this.configService.getOrThrow<string>('ADMIN_JWT_ISSUER'),
+          audience: this.adminJwtAudience,
+          issuer: this.adminJwtIssuer,
         },
       ),
       refresh_token,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 
-  async findUser(id: string): Promise<User> {
-    return this.authRepository.findUser(id);
+  async findUser(uuid: string): Promise<User> {
+    return this.authRepository.findUser(uuid);
   }
 
-  async findAdminRefreshTokenBySessionId(adminId: string, sessionId: string) {
+  async findAdminRefreshTokenBySessionId(adminUuid: string, sessionId: string) {
     return this.authRepository.findAdminRefreshTokenBySessionId(
-      adminId,
+      adminUuid,
       sessionId,
     );
   }
 
-  async findUserRefreshTokenBySessionId(userId: string, sessionId: string) {
+  async findUserRefreshTokenBySessionId(userUuid: string, sessionId: string) {
     return this.authRepository.findUserRefreshTokenBySessionId(
-      userId,
+      userUuid,
       sessionId,
     );
   }
 
-  async userRefresh(refreshToken: string): Promise<JwtToken> {
+  async userRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
-    const { userId, sessionId } =
+    const { userUuid, sessionId, expiredAt } =
       await this.authRepository.findUserByRefreshToken(hashedToken);
+
+    await this.authRepository.deleteUserRefreshToken(hashedToken);
+
+    const newRefreshToken = this.generateOpaqueToken();
+    const newHashedToken = this.hashRefreshToken(newRefreshToken);
+    await this.authRepository.setUserRefreshToken(
+      userUuid,
+      newHashedToken,
+      sessionId,
+      expiredAt,
+    );
     return {
       access_token: this.jwtService.sign(
         { sessionId },
         {
-          subject: userId,
-          secret: this.configService.getOrThrow<string>('USER_JWT_SECRET'),
-          expiresIn:
-            this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE'),
+          subject: userUuid,
+          secret: this.userJwtSecret,
+          expiresIn: this.userJwtExpire,
           algorithm: 'HS256',
-          audience: this.configService.getOrThrow<string>('USER_JWT_AUDIENCE'),
-          issuer: this.configService.getOrThrow<string>('USER_JWT_ISSUER'),
+          audience: this.userJwtAudience,
+          issuer: this.userJwtIssuer,
         },
       ),
+      refresh_token: newRefreshToken,
+      refreshTokenExpiredAt: expiredAt,
     };
   }
 
-  async userLogout(userId: string): Promise<void> {
-    await this.authRepository.deleteAllUserRefreshTokens(userId);
+  async userLogout(userUuid: string): Promise<void> {
+    await this.authRepository.deleteAllUserRefreshTokens(userUuid);
   }
 
   async createNewPolicyVersion({

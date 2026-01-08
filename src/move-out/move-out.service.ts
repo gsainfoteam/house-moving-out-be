@@ -4,7 +4,9 @@ import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
 import { MoveOutSchedule } from 'generated/prisma/client';
 import { MoveOutScheduleDates } from './types/moveOutScheduleDates.type';
 import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class MoveOutService {
   constructor(private readonly moveOutRepository: MoveOutRepository) {}

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { MoveOutModule } from './move-out/move-out.module';
+import { LoggerModule } from '@lib/logger';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { MoveOutModule } from './move-out/move-out.module';
     }),
     AuthModule,
     MoveOutModule,
+    LoggerModule,
   ],
   controllers: [],
   providers: [],

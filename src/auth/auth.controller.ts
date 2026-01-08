@@ -21,14 +21,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { JwtToken } from './dto/res/jwtToken.dto';
+import { IssueTokenType } from './types/jwtToken.type';
 import { UserLoginDto } from './dto/req/userLogin.dto';
 import { CreateNewPolicyDto } from './dto/req/createNewPolicy.dto';
 import { CreateNewPolicyResponseDto } from './dto/res/createNewPolicyResponse.dto';
 import { ConsentRequiredErrorDto } from './dto/res/consentRequiredError.dto';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { ConfigService } from '@nestjs/config';
-import ms, { StringValue } from 'ms';
 import { AdminGuard } from './guard/admin.guard';
 import { GetAdmin } from './decorator/getAdmin.decorator';
 import { UserGuard } from './guard/user.guard';
@@ -37,19 +36,7 @@ import { Admin, User } from 'generated/prisma/client';
 
 @Controller('auth')
 export class AuthController {
-  private readonly adminRefreshTokenExpire: number;
-  private readonly userRefreshTokenExpire: number;
-  constructor(
-    private readonly authService: AuthService,
-    private readonly configService: ConfigService,
-  ) {
-    this.adminRefreshTokenExpire = ms(
-      this.configService.getOrThrow<StringValue>('ADMIN_REFRESH_TOKEN_EXPIRE'),
-    );
-    this.userRefreshTokenExpire = ms(
-      this.configService.getOrThrow<StringValue>('USER_REFRESH_TOKEN_EXPIRE'),
-    );
-  }
+  constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({
     summary: 'Login',
@@ -67,13 +54,13 @@ export class AuthController {
     const auth = req.headers['authorization'];
     if (!auth) throw new UnauthorizedException();
 
-    const { access_token, refresh_token } =
+    const { access_token, refresh_token, refreshTokenExpiredAt } =
       await this.authService.adminLogin(auth);
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      expires: new Date(Date.now() + this.adminRefreshTokenExpire),
+      expires: refreshTokenExpiredAt,
       path: '/auth',
     });
 
@@ -88,11 +75,24 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @Post('admin/refresh')
-  async adminRefresh(@Req() req: Request): Promise<JwtToken> {
+  async adminRefresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<JwtToken> {
     const refreshToken = req.cookies['refresh_token'] as string;
     if (!refreshToken) throw new UnauthorizedException();
 
-    return await this.authService.adminRefresh(refreshToken);
+    const { access_token, refresh_token, refreshTokenExpiredAt } =
+      await this.authService.adminRefresh(refreshToken);
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      expires: refreshTokenExpiredAt,
+      path: '/auth',
+    });
+
+    return { access_token };
   }
 
   @ApiOperation({
@@ -111,7 +111,7 @@ export class AuthController {
     @GetAdmin() admin: Admin,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.adminLogout(admin.id);
+    await this.authService.adminLogout(admin.uuid);
     res.clearCookie('refresh_token', {
       path: '/auth',
     });
@@ -167,16 +167,14 @@ export class AuthController {
     const auth = req.headers['authorization'];
     if (!auth) throw new UnauthorizedException();
 
-    const { access_token, refresh_token } = await this.authService.userLogin(
-      auth,
-      body,
-    );
+    const { access_token, refresh_token, refreshTokenExpiredAt } =
+      await this.authService.userLogin(auth, body);
 
     res.cookie('user_refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
-      expires: new Date(Date.now() + this.userRefreshTokenExpire),
+      expires: refreshTokenExpiredAt,
       path: '/auth',
     });
 
@@ -191,11 +189,25 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @Post('user/refresh')
-  async userRefresh(@Req() req: Request): Promise<JwtToken> {
+  async userRefresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<JwtToken> {
     const refreshToken = req.cookies['user_refresh_token'] as string;
     if (!refreshToken) throw new UnauthorizedException();
 
-    return await this.authService.userRefresh(refreshToken);
+    const result: IssueTokenType =
+      await this.authService.userRefresh(refreshToken);
+    const { access_token, refresh_token, refreshTokenExpiredAt } = result;
+    res.cookie('user_refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      expires: refreshTokenExpiredAt,
+      path: '/auth',
+    });
+
+    return { access_token };
   }
 
   @ApiOperation({
@@ -213,7 +225,7 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.userLogout(user.id);
+    await this.authService.userLogout(user.uuid);
     res.clearCookie('user_refresh_token', {
       path: '/auth',
     });
