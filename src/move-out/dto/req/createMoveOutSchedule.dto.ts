@@ -1,0 +1,44 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsDate, IsString } from 'class-validator';
+
+export class CreateMoveOutScheduleDto {
+  @ApiProperty({
+    example: '2025 가을학기 정규 퇴사검사',
+    description: '퇴사 검사 일정 제목',
+  })
+  @IsString()
+  title: string;
+
+  @ApiProperty({
+    example: '2025-12-01',
+    description: '신청 시작 날짜',
+  })
+  @Type(() => Date)
+  @IsDate()
+  applicationStartDate: Date;
+
+  @ApiProperty({
+    example: '2025-12-05',
+    description: '신청 종료 날짜',
+  })
+  @Type(() => Date)
+  @IsDate()
+  applicationEndDate: Date;
+
+  @ApiProperty({
+    example: '2025-12-10',
+    description: '검사 시작 날짜',
+  })
+  @Type(() => Date)
+  @IsDate()
+  inspectionStartDate: Date;
+
+  @ApiProperty({
+    example: '2025-12-15',
+    description: '검사 종료 날짜',
+  })
+  @Type(() => Date)
+  @IsDate()
+  inspectionEndDate: Date;
+}

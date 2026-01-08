@@ -5,8 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -15,24 +15,117 @@ datasource db {
 }
 
 model Admin {
-  id            String  @id
+  uuid          String @id
   name          String
-  email         String  @unique
-  phoneNumber   String? @map("phone_number")
+  email         String @unique
+  phoneNumber   String @map("phone_number")
+  studentNumber String @map("student_number")
 
   adminRefreshTokens AdminRefreshToken[]
+  auditLogs          AuditLog[]
 
   @@map("admin")
 }
 
 model AdminRefreshToken {
-  id            String    @id @default(uuid())
-  adminId       String    @map("admin_uuid")
-  refreshToken  String    @unique @map("refresh_token")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  expiredAt     DateTime  @map("expired_at")
+  uuid         String   @id @default(uuid())
+  adminUuid    String   @map("admin_uuid")
+  refreshToken String   @unique @map("refresh_token")
+  sessionId    String   @map("session_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiredAt    DateTime @map("expired_at")
 
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin Admin @relation(fields: [adminUuid], references: [uuid], onDelete: Cascade)
 
+  @@index([adminUuid, sessionId])
   @@map("admin_refresh_token")
+}
+
+model User {
+  uuid          String @id
+  name          String
+  email         String @unique
+  phoneNumber   String @map("phone_number")
+  studentNumber String @map("student_number")
+
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  userRefreshTokens UserRefreshToken[]
+  userConsents      UserConsent[]
+
+  @@map("user")
+}
+
+model UserRefreshToken {
+  uuid         String   @id @default(uuid())
+  userUuid     String   @map("user_uuid")
+  refreshToken String   @unique @map("refresh_token")
+  sessionId    String   @map("session_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiredAt    DateTime @map("expired_at")
+
+  user User @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+
+  @@index([userUuid, sessionId])
+  @@map("user_refresh_token")
+}
+
+model UserConsent {
+  uuid        String      @id @default(uuid())
+  userUuid    String      @map("user_uuid")
+  consentType ConsentType @map("consent_type")
+  version     String
+  agreedAt    DateTime    @default(now()) @map("agreed_at")
+
+  user User @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+
+  @@index([userUuid, consentType])
+  @@map("user_consent")
+}
+
+model PolicyVersion {
+  uuid      String      @id @default(uuid())
+  type      ConsentType
+  version   String
+  isActive  Boolean     @default(true) @map("is_active")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@unique([type, version])
+  @@index([type, isActive])
+  @@map("policy_version")
+}
+
+model AuditLog {
+  uuid        String   @id @default(uuid())
+  action      String
+  data        String
+  adminUuid   String   @map("admin_uuid")
+  performedAt DateTime @default(now()) @map("performed_at")
+
+  admin Admin @relation(fields: [adminUuid], references: [uuid])
+
+  @@index([performedAt])
+  @@map("audit_log")
+}
+
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+
+  @@map("consent_type")
+}
+
+model MoveOutSchedule {
+  id                   Int      @id @default(autoincrement())
+  title                String
+  applicationStartDate DateTime @map("application_start_date") @db.Date
+  applicationEndDate   DateTime @map("application_end_date") @db.Date
+  inspectionStartDate  DateTime @map("inspection_start_date") @db.Date
+  inspectionEndDate    DateTime @map("inspection_end_date") @db.Date
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("move_out_schedule")
 }

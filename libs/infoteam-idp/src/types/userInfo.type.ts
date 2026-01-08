@@ -1,7 +1,7 @@
 export type UserInfo = {
-  id: string;
+  uuid: string;
   email: string;
   name: string;
-  studentNumber?: string;
-  phoneNumber?: string;
+  studentNumber: string;
+  phoneNumber: string;
 };
