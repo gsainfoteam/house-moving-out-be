@@ -1,4 +1,4 @@
-import { PrismaService } from '@lib/prisma';
+import { Loggable } from '@lib/logger';
 import {
   Injectable,
   InternalServerErrorException,
@@ -7,12 +7,13 @@ import {
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { PrismaTransaction } from 'src/common/types';
 
+@Loggable()
 @Injectable()
 export class AuditLogRepository {
   private readonly logger = new Logger(AuditLogRepository.name, {
     timestamp: true,
   });
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor() {}
 
   async createAuditLogInTx(
     adminUuid: string,

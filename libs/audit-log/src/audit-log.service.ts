@@ -1,12 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaTransaction } from 'src/common/types';
 import { AuditLogRepository } from './audit-log.repository';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class AuditLogService {
-  private readonly logger = new Logger(AuditLogService.name, {
-    timestamp: true,
-  });
   constructor(private readonly auditLogRepository: AuditLogRepository) {}
 
   async createAuditLogInTx(
