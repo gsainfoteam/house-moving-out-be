@@ -15,12 +15,14 @@ datasource db {
 }
 
 model Admin {
-  uuid        String  @id
-  name        String
-  email       String  @unique
-  phoneNumber String? @map("phone_number")
+  uuid          String @id
+  name          String
+  email         String @unique
+  phoneNumber   String @map("phone_number")
+  studentNumber String @map("student_number")
 
   adminRefreshTokens AdminRefreshToken[]
+  auditLogs          AuditLog[]
 
   @@map("admin")
 }
@@ -93,6 +95,19 @@ model PolicyVersion {
   @@unique([type, version])
   @@index([type, isActive])
   @@map("policy_version")
+}
+
+model AuditLog {
+  uuid        String   @id @default(uuid())
+  action      String
+  data        String
+  adminUuid   String   @map("admin_uuid")
+  performedAt DateTime @default(now()) @map("performed_at")
+
+  admin Admin @relation(fields: [adminUuid], references: [uuid])
+
+  @@index([performedAt])
+  @@map("audit_log")
 }
 
 enum ConsentType {
