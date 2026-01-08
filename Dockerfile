@@ -23,6 +23,7 @@ COPY --from=prod /usr/src/app/node_modules ./node_modules
 COPY --from=builder ./usr/src/app/.env ./.env
 COPY --from=builder ./usr/src/app/dist ./dist
 COPY --from=builder ./usr/src/app/package.json ./package.json
+COPY --from=builder ./usr/src/app/generated.json ./generated
 
 # run the app
 USER bun
