@@ -24,4 +24,4 @@ CREATE TABLE "audit_log" (
 CREATE INDEX "audit_log_performed_at_idx" ON "audit_log"("performed_at");
 
 -- AddForeignKey
-ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "admin"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "admin"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
