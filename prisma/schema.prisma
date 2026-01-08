@@ -15,11 +15,11 @@ datasource db {
 }
 
 model Admin {
-  uuid          String  @id
+  uuid          String @id
   name          String
-  email         String  @unique
-  phoneNumber   String? @map("phone_number")
-  studentNumber String  @map("student_number")
+  email         String @unique
+  phoneNumber   String @map("phone_number")
+  studentNumber String @map("student_number")
 
   adminRefreshTokens AdminRefreshToken[]
   auditLogs          AuditLog[]

@@ -2,10 +2,12 @@
   Warnings:
 
   - Added the required column `student_number` to the `admin` table without a default value. This is not possible if the table is not empty.
+  - Made the column `phone_number` on table `admin` required. This step will fail if there are existing NULL values in that column.
 
 */
 -- AlterTable
-ALTER TABLE "admin" ADD COLUMN     "student_number" TEXT NOT NULL;
+ALTER TABLE "admin" ADD COLUMN     "student_number" TEXT NOT NULL,
+ALTER COLUMN "phone_number" SET NOT NULL;
 
 -- CreateTable
 CREATE TABLE "audit_log" (
