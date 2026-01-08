@@ -3,10 +3,10 @@ import { ConsentType } from 'generated/prisma/client';
 
 export class CreateNewPolicyResponseDto {
   @ApiProperty({
-    description: 'Policy version ID',
+    description: 'Policy version UUID',
     example: 'uuid',
   })
-  id: string;
+  uuid: string;
 
   @ApiProperty({
     description: 'Policy type',

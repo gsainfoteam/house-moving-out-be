@@ -45,13 +45,13 @@ export class InfoteamIdpService {
     );
 
     const {
-      sub: id,
+      sub: uuid,
       name,
       email,
       student_id: studentNumber,
       phone_number: phoneNumber,
     } = userInfoResponse.data;
 
-    return { id, name, email, studentNumber, phoneNumber };
+    return { uuid, name, email, studentNumber, phoneNumber };
   }
 }

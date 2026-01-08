@@ -13,7 +13,9 @@ import { Admin, ConsentType, User } from 'generated/prisma/client';
 import ms, { StringValue } from 'ms';
 import { PrismaTransaction } from '../common/types';
 import { UserInfo } from '@lib/infoteam-idp/types/userInfo.type';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class AuthRepository {
   private readonly logger = new Logger(AuthRepository.name);
@@ -31,17 +33,17 @@ export class AuthRepository {
     );
   }
 
-  async findAdmin(id: string): Promise<Admin> {
+  async findAdmin(uuid: string): Promise<Admin> {
     return await this.prismaService.admin
       .findUniqueOrThrow({
         where: {
-          id,
+          uuid,
         },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`admin not found: ${id}`);
+            this.logger.debug(`admin not found: ${uuid}`);
             throw new UnauthorizedException();
           }
           this.logger.error(`findAdmin prisma error: ${error.message}`);
@@ -53,17 +55,18 @@ export class AuthRepository {
   }
 
   async setAdminRefreshToken(
-    id: string,
+    uuid: string,
     hashedRefreshToken: string,
     sessionId: string,
+    expiredAt: Date,
   ): Promise<void> {
     await this.prismaService.adminRefreshToken
       .create({
         data: {
-          adminId: id,
+          adminUuid: uuid,
           refreshToken: hashedRefreshToken,
           sessionId,
-          expiredAt: new Date(Date.now() + this.adminRefreshTokenExpire),
+          expiredAt,
         },
       })
       .catch((error) => {
@@ -80,7 +83,7 @@ export class AuthRepository {
 
   async findAdminByRefreshToken(
     hashedRefreshToken: string,
-  ): Promise<Pick<AdminRefreshToken, 'adminId' | 'sessionId'>> {
+  ): Promise<Pick<AdminRefreshToken, 'adminUuid' | 'sessionId' | 'expiredAt'>> {
     return await this.prismaService.adminRefreshToken
       .findUniqueOrThrow({
         where: {
@@ -88,8 +91,9 @@ export class AuthRepository {
           expiredAt: { gt: new Date() },
         },
         select: {
-          adminId: true,
+          adminUuid: true,
           sessionId: true,
+          expiredAt: true,
         },
       })
       .catch((error) => {
@@ -109,13 +113,13 @@ export class AuthRepository {
   }
 
   async findAdminRefreshTokenBySessionId(
-    adminId: string,
+    adminUuid: string,
     sessionId: string,
   ): Promise<AdminRefreshToken | null> {
     return await this.prismaService.adminRefreshToken
       .findFirst({
         where: {
-          adminId,
+          adminUuid,
           sessionId,
           expiredAt: { gt: new Date() },
         },
@@ -132,11 +136,30 @@ export class AuthRepository {
       });
   }
 
-  async deleteAllAdminRefreshTokens(adminId: string): Promise<void> {
+  async deleteAdminRefreshToken(hashedRefreshToken: string): Promise<void> {
     await this.prismaService.adminRefreshToken
       .deleteMany({
         where: {
-          adminId,
+          refreshToken: hashedRefreshToken,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `deleteAdminRefreshToken prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteAdminRefreshToken error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteAllAdminRefreshTokens(adminUuid: string): Promise<void> {
+    await this.prismaService.adminRefreshToken
+      .deleteMany({
+        where: {
+          adminUuid,
         },
       })
       .catch((error) => {
@@ -152,14 +175,14 @@ export class AuthRepository {
   }
 
   async upsertUserInTx(
-    { id, name, email, phoneNumber, studentNumber }: UserInfo,
+    { uuid, name, email, phoneNumber, studentNumber }: UserInfo,
     tx: PrismaTransaction,
   ): Promise<User> {
     return await tx.user
       .upsert({
-        where: { id },
+        where: { uuid },
         create: {
-          id,
+          uuid,
           name,
           email,
           phoneNumber,
@@ -182,11 +205,57 @@ export class AuthRepository {
       });
   }
 
-  async deleteAllUserRefreshTokens(userId: string): Promise<void> {
+  async deleteUserRefreshToken(hashedRefreshToken: string): Promise<void> {
     await this.prismaService.userRefreshToken
       .deleteMany({
         where: {
-          userId,
+          refreshToken: hashedRefreshToken,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `deleteUserRefreshToken prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteUserRefreshToken error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async setUserRefreshToken(
+    uuid: string,
+    hashedRefreshToken: string,
+    sessionId: string,
+    expiredAt: Date,
+  ): Promise<void> {
+    await this.prismaService.userRefreshToken
+      .create({
+        data: {
+          userUuid: uuid,
+          refreshToken: hashedRefreshToken,
+          sessionId,
+          expiredAt,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `setUserRefreshToken prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`setUserRefreshToken error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteAllUserRefreshTokens(userUuid: string): Promise<void> {
+    await this.prismaService.userRefreshToken
+      .deleteMany({
+        where: {
+          userUuid,
         },
       })
       .catch((error) => {
@@ -202,13 +271,13 @@ export class AuthRepository {
   }
 
   async deleteAllUserRefreshTokensInTx(
-    userId: string,
+    userUuid: string,
     tx: PrismaTransaction,
   ): Promise<void> {
     await tx.userRefreshToken
       .deleteMany({
         where: {
-          userId,
+          userUuid,
         },
       })
       .catch((error) => {
@@ -224,18 +293,19 @@ export class AuthRepository {
   }
 
   async setUserRefreshTokenInTx(
-    id: string,
+    uuid: string,
     hashedRefreshToken: string,
     sessionId: string,
+    expiredAt: Date,
     tx: PrismaTransaction,
   ): Promise<void> {
     await tx.userRefreshToken
       .create({
         data: {
-          userId: id,
+          userUuid: uuid,
           refreshToken: hashedRefreshToken,
           sessionId,
-          expiredAt: new Date(Date.now() + this.userRefreshTokenExpire),
+          expiredAt,
         },
       })
       .catch((error) => {
@@ -252,7 +322,7 @@ export class AuthRepository {
 
   async findUserByRefreshToken(
     hashedRefreshToken: string,
-  ): Promise<Pick<UserRefreshToken, 'userId' | 'sessionId'>> {
+  ): Promise<Pick<UserRefreshToken, 'userUuid' | 'sessionId' | 'expiredAt'>> {
     return await this.prismaService.userRefreshToken
       .findUniqueOrThrow({
         where: {
@@ -260,8 +330,9 @@ export class AuthRepository {
           expiredAt: { gt: new Date() },
         },
         select: {
-          userId: true,
+          userUuid: true,
           sessionId: true,
+          expiredAt: true,
         },
       })
       .catch((error) => {
@@ -281,13 +352,13 @@ export class AuthRepository {
   }
 
   async findUserRefreshTokenBySessionId(
-    userId: string,
+    userUuid: string,
     sessionId: string,
   ): Promise<UserRefreshToken | null> {
     return await this.prismaService.userRefreshToken
       .findFirst({
         where: {
-          userId,
+          userUuid,
           sessionId,
           expiredAt: { gt: new Date() },
         },
@@ -304,18 +375,18 @@ export class AuthRepository {
       });
   }
 
-  async findUser(id: string): Promise<User> {
+  async findUser(uuid: string): Promise<User> {
     return await this.prismaService.user
       .findFirstOrThrow({
         where: {
-          id,
+          uuid,
           deletedAt: null,
         },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`user not found: ${id}`);
+            this.logger.debug(`user not found: ${uuid}`);
             throw new UnauthorizedException();
           }
           this.logger.error(`findUser prisma error: ${error.message}`);
@@ -327,7 +398,7 @@ export class AuthRepository {
   }
 
   async createUserConsentsInTx(
-    userId: string,
+    userUuid: string,
     consents: Array<{
       consentType: ConsentType;
       version: string;
@@ -338,7 +409,7 @@ export class AuthRepository {
       await tx.userConsent
         .createMany({
           data: consents.map((consent) => ({
-            userId,
+            userUuid,
             consentType: consent.consentType,
             version: consent.version,
           })),
@@ -387,14 +458,14 @@ export class AuthRepository {
   }
 
   async getLatestUserConsentInTx(
-    userId: string,
+    userUuid: string,
     consentType: ConsentType,
     tx: PrismaTransaction,
   ): Promise<{ version: string; agreedAt: Date } | null> {
     return await tx.userConsent
       .findFirst({
         where: {
-          userId,
+          userUuid,
           consentType,
         },
         select: {
@@ -424,7 +495,7 @@ export class AuthRepository {
     type: ConsentType;
     version: string;
   }): Promise<{
-    id: string;
+    uuid: string;
     type: ConsentType;
     version: string;
     isActive: boolean;
