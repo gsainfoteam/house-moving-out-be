@@ -15,7 +15,7 @@ export class AuditLogRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createAuditLogInTx(
-    adminId: string,
+    adminUuid: string,
     action: string,
     data: string,
     tx: PrismaTransaction,
@@ -23,7 +23,7 @@ export class AuditLogRepository {
     await tx.auditLog
       .create({
         data: {
-          adminId,
+          adminUuid,
           action,
           data,
         },

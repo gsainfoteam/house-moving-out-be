@@ -10,11 +10,16 @@ export class AuditLogService {
   constructor(private readonly auditLogRepository: AuditLogRepository) {}
 
   async createAuditLogInTx(
-    adminId: string,
+    adminUuid: string,
     action: string,
     data: string,
     tx: PrismaTransaction,
   ) {
-    await this.auditLogRepository.createAuditLogInTx(adminId, action, data, tx);
+    await this.auditLogRepository.createAuditLogInTx(
+      adminUuid,
+      action,
+      data,
+      tx,
+    );
   }
 }
