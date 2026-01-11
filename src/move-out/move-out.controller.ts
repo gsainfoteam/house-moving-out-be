@@ -10,11 +10,16 @@ import {
   ClassSerializerInterceptor,
   ValidationPipe,
   UsePipes,
+  UploadedFile,
+  Query,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -26,6 +31,10 @@ import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
 import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
 import { MoveOutScheduleResDto } from './dto/res/moveOutScheduleRes.dto';
+import { UploadExcelDto } from './dto/req/uploadExcel.dto';
+import { CreateInspectionTargetsQueryDto } from './dto/req/createInspectionTargetsQuery.dto';
+import { SemesterDto } from './dto/req/semester.dto';
+import { CreateInspectionTargetsResDto } from './dto/res/createInspectionTargetsRes.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -86,5 +95,55 @@ export class MoveOutController {
       id,
       updateMoveOutScheduleDto,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Compare Two Sheets and Find Inspection Target Rooms',
+    description:
+      'Upload Excel file with 2 sheets (current semester and next semester application), compare room assignments, and save students that need inspection. Requires current semester and next semester information.',
+  })
+  @ApiCreatedResponse({
+    description: 'Inspection targets successfully created',
+    type: CreateInspectionTargetsResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UploadExcelDto })
+  @UseGuards(AdminGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  @Post('inspection-targets')
+  async compareSheets(
+    @UploadedFile() file: Express.Multer.File,
+    @Query() queryDto: CreateInspectionTargetsQueryDto,
+  ): Promise<CreateInspectionTargetsResDto> {
+    const currentSemesterDto: SemesterDto = {
+      year: queryDto.currentYear,
+      season: queryDto.currentSeason,
+    };
+    const nextSemesterDto: SemesterDto = {
+      year: queryDto.nextYear,
+      season: queryDto.nextSeason,
+    };
+
+    const inspectionTargets =
+      await this.moveOutService.compareTwoSheetsAndFindInspectionTargets(
+        file,
+        currentSemesterDto,
+        nextSemesterDto,
+      );
+
+    return {
+      message: 'Inspection targets successfully created',
+      count: inspectionTargets.length,
+    };
   }
 }
