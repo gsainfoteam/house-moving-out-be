@@ -594,14 +594,14 @@ export class MoveOutService {
       throw new BadRequestException('Invalid MIME type');
     }
 
-    if (!file.size || file.size > EXCEL_VALIDATION_CONSTANTS.MAX_FILE_SIZE) {
+    if (file.size === 0) {
+      throw new BadRequestException('Empty file cannot be uploaded');
+    }
+
+    if (file.size > EXCEL_VALIDATION_CONSTANTS.MAX_FILE_SIZE) {
       throw new BadRequestException(
         `File size is too large. Maximum size: ${EXCEL_VALIDATION_CONSTANTS.MAX_FILE_SIZE / 1024 / 1024}MB`,
       );
-    }
-
-    if (file.size === 0) {
-      throw new BadRequestException('Empty file cannot be uploaded');
     }
 
     if (!file.buffer) {
