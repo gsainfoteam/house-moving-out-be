@@ -134,7 +134,7 @@ export class MoveOutController {
       season: queryDto.nextSeason,
     };
 
-    const inspectionTargets =
+    const savedCount =
       await this.moveOutService.compareTwoSheetsAndFindInspectionTargets(
         file,
         currentSemesterDto,
@@ -143,7 +143,7 @@ export class MoveOutController {
 
     return {
       message: 'Inspection targets successfully created',
-      count: inspectionTargets.length,
+      count: savedCount,
     };
   }
 }

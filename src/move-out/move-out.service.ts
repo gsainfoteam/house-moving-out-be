@@ -68,7 +68,7 @@ export class MoveOutService {
     file: Express.Multer.File | undefined,
     currentSemesterDto: SemesterDto,
     nextSemesterDto: SemesterDto,
-  ): Promise<InspectionTargetStudent[]> {
+  ): Promise<number> {
     this.validateSemesterOrder(currentSemesterDto, nextSemesterDto);
 
     await this.validateExcelFile(file);
@@ -112,11 +112,7 @@ export class MoveOutService {
       nextSemesterDto.season,
     );
 
-    if (inspectionTargets.length === 0) {
-      return inspectionTargets;
-    }
-
-    await this.prismaService.$transaction(
+    const result = await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const existingTarget =
           await this.moveOutRepository.findFirstInspectionTargetBySemestersInTx(
@@ -131,7 +127,7 @@ export class MoveOutService {
           );
         }
 
-        await this.moveOutRepository.createInspectionTargetsInTx(
+        return await this.moveOutRepository.createInspectionTargetsInTx(
           currentSemester.uuid,
           nextSemester.uuid,
           inspectionTargets,
@@ -143,7 +139,7 @@ export class MoveOutService {
       },
     );
 
-    return inspectionTargets;
+    return result.count;
   }
 
   private parseSheetToRoomInfoMap(

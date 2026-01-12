@@ -167,8 +167,8 @@ export class MoveOutRepository {
     nextSemesterUuid: string,
     inspectionTargets: InspectionTargetStudent[],
     tx: PrismaTransaction,
-  ): Promise<void> {
-    await tx.inspectionTarget
+  ): Promise<{ count: number }> {
+    return await tx.inspectionTarget
       .createMany({
         data: inspectionTargets.map((target) => ({
           currentSemesterUuid,
@@ -178,7 +178,6 @@ export class MoveOutRepository {
           studentName: target.studentName,
           studentNumber: target.studentNumber,
         })),
-        skipDuplicates: true,
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
