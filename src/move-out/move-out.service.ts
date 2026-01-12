@@ -279,7 +279,7 @@ export class MoveOutService {
 
       for (const currentSemesterStudent of currentSemesterRoom.students) {
         if (
-          !currentSemesterStudent.name &&
+          !currentSemesterStudent.name ||
           !currentSemesterStudent.studentNumber
         ) {
           continue;
