@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -90,45 +89,29 @@ export class MoveOutRepository {
       });
   }
 
-  async findSemester(year: number, season: Season): Promise<Semester | null> {
+  async findOrCreateSemester(year: number, season: Season): Promise<Semester> {
     return await this.prismaService.semester
-      .findUnique({
+      .upsert({
         where: {
           year_season: {
             year,
             season,
           },
         },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(`findSemester prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findSemester error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async createSemester(year: number, season: Season): Promise<Semester> {
-    return await this.prismaService.semester
-      .create({
-        data: {
+        update: {},
+        create: {
           year,
           season,
         },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2002') {
-            throw new ConflictException(
-              `Semester with year ${year} and season ${season} already exists`,
-            );
-          }
-          this.logger.error(`createSemester prisma error: ${error.message}`);
+          this.logger.error(
+            `findOrCreateSemester prisma error: ${error.message}`,
+          );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`createSemester error: ${error}`);
+        this.logger.error(`findOrCreateSemester error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

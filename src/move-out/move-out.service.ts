@@ -716,12 +716,6 @@ export class MoveOutService {
     year: number,
     season: Season,
   ): Promise<Semester> {
-    const semester = await this.moveOutRepository.findSemester(year, season);
-
-    if (semester) {
-      return semester;
-    }
-
-    return await this.moveOutRepository.createSemester(year, season);
+    return await this.moveOutRepository.findOrCreateSemester(year, season);
   }
 }
