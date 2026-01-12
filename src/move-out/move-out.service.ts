@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
 import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
-import { MoveOutSchedule, Season, Semester } from 'generated/prisma/client';
+import { MoveOutSchedule, Season } from 'generated/prisma/client';
 import { MoveOutScheduleDates } from './types/moveOutScheduleDates.type';
 import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
 import { SemesterDto } from './dto/req/semester.dto';
@@ -103,11 +103,11 @@ export class MoveOutService {
       nextSemesterRooms,
     );
 
-    const currentSemester = await this.findOrCreateSemester(
+    const currentSemester = await this.moveOutRepository.findOrCreateSemester(
       currentSemesterDto.year,
       currentSemesterDto.season,
     );
-    const nextSemester = await this.findOrCreateSemester(
+    const nextSemester = await this.moveOutRepository.findOrCreateSemester(
       nextSemesterDto.year,
       nextSemesterDto.season,
     );
@@ -710,12 +710,5 @@ export class MoveOutService {
         );
       }
     }
-  }
-
-  private async findOrCreateSemester(
-    year: number,
-    season: Season,
-  ): Promise<Semester> {
-    return await this.moveOutRepository.findOrCreateSemester(year, season);
   }
 }
