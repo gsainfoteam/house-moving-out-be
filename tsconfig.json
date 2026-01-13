@@ -28,7 +28,9 @@
       "@lib/audit-log": ["libs/audit-log/src"],
       "@lib/audit-log/*": ["libs/audit-log/src/*"],
       "@lib/logger": ["libs/logger/src"],
-      "@lib/logger/*": ["libs/logger/src/*"]
+      "@lib/logger/*": ["libs/logger/src/*"],
+      "@lib/excel-parser": ["libs/excel-parser/src"],
+      "@lib/excel-parser/*": ["libs/excel-parser/src/*"]
     }
   }
 }

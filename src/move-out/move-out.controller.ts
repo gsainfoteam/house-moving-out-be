@@ -10,11 +10,16 @@ import {
   ClassSerializerInterceptor,
   ValidationPipe,
   UsePipes,
+  UploadedFile,
+  Query,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -23,9 +28,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
-import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
-import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
-import { MoveOutScheduleResDto } from './dto/res/moveOutScheduleRes.dto';
+import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
+import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
+import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
+import { UploadExcelDto } from './dto/req/upload-excel.dto';
+import { CreateInspectionTargetsQueryDto } from './dto/req/create-inspection-targets-query.dto';
+import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
+import { Semester } from './types/semester.type';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -86,5 +95,55 @@ export class MoveOutController {
       id,
       updateMoveOutScheduleDto,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Compare Two Sheets and Find Inspection Target Rooms',
+    description:
+      'Upload Excel file with 2 sheets (current semester and next semester application), compare room assignments, and save students that need inspection. Requires current semester and next semester information.',
+  })
+  @ApiCreatedResponse({
+    description: 'Inspection targets successfully created',
+    type: CreateInspectionTargetsResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UploadExcelDto })
+  @UseGuards(AdminGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  @Post('inspection-targets')
+  async compareSheets(
+    @UploadedFile() file: Express.Multer.File,
+    @Query() queryDto: CreateInspectionTargetsQueryDto,
+  ): Promise<CreateInspectionTargetsResDto> {
+    const currentSemester: Semester = {
+      year: queryDto.currentYear,
+      season: queryDto.currentSeason,
+    };
+    const nextSemester: Semester = {
+      year: queryDto.nextYear,
+      season: queryDto.nextSeason,
+    };
+
+    const savedCount =
+      await this.moveOutService.compareTwoSheetsAndFindInspectionTargets(
+        file,
+        currentSemester,
+        nextSemester,
+      );
+
+    return {
+      message: 'Inspection targets successfully created',
+      count: savedCount,
+    };
   }
 }
