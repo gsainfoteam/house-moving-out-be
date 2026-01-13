@@ -8,7 +8,7 @@ import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
 import { MoveOutSchedule, Season } from 'generated/prisma/client';
 import { MoveOutScheduleDates } from './types/moveOutScheduleDates.type';
 import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
-import { SemesterDto } from './dto/req/semester.dto';
+import { Semester } from './types/semester.type';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
 import {
@@ -61,10 +61,10 @@ export class MoveOutService {
 
   async compareTwoSheetsAndFindInspectionTargets(
     file: Express.Multer.File | undefined,
-    currentSemesterDto: SemesterDto,
-    nextSemesterDto: SemesterDto,
+    currentSemester: Semester,
+    nextSemester: Semester,
   ): Promise<number> {
-    this.validateSemesterOrder(currentSemesterDto, nextSemesterDto);
+    this.validateSemesterOrder(currentSemester, nextSemester);
 
     await this.excelValidatorService.validateExcelFile(file);
 
@@ -99,33 +99,35 @@ export class MoveOutService {
       nextSemesterRooms,
     );
 
-    const currentSemester = await this.moveOutRepository.findOrCreateSemester(
-      currentSemesterDto.year,
-      currentSemesterDto.season,
-    );
-    const nextSemester = await this.moveOutRepository.findOrCreateSemester(
-      nextSemesterDto.year,
-      nextSemesterDto.season,
-    );
+    const currentSemesterEntity =
+      await this.moveOutRepository.findOrCreateSemester(
+        currentSemester.year,
+        currentSemester.season,
+      );
+    const nextSemesterEntity =
+      await this.moveOutRepository.findOrCreateSemester(
+        nextSemester.year,
+        nextSemester.season,
+      );
 
     const result = await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const existingTarget =
           await this.moveOutRepository.findFirstInspectionTargetBySemestersInTx(
-            currentSemester.uuid,
-            nextSemester.uuid,
+            currentSemesterEntity.uuid,
+            nextSemesterEntity.uuid,
             tx,
           );
 
         if (existingTarget !== null) {
           throw new ConflictException(
-            `Inspection targets already exist for current semester (${currentSemesterDto.year} ${currentSemesterDto.season}) and next semester (${nextSemesterDto.year} ${nextSemesterDto.season}). Use update endpoint to modify existing data.`,
+            `Inspection targets already exist for current semester (${currentSemester.year} ${currentSemester.season}) and next semester (${nextSemester.year} ${nextSemester.season}). Use update endpoint to modify existing data.`,
           );
         }
 
         return await this.moveOutRepository.createInspectionTargetsInTx(
-          currentSemester.uuid,
-          nextSemester.uuid,
+          currentSemesterEntity.uuid,
+          nextSemesterEntity.uuid,
           inspectionTargets,
           tx,
         );
@@ -223,11 +225,11 @@ export class MoveOutService {
   }
 
   private validateSemesterOrder(
-    currentSemesterDto: SemesterDto,
-    nextSemesterDto: SemesterDto,
+    currentSemester: Semester,
+    nextSemester: Semester,
   ): void {
-    const { year: currentYear, season: currentSeason } = currentSemesterDto;
-    const { year: nextYear, season: nextSeason } = nextSemesterDto;
+    const { year: currentYear, season: currentSeason } = currentSemester;
+    const { year: nextYear, season: nextSeason } = nextSemester;
 
     if (currentYear > nextYear) {
       throw new BadRequestException(

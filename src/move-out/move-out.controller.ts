@@ -33,8 +33,8 @@ import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
 import { MoveOutScheduleResDto } from './dto/res/moveOutScheduleRes.dto';
 import { UploadExcelDto } from './dto/req/uploadExcel.dto';
 import { CreateInspectionTargetsQueryDto } from './dto/req/createInspectionTargetsQuery.dto';
-import { SemesterDto } from './dto/req/semester.dto';
 import { CreateInspectionTargetsResDto } from './dto/res/createInspectionTargetsRes.dto';
+import { Semester } from './types/semester.type';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -125,11 +125,11 @@ export class MoveOutController {
     @UploadedFile() file: Express.Multer.File,
     @Query() queryDto: CreateInspectionTargetsQueryDto,
   ): Promise<CreateInspectionTargetsResDto> {
-    const currentSemesterDto: SemesterDto = {
+    const currentSemester: Semester = {
       year: queryDto.currentYear,
       season: queryDto.currentSeason,
     };
-    const nextSemesterDto: SemesterDto = {
+    const nextSemester: Semester = {
       year: queryDto.nextYear,
       season: queryDto.nextSeason,
     };
@@ -137,8 +137,8 @@ export class MoveOutController {
     const savedCount =
       await this.moveOutService.compareTwoSheetsAndFindInspectionTargets(
         file,
-        currentSemesterDto,
-        nextSemesterDto,
+        currentSemester,
+        nextSemester,
       );
 
     return {
