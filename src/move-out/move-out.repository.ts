@@ -14,7 +14,7 @@ import {
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
-import { InspectionTargetStudent } from './types/excel.type';
+import { InspectionTargetStudent } from './types/inspectionTarget.type';
 import { Loggable } from '@lib/logger';
 import { PrismaTransaction } from 'src/common/types';
 
