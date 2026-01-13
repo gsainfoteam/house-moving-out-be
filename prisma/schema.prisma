@@ -149,7 +149,6 @@ model Semester {
   nextSemesterTargets    InspectionTarget[] @relation("NextSemester")
 
   @@unique([year, season])
-  @@index([year, season])
   @@map("semester")
 }
 

@@ -30,9 +30,6 @@ CREATE TABLE "inspection_target" (
 );
 
 -- CreateIndex
-CREATE INDEX "semester_year_season_idx" ON "semester"("year", "season");
-
--- CreateIndex
 CREATE UNIQUE INDEX "semester_year_season_key" ON "semester"("year", "season");
 
 -- CreateIndex
