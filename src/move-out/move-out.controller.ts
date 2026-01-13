@@ -28,12 +28,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
-import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
-import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
-import { MoveOutScheduleResDto } from './dto/res/moveOutScheduleRes.dto';
-import { UploadExcelDto } from './dto/req/uploadExcel.dto';
-import { CreateInspectionTargetsQueryDto } from './dto/req/createInspectionTargetsQuery.dto';
-import { CreateInspectionTargetsResDto } from './dto/res/createInspectionTargetsRes.dto';
+import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
+import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
+import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
+import { UploadExcelDto } from './dto/req/upload-excel.dto';
+import { CreateInspectionTargetsQueryDto } from './dto/req/create-inspection-targets-query.dto';
+import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
 import { Semester } from './types/semester.type';
 
 @UseInterceptors(ClassSerializerInterceptor)

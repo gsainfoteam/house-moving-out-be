@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthRepository } from './auth.repository';
 import { Admin, ConsentType, User } from 'generated/prisma/client';
 import * as crypto from 'crypto';
-import { IssueTokenType } from './types/jwtToken.type';
+import { IssueTokenType } from './types/jwt-token.type';
 import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
 import { ConsentRequiredException } from './exceptions/consent-required.exception';
@@ -16,9 +16,9 @@ import {
 } from './types/consent.type';
 import { PrismaTransaction } from '../common/types';
 import { PrismaService } from '@lib/prisma';
-import { CreateNewPolicyResponseDto } from './dto/res/createNewPolicyResponse.dto';
-import { UserLoginDto } from './dto/req/userLogin.dto';
-import { CreateNewPolicyDto } from './dto/req/createNewPolicy.dto';
+import { CreateNewPolicyResponseDto } from './dto/res/create-new-policy-response.dto';
+import { UserLoginDto } from './dto/req/user-login.dto';
+import { CreateNewPolicyDto } from './dto/req/create-new-policy.dto';
 import { Loggable } from '@lib/logger';
 
 @Loggable()

@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@lib/prisma';
-import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
+import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import {
   InspectionTarget,
   MoveOutSchedule,
@@ -13,8 +13,8 @@ import {
   Season,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
-import { InspectionTargetStudent } from './types/inspectionTarget.type';
+import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
+import { InspectionTargetStudent } from './types/inspection-target.type';
 import { Loggable } from '@lib/logger';
 import { PrismaTransaction } from 'src/common/types';
 

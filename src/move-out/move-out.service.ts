@@ -4,10 +4,10 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { CreateMoveOutScheduleDto } from './dto/req/createMoveOutSchedule.dto';
+import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import { MoveOutSchedule, Season } from 'generated/prisma/client';
-import { MoveOutScheduleDates } from './types/moveOutScheduleDates.type';
-import { UpdateMoveOutScheduleDto } from './dto/req/updateMoveOutSchedule.dto';
+import { MoveOutScheduleDates } from './types/move-out-schedule-dates.type';
+import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { Semester } from './types/semester.type';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
@@ -16,7 +16,7 @@ import {
   ExcelParserService,
   ExcelValidatorService,
 } from '@lib/excel-parser';
-import { InspectionTargetStudent } from './types/inspectionTarget.type';
+import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 

@@ -20,18 +20,18 @@ import {
   ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { JwtToken } from './dto/res/jwtToken.dto';
-import { IssueTokenType } from './types/jwtToken.type';
-import { UserLoginDto } from './dto/req/userLogin.dto';
-import { CreateNewPolicyDto } from './dto/req/createNewPolicy.dto';
-import { CreateNewPolicyResponseDto } from './dto/res/createNewPolicyResponse.dto';
-import { ConsentRequiredErrorDto } from './dto/res/consentRequiredError.dto';
+import { JwtToken } from './dto/res/jwt-token.dto';
+import { IssueTokenType } from './types/jwt-token.type';
+import { UserLoginDto } from './dto/req/user-login.dto';
+import { CreateNewPolicyDto } from './dto/req/create-new-policy.dto';
+import { CreateNewPolicyResponseDto } from './dto/res/create-new-policy-response.dto';
+import { ConsentRequiredErrorDto } from './dto/res/consent-required-error.dto';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { AdminGuard } from './guard/admin.guard';
-import { GetAdmin } from './decorator/getAdmin.decorator';
+import { GetAdmin } from './decorator/get-admin.decorator';
 import { UserGuard } from './guard/user.guard';
-import { GetUser } from './decorator/getUser.decorator';
+import { GetUser } from './decorator/get-user.decorator';
 import { Admin, User } from 'generated/prisma/client';
 
 @Controller('auth')
