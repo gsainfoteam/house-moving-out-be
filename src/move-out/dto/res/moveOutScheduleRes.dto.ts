@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
 
 export class MoveOutScheduleResDto {
   @ApiProperty({
@@ -48,8 +47,4 @@ export class MoveOutScheduleResDto {
     example: '2025-12-01T00:00:00.000Z',
   })
   updatedAt: Date;
-
-  constructor(partial: Partial<MoveOutScheduleResDto>) {
-    Object.assign(this, partial);
-  }
 }
