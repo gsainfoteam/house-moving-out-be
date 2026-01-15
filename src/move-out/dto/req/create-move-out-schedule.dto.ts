@@ -13,7 +13,7 @@ export class InspectionTimeRangeDto {
 
   @ApiProperty({
     description: '운영 시간 범위 종료',
-    example: '2025-01-13T19:00:00.000Z',
+    example: '2026-01-13T19:00:00.000Z',
   })
   @Type(() => Date)
   @IsDate()
@@ -64,8 +64,8 @@ export class CreateMoveOutScheduleDto {
     type: [InspectionTimeRangeDto],
     description: '실제 운영 시간 범위 목록',
     example: [
-      { start: '2026-01-13T13:00:00.000Z', end: '2025-06-19T15:30:00.000Z' },
-      { start: '2026-01-14T09:00:00.000Z', end: '2025-06-20T12:15:00.000Z' },
+      { start: '2026-01-13T13:00:00.000Z', end: '2026-01-13T15:30:00.000Z' },
+      { start: '2026-01-14T09:00:00.000Z', end: '2026-01-14T12:15:00.000Z' },
     ],
   })
   @ValidateNested({ each: true })

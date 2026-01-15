@@ -38,7 +38,7 @@ export class MoveOutService {
   async createMoveOutSchedule(
     createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    // this.validateScheduleDates(createMoveOutScheduleDto); // 유효성 검증 (요청에 의해 비활성화)
+    // this.validateScheduleDates(createMoveOutScheduleDto);
     const targetCounts = this.calculateTargetCounts();
 
     const { inspectionTimeRange, ...scheduleData } = createMoveOutScheduleDto;
