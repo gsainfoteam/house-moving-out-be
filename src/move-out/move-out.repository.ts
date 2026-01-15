@@ -16,9 +16,9 @@ import {
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { InspectionTargetStudent } from './types/inspection-target.type';
-import { Loggable } from '@lib/logger';
 import { PrismaTransaction } from 'src/common/types';
-import { MoveOutScheduleWithSlots } from './types/moveOutScheduleWithSlots.type';
+import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
+import { Loggable } from '@lib/logger';
 
 @Loggable()
 @Injectable()

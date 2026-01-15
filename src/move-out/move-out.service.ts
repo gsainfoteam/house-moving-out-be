@@ -11,7 +11,7 @@ import { Semester } from './types/semester.type';
 import {
   CreateMoveOutScheduleDto,
   InspectionTimeRangeDto,
-} from './dto/req/createMoveOutSchedule.dto';
+} from './dto/req/create-move-out-schedule.dto';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
 import {
