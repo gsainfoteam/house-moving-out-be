@@ -1,6 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDate, IsString } from 'class-validator';
+import { IsDate, IsString, IsArray, ValidateNested } from 'class-validator';
+
+export class InspectionTimeRangeDto {
+  @ApiProperty({
+    description: '운영 시간 범위 시작',
+    example: '2026-01-13T13:00:00.000Z',
+  })
+  @Type(() => Date)
+  @IsDate()
+  start: Date;
+
+  @ApiProperty({
+    description: '운영 시간 범위 종료',
+    example: '2025-01-13T19:00:00.000Z',
+  })
+  @Type(() => Date)
+  @IsDate()
+  end: Date;
+}
 
 export class CreateMoveOutScheduleDto {
   @ApiProperty({
@@ -41,4 +59,17 @@ export class CreateMoveOutScheduleDto {
   @Type(() => Date)
   @IsDate()
   inspectionEndDate: Date;
+
+  @ApiProperty({
+    type: [InspectionTimeRangeDto],
+    description: '실제 운영 시간 범위 목록',
+    example: [
+      { start: '2026-01-13T13:00:00.000Z', end: '2025-06-19T15:30:00.000Z' },
+      { start: '2026-01-14T09:00:00.000Z', end: '2025-06-20T12:15:00.000Z' },
+    ],
+  })
+  @ValidateNested({ each: true })
+  @Type(() => InspectionTimeRangeDto)
+  @IsArray()
+  inspectionTimeRange: InspectionTimeRangeDto[];
 }

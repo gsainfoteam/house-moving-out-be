@@ -4,11 +4,14 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import { MoveOutSchedule, Season } from 'generated/prisma/client';
 import { MoveOutScheduleDates } from './types/move-out-schedule-dates.type';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { Semester } from './types/semester.type';
+import {
+  CreateMoveOutScheduleDto,
+  InspectionTimeRangeDto,
+} from './dto/req/createMoveOutSchedule.dto';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
 import {
@@ -23,6 +26,8 @@ import { PrismaTransaction } from 'src/common/types';
 @Loggable()
 @Injectable()
 export class MoveOutService {
+  private readonly SLOT_DURATION_MINUTES = 15;
+  private readonly WEIGHT_FACTOR = 1.5;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -33,10 +38,34 @@ export class MoveOutService {
   async createMoveOutSchedule(
     createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    this.validateScheduleDates(createMoveOutScheduleDto);
+    // this.validateScheduleDates(createMoveOutScheduleDto); // 유효성 검증 (요청에 의해 비활성화)
+    const targetCounts = this.calculateTargetCounts();
+
+    const { inspectionTimeRange, ...scheduleData } = createMoveOutScheduleDto;
+    const generatedSlots = this.generateSlots(
+      inspectionTimeRange,
+      this.SLOT_DURATION_MINUTES,
+    );
+    if (generatedSlots.length === 0) {
+      throw new BadRequestException(
+        'No slots were generated. Check your active time ranges.',
+      );
+    }
+
+    const maxCapacity = this.calculateMaxCapacity(
+      generatedSlots.length,
+      targetCounts,
+      this.WEIGHT_FACTOR,
+    );
+
+    const slotsData = generatedSlots.map((slot) => ({
+      ...slot,
+      maxCapacity,
+    }));
 
     return await this.moveOutRepository.createMoveOutSchedule(
-      createMoveOutScheduleDto,
+      scheduleData,
+      slotsData,
     );
   }
 
@@ -44,7 +73,8 @@ export class MoveOutService {
     id: number,
     updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    const schedule = await this.moveOutRepository.findMoveOutScheduleById(id);
+    const schedule =
+      await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
 
     const updatedMoveOutScheduleDates: MoveOutScheduleDates = {
       ...schedule,
@@ -189,6 +219,47 @@ export class MoveOutService {
     }
 
     return inspectionTargets;
+  }
+
+  private calculateTargetCounts(): { male: number; female: number } {
+    // Mocking 함수.
+    return { male: 150, female: 150 };
+  }
+
+  private generateSlots(
+    inspectionTimeRanges: InspectionTimeRangeDto[],
+    slotDuration: number,
+  ): { startTime: Date; endTime: Date }[] {
+    const slots: { startTime: Date; endTime: Date }[] = [];
+    for (const range of inspectionTimeRanges) {
+      let timePointer = new Date(range.start);
+      const end = new Date(range.end);
+
+      while (true) {
+        const nextTime = new Date(timePointer.getTime() + slotDuration * 60000);
+        if (nextTime > end) {
+          break;
+        }
+
+        slots.push({
+          startTime: timePointer,
+          endTime: nextTime,
+        });
+
+        timePointer = nextTime;
+      }
+    }
+    return slots;
+  }
+
+  private calculateMaxCapacity(
+    totalSlots: number,
+    targetCounts: { male: number; female: number },
+    weightFactor: number,
+  ): number {
+    const weightedTotalCount =
+      (targetCounts.male + targetCounts.female) * weightFactor;
+    return Math.ceil(weightedTotalCount / totalSlots);
   }
 
   private validateScheduleDates(moveOutScheduleDates: MoveOutScheduleDates) {
