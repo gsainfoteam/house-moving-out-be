@@ -22,6 +22,7 @@ import {
 import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
+import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 
 @Loggable()
 @Injectable()
@@ -48,7 +49,7 @@ export class MoveOutService {
     );
     if (generatedSlots.length === 0) {
       throw new BadRequestException(
-        'No slots were generated. Check your active time ranges.',
+        'No slots were generated. Check your inspection time ranges.',
       );
     }
 
@@ -87,6 +88,12 @@ export class MoveOutService {
       id,
       updateMoveOutScheduleDto,
     );
+  }
+
+  async findMoveOutScheduleWithSlots(
+    id: number,
+  ): Promise<MoveOutScheduleWithSlots> {
+    return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
   }
 
   async compareTwoSheetsAndFindInspectionTargets(
