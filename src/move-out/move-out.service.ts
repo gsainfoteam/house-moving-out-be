@@ -26,7 +26,7 @@ import { PrismaTransaction } from 'src/common/types';
 @Loggable()
 @Injectable()
 export class MoveOutService {
-  private readonly SLOT_DURATION_MINUTES = 15;
+  private readonly SLOT_DURATION_MINUTES = 30;
   private readonly WEIGHT_FACTOR = 1.5;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
