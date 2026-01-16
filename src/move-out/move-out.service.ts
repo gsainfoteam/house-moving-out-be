@@ -242,18 +242,15 @@ export class MoveOutService {
     for (const range of inspectionTimeRanges) {
       let timePointer = new Date(range.start);
       const end = new Date(range.end);
+      let nextTime = new Date(timePointer.getTime() + slotDuration * 60000);
 
-      while (true) {
-        const nextTime = new Date(timePointer.getTime() + slotDuration * 60000);
-        if (nextTime > end) {
-          break;
-        }
-
+      while (nextTime <= end) {
         slots.push({
           startTime: timePointer,
           endTime: nextTime,
         });
 
+        nextTime = new Date(timePointer.getTime() + slotDuration * 60000);
         timePointer = nextTime;
       }
     }
