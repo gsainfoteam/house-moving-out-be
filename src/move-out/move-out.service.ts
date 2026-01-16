@@ -23,6 +23,7 @@ import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
+import { InspectionTargetCount } from './types/inspection-target-count.type';
 
 @Loggable()
 @Injectable()
@@ -228,7 +229,7 @@ export class MoveOutService {
     return inspectionTargets;
   }
 
-  private calculateTargetCounts(): { male: number; female: number } {
+  private calculateTargetCounts(): InspectionTargetCount {
     // Mocking 함수.
     return { male: 150, female: 150 };
   }
@@ -261,7 +262,7 @@ export class MoveOutService {
 
   private calculateMaxCapacity(
     totalSlots: number,
-    targetCounts: { male: number; female: number },
+    targetCounts: InspectionTargetCount,
     weightFactor: number,
   ): number {
     const weightedTotalCount =
@@ -269,7 +270,9 @@ export class MoveOutService {
     return Math.ceil(weightedTotalCount / totalSlots);
   }
 
-  private validateScheduleDates(moveOutScheduleDates: MoveOutScheduleDates) {
+  private validateScheduleDates(
+    moveOutScheduleDates: MoveOutScheduleDates,
+  ): void {
     const {
       applicationStartDate,
       applicationEndDate,
