@@ -236,22 +236,24 @@ export class MoveOutService {
 
   private generateSlots(
     inspectionTimeRanges: InspectionTimeRangeDto[],
-    slotDuration: number,
+    slotDurationMinute: number,
   ): { startTime: Date; endTime: Date }[] {
     const slots: { startTime: Date; endTime: Date }[] = [];
+    const SLOT_DURATION_MS = slotDurationMinute * 60000;
+
     for (const range of inspectionTimeRanges) {
-      let timePointer = new Date(range.start);
-      const end = new Date(range.end);
-      let nextTime = new Date(timePointer.getTime() + slotDuration * 60000);
+      const rangeStart = new Date(range.start);
+      const rangeEndMs = new Date(range.end).getTime();
 
-      while (nextTime <= end) {
-        slots.push({
-          startTime: timePointer,
-          endTime: nextTime,
-        });
-
-        nextTime = new Date(timePointer.getTime() + slotDuration * 60000);
-        timePointer = nextTime;
+      let slotStart = rangeStart;
+      for (
+        let slotEndMs = rangeStart.getTime() + SLOT_DURATION_MS;
+        slotEndMs <= rangeEndMs;
+        slotEndMs += SLOT_DURATION_MS
+      ) {
+        const slotEnd = new Date(slotEndMs);
+        slots.push({ startTime: slotStart, endTime: slotEnd });
+        slotStart = slotEnd;
       }
     }
     return slots;
