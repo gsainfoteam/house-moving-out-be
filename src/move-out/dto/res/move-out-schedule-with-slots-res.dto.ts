@@ -18,13 +18,13 @@ export class InspectionSlotResDto {
 
   @ApiProperty({
     description: '슬롯 시작 시간',
-    example: '2026-02-05T13:00:00.000Z',
+    example: '2026-02-05T04:00:00.000Z',
   })
   startTime: Date;
 
   @ApiProperty({
     description: '슬롯 종료 시간',
-    example: '2026-02-05T13:30:00.000Z',
+    example: '2026-02-05T04:30:00.000Z',
   })
   endTime: Date;
 
