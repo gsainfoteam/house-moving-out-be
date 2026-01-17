@@ -15,27 +15,28 @@ export class MoveOutScheduleResDto {
 
   @ApiProperty({
     description: '신청 시작 날짜',
-    example: '2025-12-01',
+    example: '2025-11-30T15:00:00.000Z',
   })
   applicationStartDate: Date;
 
   @ApiProperty({
     description: '신청 종료 날짜',
-    example: '2025-12-05',
+    example: '2025-12-04T15:00:00.000Z',
   })
   applicationEndDate: Date;
 
   @ApiProperty({
     description: '검사 시작 날짜',
-    example: '2025-12-10',
+    example: '2025-12-09T15:00:00.000Z',
   })
   inspectionStartDate: Date;
 
   @ApiProperty({
     description: '검사 종료 날짜',
-    example: '2025-12-15',
+    example: '2025-12-14T15:00:00.000Z',
   })
   inspectionEndDate: Date;
+
   @ApiProperty({
     description: '생성 날짜',
     example: '2025-12-01T00:00:00.000Z',

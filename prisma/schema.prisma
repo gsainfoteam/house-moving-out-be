@@ -127,14 +127,15 @@ enum Season {
 }
 
 model MoveOutSchedule {
-  id                   Int      @id @default(autoincrement())
+  id                   Int              @id @default(autoincrement())
   title                String
-  applicationStartDate DateTime @map("application_start_date") @db.Date
-  applicationEndDate   DateTime @map("application_end_date") @db.Date
-  inspectionStartDate  DateTime @map("inspection_start_date") @db.Date
-  inspectionEndDate    DateTime @map("inspection_end_date") @db.Date
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+  applicationStartDate DateTime         @map("application_start_date") @db.Date
+  applicationEndDate   DateTime         @map("application_end_date") @db.Date
+  inspectionStartDate  DateTime         @map("inspection_start_date") @db.Date
+  inspectionEndDate    DateTime         @map("inspection_end_date") @db.Date
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at")
+  inspectionSlots      InspectionSlot[]
 
   @@map("move_out_schedule")
 }
@@ -173,4 +174,17 @@ model InspectionTarget {
   @@index([nextSemesterUuid])
   @@index([currentSemesterUuid, nextSemesterUuid, houseName, roomNumber])
   @@map("inspection_target")
+}
+
+model InspectionSlot {
+  id            String          @id @default(uuid())
+  scheduleId    Int             @map("schedule_id")
+  schedule      MoveOutSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  startTime     DateTime        @map("start_time")
+  endTime       DateTime        @map("end_time")
+  maxCapacity   Int             @default(0) @map("max_capacity")
+  reservedCount Int             @default(0) @map("reserved_count")
+
+  @@index([scheduleId, startTime])
+  @@map("inspection_slot")
 }

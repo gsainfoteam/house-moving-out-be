@@ -4,11 +4,14 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import { MoveOutSchedule, Season } from 'generated/prisma/client';
 import { MoveOutScheduleDates } from './types/move-out-schedule-dates.type';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { Semester } from './types/semester.type';
+import {
+  CreateMoveOutScheduleDto,
+  InspectionTimeRangeDto,
+} from './dto/req/create-move-out-schedule.dto';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
 import {
@@ -19,10 +22,14 @@ import {
 import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
+import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
+import { InspectionTargetCount } from './types/inspection-target-count.type';
 
 @Loggable()
 @Injectable()
 export class MoveOutService {
+  private readonly SLOT_DURATION_MINUTES = 30;
+  private readonly WEIGHT_FACTOR = 1.5;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -33,10 +40,34 @@ export class MoveOutService {
   async createMoveOutSchedule(
     createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    this.validateScheduleDates(createMoveOutScheduleDto);
+    // this.validateScheduleDates(createMoveOutScheduleDto);
+    const targetCounts = this.calculateTargetCounts();
+
+    const { inspectionTimeRange, ...scheduleData } = createMoveOutScheduleDto;
+    const generatedSlots = this.generateSlots(
+      inspectionTimeRange,
+      this.SLOT_DURATION_MINUTES,
+    );
+    if (generatedSlots.length === 0) {
+      throw new BadRequestException(
+        'No slots were generated. Check your inspection time ranges.',
+      );
+    }
+
+    const maxCapacity = this.calculateMaxCapacity(
+      generatedSlots.length,
+      targetCounts,
+      this.WEIGHT_FACTOR,
+    );
+
+    const slotsData = generatedSlots.map((slot) => ({
+      ...slot,
+      maxCapacity,
+    }));
 
     return await this.moveOutRepository.createMoveOutSchedule(
-      createMoveOutScheduleDto,
+      scheduleData,
+      slotsData,
     );
   }
 
@@ -44,7 +75,8 @@ export class MoveOutService {
     id: number,
     updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    const schedule = await this.moveOutRepository.findMoveOutScheduleById(id);
+    const schedule =
+      await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
 
     const updatedMoveOutScheduleDates: MoveOutScheduleDates = {
       ...schedule,
@@ -57,6 +89,12 @@ export class MoveOutService {
       id,
       updateMoveOutScheduleDto,
     );
+  }
+
+  async findMoveOutScheduleWithSlots(
+    id: number,
+  ): Promise<MoveOutScheduleWithSlots> {
+    return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
   }
 
   async compareTwoSheetsAndFindInspectionTargets(
@@ -191,7 +229,49 @@ export class MoveOutService {
     return inspectionTargets;
   }
 
-  private validateScheduleDates(moveOutScheduleDates: MoveOutScheduleDates) {
+  private calculateTargetCounts(): InspectionTargetCount {
+    // Mocking 함수.
+    return { male: 150, female: 150 };
+  }
+
+  private generateSlots(
+    inspectionTimeRanges: InspectionTimeRangeDto[],
+    slotDurationMinute: number,
+  ): { startTime: Date; endTime: Date }[] {
+    const slots: { startTime: Date; endTime: Date }[] = [];
+    const SLOT_DURATION_MS = slotDurationMinute * 60000;
+
+    for (const range of inspectionTimeRanges) {
+      const rangeStart = new Date(range.start);
+      const rangeEndMs = new Date(range.end).getTime();
+
+      let slotStart = rangeStart;
+      for (
+        let slotEndMs = rangeStart.getTime() + SLOT_DURATION_MS;
+        slotEndMs <= rangeEndMs;
+        slotEndMs += SLOT_DURATION_MS
+      ) {
+        const slotEnd = new Date(slotEndMs);
+        slots.push({ startTime: slotStart, endTime: slotEnd });
+        slotStart = slotEnd;
+      }
+    }
+    return slots;
+  }
+
+  private calculateMaxCapacity(
+    totalSlots: number,
+    targetCounts: InspectionTargetCount,
+    weightFactor: number,
+  ): number {
+    const weightedTotalCount =
+      (targetCounts.male + targetCounts.female) * weightFactor;
+    return Math.ceil(weightedTotalCount / totalSlots);
+  }
+
+  private validateScheduleDates(
+    moveOutScheduleDates: MoveOutScheduleDates,
+  ): void {
     const {
       applicationStartDate,
       applicationEndDate,
