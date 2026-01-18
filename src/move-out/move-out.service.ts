@@ -272,34 +272,11 @@ export class MoveOutService {
   private validateScheduleDates(
     moveOutScheduleDates: MoveOutScheduleDates,
   ): void {
-    const {
-      applicationStartDate,
-      applicationEndDate,
-      inspectionStartDate,
-      inspectionEndDate,
-    } = moveOutScheduleDates;
+    const { applicationStartDate, applicationEndDate } = moveOutScheduleDates;
 
     if (applicationStartDate > applicationEndDate) {
       throw new BadRequestException(
         'Application start date cannot be after application end date',
-      );
-    }
-
-    if (inspectionStartDate > inspectionEndDate) {
-      throw new BadRequestException(
-        'Inspection start date cannot be after inspection end date',
-      );
-    }
-
-    if (applicationStartDate > inspectionStartDate) {
-      throw new BadRequestException(
-        'Application start date cannot be after inspection start date',
-      );
-    }
-
-    if (applicationEndDate > inspectionEndDate) {
-      throw new BadRequestException(
-        'Application end date cannot be after inspection end date',
       );
     }
   }

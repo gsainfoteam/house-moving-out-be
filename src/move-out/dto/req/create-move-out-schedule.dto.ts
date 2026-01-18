@@ -34,7 +34,7 @@ export class CreateMoveOutScheduleDto {
   })
   @Type(() => Date)
   @IsDate()
-  applicationStartDate: Date;
+  applicationStartTime: Date;
 
   @ApiProperty({
     example: '2025-12-04T15:00:00.000Z',
@@ -42,23 +42,7 @@ export class CreateMoveOutScheduleDto {
   })
   @Type(() => Date)
   @IsDate()
-  applicationEndDate: Date;
-
-  @ApiProperty({
-    example: '2025-12-09T15:00:00.000Z',
-    description: '검사 시작 날짜',
-  })
-  @Type(() => Date)
-  @IsDate()
-  inspectionStartDate: Date;
-
-  @ApiProperty({
-    example: '2025-12-14T15:00:00.000Z',
-    description: '검사 종료 날짜',
-  })
-  @Type(() => Date)
-  @IsDate()
-  inspectionEndDate: Date;
+  applicationEndTime: Date;
 
   @ApiProperty({
     type: [InspectionTimeRangeDto],
