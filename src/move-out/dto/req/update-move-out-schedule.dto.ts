@@ -12,38 +12,20 @@ export class UpdateMoveOutScheduleDto {
   title?: string;
 
   @ApiPropertyOptional({
-    example: '2025-12-01',
+    example: '2025-11-30T15:00:00.000Z',
     description: '신청 시작 날짜',
   })
   @Type(() => Date)
   @IsDate()
   @IsOptional()
-  applicationStartDate?: Date;
+  applicationStartTime?: Date;
 
   @ApiPropertyOptional({
-    example: '2025-12-05',
+    example: '2025-12-04T15:00:00.000Z',
     description: '신청 종료 날짜',
   })
   @Type(() => Date)
   @IsDate()
   @IsOptional()
-  applicationEndDate?: Date;
-
-  @ApiPropertyOptional({
-    example: '2025-12-10',
-    description: '검사 시작 날짜',
-  })
-  @Type(() => Date)
-  @IsDate()
-  @IsOptional()
-  inspectionStartDate?: Date;
-
-  @ApiPropertyOptional({
-    example: '2025-12-15',
-    description: '검사 종료 날짜',
-  })
-  @Type(() => Date)
-  @IsDate()
-  @IsOptional()
-  inspectionEndDate?: Date;
+  applicationEndTime?: Date;
 }

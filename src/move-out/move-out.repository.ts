@@ -11,12 +11,14 @@ import {
   MoveOutSchedule,
   Semester,
   Season,
+  Prisma,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { InspectionTargetStudent } from './types/inspection-target.type';
-import { Loggable } from '@lib/logger';
 import { PrismaTransaction } from 'src/common/types';
+import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
+import { Loggable } from '@lib/logger';
 
 @Loggable()
 @Injectable()
@@ -25,11 +27,19 @@ export class MoveOutRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createMoveOutSchedule(
-    moveOutSchedule: CreateMoveOutScheduleDto,
+    scheduleData: Omit<CreateMoveOutScheduleDto, 'inspectionTimeRange'>,
+    slotsData: Prisma.InspectionSlotCreateManyScheduleInput[],
   ): Promise<MoveOutSchedule> {
     return await this.prismaService.moveOutSchedule
       .create({
-        data: moveOutSchedule,
+        data: {
+          ...scheduleData,
+          inspectionSlots: {
+            createMany: {
+              data: slotsData,
+            },
+          },
+        },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
@@ -60,6 +70,32 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findMoveOutScheduleById error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findMoveOutScheduleWithSlotsById(
+    id: number,
+  ): Promise<MoveOutScheduleWithSlots> {
+    return await this.prismaService.moveOutSchedule
+      .findUniqueOrThrow({
+        where: { id },
+        include: {
+          inspectionSlots: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`MoveOutSchedule not found: ${id}`);
+            throw new NotFoundException(`Not Found Error`);
+          }
+          this.logger.error(
+            `findMoveOutScheduleWithSlotsById prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findMoveOutScheduleWithSlotsById error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

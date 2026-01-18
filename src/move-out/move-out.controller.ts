@@ -3,15 +3,13 @@ import {
   Controller,
   Post,
   UseGuards,
-  Patch,
   Param,
   ParseIntPipe,
   UseInterceptors,
   ClassSerializerInterceptor,
-  ValidationPipe,
-  UsePipes,
   UploadedFile,
   Query,
+  Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
@@ -29,12 +27,12 @@ import {
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
-import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { UploadExcelDto } from './dto/req/upload-excel.dto';
 import { CreateInspectionTargetsQueryDto } from './dto/req/create-inspection-targets-query.dto';
 import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
 import { Semester } from './types/semester.type';
+import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -54,7 +52,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Post()
+  @Post('schedule')
   async createMoveOutSchedule(
     @Body() createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutScheduleResDto> {
@@ -63,10 +61,9 @@ export class MoveOutController {
     );
   }
 
-  @ApiOperation({
+  /* @ApiOperation({
     summary: 'Update Move Out Schedule',
-    description:
-      'Update an existing move out schedule by ID. Only accessible by admins.',
+    description: 'Update an existing move out schedule by ID.',
   })
   @ApiOkResponse({
     description: 'The move out schedule has been successfully updated.',
@@ -78,7 +75,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Patch(':id')
+  @Patch('schedule/:id')
   @UsePipes(
     new ValidationPipe({
       skipMissingProperties: true,
@@ -95,6 +92,29 @@ export class MoveOutController {
       id,
       updateMoveOutScheduleDto,
     );
+  } */
+
+  @ApiOperation({
+    summary: 'Get Move Out Schedule with Slots',
+    description:
+      'Retrieve a specific move out schedule including its inspection slots by ID.',
+  })
+  @ApiOkResponse({
+    description:
+      'The move out schedule with slots has been successfully retrieved.',
+    type: MoveOutScheduleWithSlotsResDto,
+  })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiBadRequestResponse({ description: 'Invalid ID format' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('schedule/:id')
+  async findMoveOutScheduleWithSlots(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<MoveOutScheduleWithSlotsResDto> {
+    return await this.moveOutService.findMoveOutScheduleWithSlots(id);
   }
 
   @ApiOperation({
