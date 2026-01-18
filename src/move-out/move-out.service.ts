@@ -40,7 +40,8 @@ export class MoveOutService {
   async createMoveOutSchedule(
     createMoveOutScheduleDto: CreateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    // this.validateScheduleDates(createMoveOutScheduleDto);
+    this.validateScheduleAndRanges(createMoveOutScheduleDto);
+
     const targetCounts = this.calculateTargetCounts();
 
     const { inspectionTimeRange, ...scheduleData } = createMoveOutScheduleDto;
@@ -83,7 +84,7 @@ export class MoveOutService {
       ...updateMoveOutScheduleDto,
     };
 
-    this.validateScheduleDates(updatedMoveOutScheduleDates);
+    // this.validateScheduleAndRanges(updatedMoveOutScheduleDates);
 
     return await this.moveOutRepository.updateMoveOutSchedule(
       id,
@@ -269,15 +270,63 @@ export class MoveOutService {
     return Math.ceil(weightedTotalCount / totalSlots);
   }
 
-  private validateScheduleDates(
-    moveOutScheduleDates: MoveOutScheduleDates,
-  ): void {
-    const { applicationStartTime, applicationEndTime } = moveOutScheduleDates;
+  private validateScheduleAndRanges(scheduleData: {
+    applicationStartTime: Date;
+    applicationEndTime: Date;
+    inspectionTimeRange: InspectionTimeRangeDto[];
+  }): void {
+    const { applicationStartTime, applicationEndTime, inspectionTimeRange } =
+      scheduleData;
+
+    if (!inspectionTimeRange || inspectionTimeRange.length === 0) {
+      throw new BadRequestException('Inspection time range must be provided.');
+    }
+
+    inspectionTimeRange.sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    const inspectionStartTime = inspectionTimeRange[0].start;
+    const inspectionEndTime =
+      inspectionTimeRange[inspectionTimeRange.length - 1].end;
 
     if (applicationStartTime > applicationEndTime) {
       throw new BadRequestException(
         'Application start date cannot be after application end date',
       );
+    }
+    if (inspectionStartTime > inspectionEndTime) {
+      throw new BadRequestException(
+        'Inspection start date cannot be after inspection end date',
+      );
+    }
+    if (applicationStartTime > inspectionStartTime) {
+      throw new BadRequestException(
+        'Application start date cannot be after inspection start date',
+      );
+    }
+    if (applicationEndTime > inspectionEndTime) {
+      throw new BadRequestException(
+        'Application end date cannot be after inspection end date',
+      );
+    }
+
+    for (let i = 0; i < inspectionTimeRange.length; i++) {
+      const currentStartTime = inspectionTimeRange[i].start.getTime();
+      const currentEndTime = inspectionTimeRange[i].end.getTime();
+
+      if (currentStartTime >= currentEndTime) {
+        throw new BadRequestException(
+          `Inspection range #${i + 1}: start time must be before end time.`,
+        );
+      }
+
+      if (i > 0) {
+        const prevEnd = inspectionTimeRange[i - 1].end.getTime();
+        if (currentStartTime < prevEnd) {
+          throw new BadRequestException(
+            'Inspection time ranges must not overlap.',
+          );
+        }
+      }
     }
   }
 
