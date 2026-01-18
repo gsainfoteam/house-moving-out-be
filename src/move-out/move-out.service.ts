@@ -284,6 +284,26 @@ export class MoveOutService {
 
     inspectionTimeRange.sort((a, b) => a.start.getTime() - b.start.getTime());
 
+    for (let i = 0; i < inspectionTimeRange.length; i++) {
+      const currentStartTime = inspectionTimeRange[i].start.getTime();
+      const currentEndTime = inspectionTimeRange[i].end.getTime();
+
+      if (currentStartTime >= currentEndTime) {
+        throw new BadRequestException(
+          `Inspection range #${i + 1}: start time must be before end time.`,
+        );
+      }
+
+      if (i > 0) {
+        const prevEnd = inspectionTimeRange[i - 1].end.getTime();
+        if (currentStartTime < prevEnd) {
+          throw new BadRequestException(
+            'Inspection time ranges must not overlap.',
+          );
+        }
+      }
+    }
+
     const inspectionStartTime = inspectionTimeRange[0].start;
     const inspectionEndTime =
       inspectionTimeRange[inspectionTimeRange.length - 1].end;
@@ -307,26 +327,6 @@ export class MoveOutService {
       throw new BadRequestException(
         'Application end date cannot be after inspection end date',
       );
-    }
-
-    for (let i = 0; i < inspectionTimeRange.length; i++) {
-      const currentStartTime = inspectionTimeRange[i].start.getTime();
-      const currentEndTime = inspectionTimeRange[i].end.getTime();
-
-      if (currentStartTime >= currentEndTime) {
-        throw new BadRequestException(
-          `Inspection range #${i + 1}: start time must be before end time.`,
-        );
-      }
-
-      if (i > 0) {
-        const prevEnd = inspectionTimeRange[i - 1].end.getTime();
-        if (currentStartTime < prevEnd) {
-          throw new BadRequestException(
-            'Inspection time ranges must not overlap.',
-          );
-        }
-      }
     }
   }
 
