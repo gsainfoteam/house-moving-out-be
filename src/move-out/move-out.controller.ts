@@ -3,13 +3,10 @@ import {
   Controller,
   Post,
   UseGuards,
-  Patch,
   Param,
   ParseIntPipe,
   UseInterceptors,
   ClassSerializerInterceptor,
-  ValidationPipe,
-  UsePipes,
   UploadedFile,
   Query,
   Get,
@@ -30,7 +27,6 @@ import {
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
-import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { UploadExcelDto } from './dto/req/upload-excel.dto';
 import { CreateInspectionTargetsQueryDto } from './dto/req/create-inspection-targets-query.dto';
@@ -65,7 +61,7 @@ export class MoveOutController {
     );
   }
 
-  @ApiOperation({
+  /* @ApiOperation({
     summary: 'Update Move Out Schedule',
     description: 'Update an existing move out schedule by ID.',
   })
@@ -96,7 +92,7 @@ export class MoveOutController {
       id,
       updateMoveOutScheduleDto,
     );
-  }
+  } */
 
   @ApiOperation({
     summary: 'Get Move Out Schedule with Slots',

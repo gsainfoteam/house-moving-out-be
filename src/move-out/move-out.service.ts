@@ -5,8 +5,6 @@ import {
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
 import { MoveOutSchedule, Season } from 'generated/prisma/client';
-import { MoveOutScheduleDates } from './types/move-out-schedule-dates.type';
-import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { Semester } from './types/semester.type';
 import {
   CreateMoveOutScheduleDto,
@@ -72,7 +70,7 @@ export class MoveOutService {
     );
   }
 
-  async updateMoveOutSchedule(
+  /* async updateMoveOutSchedule(
     id: number,
     updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
@@ -84,13 +82,13 @@ export class MoveOutService {
       ...updateMoveOutScheduleDto,
     };
 
-    // this.validateScheduleAndRanges(updatedMoveOutScheduleDates);
+    this.validateScheduleAndRanges(updatedMoveOutScheduleDates);
 
     return await this.moveOutRepository.updateMoveOutSchedule(
       id,
       updateMoveOutScheduleDto,
     );
-  }
+  } */
 
   async findMoveOutScheduleWithSlots(
     id: number,
