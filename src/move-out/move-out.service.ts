@@ -272,9 +272,9 @@ export class MoveOutService {
   private validateScheduleDates(
     moveOutScheduleDates: MoveOutScheduleDates,
   ): void {
-    const { applicationStartDate, applicationEndDate } = moveOutScheduleDates;
+    const { applicationStartTime, applicationEndTime } = moveOutScheduleDates;
 
-    if (applicationStartDate > applicationEndDate) {
+    if (applicationStartTime > applicationEndTime) {
       throw new BadRequestException(
         'Application start date cannot be after application end date',
       );

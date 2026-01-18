@@ -1,4 +1,4 @@
 export type MoveOutScheduleDates = {
-  applicationStartDate: Date;
-  applicationEndDate: Date;
+  applicationStartTime: Date;
+  applicationEndTime: Date;
 };
