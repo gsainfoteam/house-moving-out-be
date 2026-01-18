@@ -129,10 +129,8 @@ enum Season {
 model MoveOutSchedule {
   id                   Int              @id @default(autoincrement())
   title                String
-  applicationStartDate DateTime         @map("application_start_date") @db.Date
-  applicationEndDate   DateTime         @map("application_end_date") @db.Date
-  inspectionStartDate  DateTime         @map("inspection_start_date") @db.Date
-  inspectionEndDate    DateTime         @map("inspection_end_date") @db.Date
+  applicationStartTime DateTime         @map("application_start_time")
+  applicationEndTime   DateTime         @map("application_end_time")
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at")
   inspectionSlots      InspectionSlot[]
