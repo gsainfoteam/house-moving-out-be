@@ -10,12 +10,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { InspectorService } from './inspector.service';
@@ -38,6 +43,8 @@ export class InspectorController {
     description: 'List of Inspectors',
     type: [InspectorResDto],
   })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Get()
@@ -53,6 +60,10 @@ export class InspectorController {
     description: 'Success',
     type: Number,
   })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiConflictResponse({ description: 'Conflict' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Post()
@@ -68,6 +79,10 @@ export class InspectorController {
     description: 'Inspector Information',
     type: InspectorResDto,
   })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Get(':id')
@@ -85,6 +100,10 @@ export class InspectorController {
     description: 'Inspector information has been successfully updated.',
     type: InspectorResDto,
   })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Patch(':id')
@@ -105,6 +124,10 @@ export class InspectorController {
   @ApiNoContentResponse({
     description: 'Deleted Successfully',
   })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Delete(':id')
