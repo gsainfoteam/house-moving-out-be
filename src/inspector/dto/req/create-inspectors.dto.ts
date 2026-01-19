@@ -2,13 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsDate,
   IsEmail,
   IsString,
+  IsUUID,
   ValidateNested,
 } from 'class-validator';
 
-class InspectorDto {
+export class InspectorDto {
   @ApiProperty({
     example: 'email@gm.gist.ac.kr',
     description: 'Inspector email',
@@ -31,14 +31,13 @@ class InspectorDto {
   studentNumber: string;
 
   @ApiProperty({
-    example: ['2025-01-01T10:00:00.000Z', '2025-01-02T14:00:00.000Z'],
-    description: 'Available inspection times',
-    type: [Date],
+    example: ['1', '2'],
+    description: 'Available inspection slot IDs',
+    type: [String],
   })
   @IsArray()
-  @IsDate({ each: true })
-  @Type(() => Date)
-  availableTimes: Date[];
+  @IsUUID('all', { each: true })
+  availableSlotIds: number[];
 }
 
 export class CreateInspectorsDto {

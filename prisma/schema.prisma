@@ -175,7 +175,7 @@ model InspectionTarget {
 }
 
 model InspectionSlot {
-  id            String          @id @default(uuid())
+  id            Int             @id @default(autoincrement())
   scheduleId    Int             @map("schedule_id")
   schedule      MoveOutSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   startTime     DateTime        @map("start_time")
@@ -183,16 +183,30 @@ model InspectionSlot {
   maxCapacity   Int             @default(0) @map("max_capacity")
   reservedCount Int             @default(0) @map("reserved_count")
 
+  inspectors InspectorAvailableSlot[]
+
   @@index([scheduleId, startTime])
   @@map("inspection_slot")
 }
 
+model InspectorAvailableSlot {
+  inspectorUuid    String @map("inspector_id")
+  inspectionSlotId Int    @map("inspection_slot_id")
+
+  inspector      Inspector      @relation(fields: [inspectorUuid], references: [uuid], onDelete: Cascade)
+  inspectionSlot InspectionSlot @relation(fields: [inspectionSlotId], references: [id], onDelete: Cascade)
+
+  @@id([inspectorUuid, inspectionSlotId])
+  @@map("inspector_available_slot")
+}
+
 model Inspector {
-  uuid           String     @id @default(uuid())
-  name           String
-  email          String     @unique
-  studentNumber  String     @map("student_number")
-  availableTimes DateTime[] @map("available_times")
+  uuid          String @id @default(uuid())
+  name          String
+  email         String @unique
+  studentNumber String @map("student_number")
+
+  availableSlots InspectorAvailableSlot[]
 
   @@map("inspector")
 }

@@ -26,9 +26,9 @@ export class InspectorResDto {
   studentNumber: string;
 
   @ApiProperty({
-    example: ['2026-01-01T10:00:00.000Z', '2026-01-02T14:00:00.000Z'],
+    example: ['1', '2'],
     description: 'Available inspection times',
-    type: [Date],
+    type: [String],
   })
-  availableTimes: Date[];
+  availableSlotIds: number[];
 }

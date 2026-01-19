@@ -6,37 +6,85 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@lib/prisma';
-import { Inspector, Prisma } from 'generated/prisma/client';
+import { Inspector, Prisma, InspectionSlot } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { TransactionClient } from 'generated/prisma/internal/prismaNamespace';
 
 @Injectable()
 export class InspectorRepository {
   private readonly logger = new Logger(InspectorRepository.name);
   constructor(private readonly prismaService: PrismaService) {}
 
-  async findAllInspectors(): Promise<Inspector[]> {
-    return await this.prismaService.inspector.findMany().catch((error) => {
+  async findAllInspectors(): Promise<
+    (Inspector & {
+      availableSlots: {
+        inspectionSlot: InspectionSlot;
+      }[];
+    })[]
+  > {
+    return await this.prismaService.inspector
+      .findMany({
+        include: {
+          availableSlots: {
+            include: {
+              inspectionSlot: true,
+            },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(`findAllInspectors prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findAllInspectors error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async createInspectorsInTx(
+    inspector: Prisma.InspectorCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return await tx.inspector.create({ data: inspector }).catch((error) => {
       if (error instanceof PrismaClientKnownRequestError) {
-        this.logger.error(`findAllInspectors prisma error: ${error.message}`);
+        if (error.code === 'P2002') {
+          this.logger.debug(`Conflict email: ${error.message}`);
+          throw new ConflictException('Conflict Error');
+        }
+        if (error.code === 'P2025') {
+          this.logger.debug(`Inspection slot not found: ${error.message}`);
+          throw new NotFoundException(`Inspection slot not found`);
+        }
+        this.logger.error(`createInspectors prisma error: ${error.message}`);
         throw new InternalServerErrorException('Database Error');
       }
-      this.logger.error(`findAllInspectors error: ${error}`);
+      this.logger.error(`createInspectors error: ${error}`);
       throw new InternalServerErrorException('Unknown Error');
     });
   }
 
-  async createInspectors(
-    inspectors: Prisma.InspectorCreateManyInput[],
+  async connectInspectorAndSlotsInTx(
+    inspectorUuid: string,
+    inspectionSlotIds: number[],
+    tx: Prisma.TransactionClient,
   ): Promise<void> {
-    await this.prismaService.inspector
+    await tx.inspectorAvailableSlot
       .createMany({
-        data: inspectors,
+        data: inspectionSlotIds.map((inspectionSlotId) => ({
+          inspectorUuid,
+          inspectionSlotId,
+        })),
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             this.logger.debug(`Conflict email: ${error.message}`);
             throw new ConflictException('Conflict Error');
+          }
+          if (error.code === 'P2025') {
+            this.logger.debug(`Inspection slot not found: ${error.message}`);
+            throw new NotFoundException(`Inspection slot not found`);
           }
           this.logger.error(`createInspectors prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
@@ -46,10 +94,23 @@ export class InspectorRepository {
       });
   }
 
-  async findInspector(uuid: string): Promise<Inspector> {
+  async findInspector(uuid: string): Promise<
+    Inspector & {
+      availableSlots: {
+        inspectionSlot: InspectionSlot;
+      }[];
+    }
+  > {
     return await this.prismaService.inspector
       .findUniqueOrThrow({
         where: { uuid },
+        include: {
+          availableSlots: {
+            include: {
+              inspectionSlot: true,
+            },
+          },
+        },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
@@ -61,31 +122,6 @@ export class InspectorRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findInspector error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async updateInspector(
-    uuid: string,
-    availableTimes: Date[],
-  ): Promise<Inspector> {
-    return await this.prismaService.inspector
-      .update({
-        where: { uuid },
-        data: {
-          availableTimes,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`Inspector not found: ${uuid}`);
-            throw new NotFoundException(`Not Found Error`);
-          }
-          this.logger.error(`updateInspector prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`updateInspector error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -105,6 +141,32 @@ export class InspectorRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`deleteInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteInspectorAvailableSlotsInTx(
+    inspectorUuid: string,
+    tx: TransactionClient,
+  ): Promise<void> {
+    await tx.inspectorAvailableSlot
+      .deleteMany({
+        where: { inspectorUuid },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `Inspector Available Slot not found: ${error.message}`,
+            );
+            throw new NotFoundException(`Not Found Error`);
+          }
+          this.logger.error(
+            `deleteInspectorAvailableSlotsInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteInspectorAvailableSlotsInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
