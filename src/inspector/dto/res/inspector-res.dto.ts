@@ -26,9 +26,12 @@ export class InspectorResDto {
   studentNumber: string;
 
   @ApiProperty({
-    example: ['1', '2'],
+    example: [
+      'd3b07384-d9a1-4f5c-8e2e-1234567890ab',
+      'e4d909c2-7d2a-4f5c-9e3e-0987654321ba',
+    ],
     description: 'Available inspection times',
     type: [String],
   })
-  availableSlotIds: number[];
+  availableSlotIds: string[];
 }

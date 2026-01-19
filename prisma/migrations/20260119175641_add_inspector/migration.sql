@@ -1,20 +1,7 @@
-/*
-  Warnings:
-
-  - The primary key for the `inspection_slot` table will be changed. If it partially fails, the table could be left without primary key constraint.
-  - The `id` column on the `inspection_slot` table would be dropped and recreated. This will lead to data loss if there is data in the column.
-
-*/
--- AlterTable
-ALTER TABLE "inspection_slot" DROP CONSTRAINT "inspection_slot_pkey",
-DROP COLUMN "id",
-ADD COLUMN     "id" SERIAL NOT NULL,
-ADD CONSTRAINT "inspection_slot_pkey" PRIMARY KEY ("id");
-
 -- CreateTable
 CREATE TABLE "inspector_available_slot" (
     "inspector_id" TEXT NOT NULL,
-    "inspection_slot_id" INTEGER NOT NULL,
+    "inspection_slot_id" TEXT NOT NULL,
 
     CONSTRAINT "inspector_available_slot_pkey" PRIMARY KEY ("inspector_id","inspection_slot_id")
 );

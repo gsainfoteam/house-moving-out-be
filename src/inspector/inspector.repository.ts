@@ -61,7 +61,7 @@ export class InspectorRepository {
 
   async connectInspectorAndSlotsInTx(
     inspectorUuid: string,
-    inspectionSlotIds: number[],
+    inspectionSlotIds: string[],
     tx: PrismaTransaction,
   ): Promise<void> {
     await tx.inspectorAvailableSlot

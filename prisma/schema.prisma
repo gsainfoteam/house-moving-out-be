@@ -175,7 +175,7 @@ model InspectionTarget {
 }
 
 model InspectionSlot {
-  id            Int             @id @default(autoincrement())
+  id            String          @id @default(uuid())
   scheduleId    Int             @map("schedule_id")
   schedule      MoveOutSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   startTime     DateTime        @map("start_time")
@@ -191,7 +191,7 @@ model InspectionSlot {
 
 model InspectorAvailableSlot {
   inspectorUuid    String @map("inspector_id")
-  inspectionSlotId Int    @map("inspection_slot_id")
+  inspectionSlotId String @map("inspection_slot_id")
 
   inspector      Inspector      @relation(fields: [inspectorUuid], references: [uuid], onDelete: Cascade)
   inspectionSlot InspectionSlot @relation(fields: [inspectionSlotId], references: [id], onDelete: Cascade)
