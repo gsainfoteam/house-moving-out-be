@@ -186,3 +186,13 @@ model InspectionSlot {
   @@index([scheduleId, startTime])
   @@map("inspection_slot")
 }
+
+model Inspector {
+  uuid            String     @id @default(uuid())
+  name            String
+  email           String     @unique
+  studentNumber   String     @map("student_number")
+  inspectionTimes DateTime[] @map("inspection_times") @db.Time(2)
+
+  @@map("inspector")
+}
