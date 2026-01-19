@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -8,6 +9,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -19,7 +21,6 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
@@ -28,9 +29,7 @@ import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 
-@ApiTags('inspector')
-@ApiBearerAuth('admin')
-@UseGuards(AdminGuard)
+@UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
 export class InspectorController {
   constructor(private readonly inspectorService: InspectorService) {}

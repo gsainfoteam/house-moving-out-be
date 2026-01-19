@@ -5,7 +5,9 @@ import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class InspectorService {
   constructor(
@@ -15,26 +17,19 @@ export class InspectorService {
 
   async getInspectors(): Promise<InspectorResDto[]> {
     const inspectors = await this.inspectorRepository.findAllInspectors();
-    return inspectors.map((inspector) => {
-      return {
-        ...inspector,
-        availableSlotIds: inspector.availableSlots.map(
-          (slot) => slot.inspectionSlot.id,
-        ),
-      };
-    });
+    return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
   async createInspectors({ inspectors }: CreateInspectorsDto): Promise<void> {
     await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
-      for (const inspector of inspectors) {
+      for (const { availableSlotIds, ...inspector } of inspectors) {
         const { uuid } = await this.inspectorRepository.createInspectorsInTx(
           inspector,
           tx,
         );
         await this.inspectorRepository.connectInspectorAndSlotsInTx(
           uuid,
-          inspector.availableSlotIds,
+          availableSlotIds,
           tx,
         );
       }
@@ -43,12 +38,7 @@ export class InspectorService {
 
   async getInspector(uuid: string): Promise<InspectorResDto> {
     const inspector = await this.inspectorRepository.findInspector(uuid);
-    return {
-      ...inspector,
-      availableSlotIds: inspector.availableSlots.map(
-        (slot) => slot.inspectionSlot.id,
-      ),
-    };
+    return new InspectorResDto(inspector);
   }
 
   async updateInspector(

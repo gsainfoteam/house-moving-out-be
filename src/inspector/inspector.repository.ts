@@ -10,7 +10,9 @@ import { Prisma } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { InspectorWithSlots } from './types/inspector-with-slots.type';
 import { PrismaTransaction } from 'src/common/types';
+import { Loggable } from '@lib/logger';
 
+@Loggable()
 @Injectable()
 export class InspectorRepository {
   private readonly logger = new Logger(InspectorRepository.name);
