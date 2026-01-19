@@ -8,8 +8,8 @@ import {
 import { PrismaService } from '@lib/prisma';
 import { Prisma } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { TransactionClient } from 'generated/prisma/internal/prismaNamespace';
 import { InspectorWithSlots } from './types/inspector-with-slots.type';
+import { PrismaTransaction } from 'src/common/types';
 
 @Injectable()
 export class InspectorRepository {
@@ -39,7 +39,7 @@ export class InspectorRepository {
 
   async createInspectorsInTx(
     inspector: Prisma.InspectorCreateInput,
-    tx: Prisma.TransactionClient,
+    tx: PrismaTransaction,
   ) {
     return await tx.inspector.create({ data: inspector }).catch((error) => {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -62,7 +62,7 @@ export class InspectorRepository {
   async connectInspectorAndSlotsInTx(
     inspectorUuid: string,
     inspectionSlotIds: number[],
-    tx: Prisma.TransactionClient,
+    tx: PrismaTransaction,
   ): Promise<void> {
     await tx.inspectorAvailableSlot
       .createMany({
@@ -136,7 +136,7 @@ export class InspectorRepository {
 
   async deleteInspectorAvailableSlotsInTx(
     inspectorUuid: string,
-    tx: TransactionClient,
+    tx: PrismaTransaction,
   ): Promise<void> {
     await tx.inspectorAvailableSlot
       .deleteMany({
@@ -144,12 +144,6 @@ export class InspectorRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(
-              `Inspector Available Slot not found: ${error.message}`,
-            );
-            throw new NotFoundException(`Not Found Error`);
-          }
           this.logger.error(
             `deleteInspectorAvailableSlotsInTx prisma error: ${error.message}`,
           );
