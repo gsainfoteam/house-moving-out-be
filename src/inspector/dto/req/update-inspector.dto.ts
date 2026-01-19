@@ -5,5 +5,5 @@ export class UpdateInspectorDto {
   @IsArray()
   @IsDate({ each: true })
   @Type(() => Date)
-  inspectionTimes: Date[];
+  availableTimes: Date[];
 }

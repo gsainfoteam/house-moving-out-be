@@ -8,19 +8,23 @@ import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 export class InspectorService {
   constructor(private readonly inspectorRepository: InspectorRepository) {}
 
-  async createInspectors({ inspectors }: CreateInspectorsDto): Promise<void> {
-    await this.inspectorRepository.createInspectors(inspectors);
-  }
-
   async getInspectors(): Promise<InspectorResDto[]> {
     return await this.inspectorRepository.findAllInspectors();
   }
 
+  async createInspectors({ inspectors }: CreateInspectorsDto): Promise<void> {
+    await this.inspectorRepository.createInspectors(inspectors);
+  }
+
+  async getInspector(uuid: string): Promise<InspectorResDto> {
+    return await this.inspectorRepository.findInspector(uuid);
+  }
+
   async updateInspector(
     uuid: string,
-    { inspectionTimes }: UpdateInspectorDto,
+    { availableTimes }: UpdateInspectorDto,
   ): Promise<void> {
-    await this.inspectorRepository.updateInspector(uuid, inspectionTimes);
+    await this.inspectorRepository.updateInspector(uuid, availableTimes);
   }
 
   async deleteInspector(uuid: string): Promise<void> {

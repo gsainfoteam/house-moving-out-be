@@ -31,6 +31,21 @@ export class InspectorController {
   constructor(private readonly inspectorService: InspectorService) {}
 
   @ApiOperation({
+    summary: 'Get All Inspectors',
+    description: 'Get a list of all inspectors.',
+  })
+  @ApiOkResponse({
+    description: 'List of Inspectors',
+    type: [InspectorResDto],
+  })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get()
+  async getInspectors(): Promise<InspectorResDto[]> {
+    return await this.inspectorService.getInspectors();
+  }
+
+  @ApiOperation({
     summary: 'Register Inspectors',
     description: 'Register Inspectors in bulk.',
   })
@@ -42,36 +57,45 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Post()
   async createInspectors(@Body() dto: CreateInspectorsDto): Promise<void> {
-    return this.inspectorService.createInspectors(dto);
+    return await this.inspectorService.createInspectors(dto);
   }
 
   @ApiOperation({
-    summary: '담당자 목록 조회',
-    description: '모든 담당자 목록을 조회합니다.',
+    summary: 'Get a Inspectors',
+    description: 'Get an inspector by ID.',
   })
   @ApiOkResponse({
-    description: '담당자 목록이 성공적으로 조회되었습니다.',
-    type: [InspectorResDto],
-  })
-  @Get()
-  async getInspectors(): Promise<InspectorResDto[]> {
-    return this.inspectorService.getInspectors();
-  }
-
-  @ApiOperation({
-    summary: '담당자 정보 수정',
-    description: '담당자의 정보를 수정합니다.',
-  })
-  @ApiOkResponse({
-    description: '담당자 정보가 성공적으로 수정되었습니다.',
+    description: 'Inspector Information',
     type: InspectorResDto,
   })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get(':id')
+  async getInspector(
+    @Param('id', ParseUUIDPipe) uuid: string,
+  ): Promise<InspectorResDto> {
+    return await this.inspectorService.getInspector(uuid);
+  }
+
+  @ApiOperation({
+    summary: 'Update Inspector',
+    description: 'Update an inspection time of inspector by ID.',
+  })
+  @ApiOkResponse({
+    description: 'Inspector information has been successfully updated.',
+    type: InspectorResDto,
+  })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
   @Patch(':id')
   async updateInspector(
     @Param('id', ParseUUIDPipe) uuid: string,
     @Body() updateInspectorDto: UpdateInspectorDto,
   ): Promise<void> {
-    return this.inspectorService.updateInspector(uuid, updateInspectorDto);
+    return await this.inspectorService.updateInspector(
+      uuid,
+      updateInspectorDto,
+    );
   }
 
   @ApiOperation({
@@ -81,10 +105,12 @@ export class InspectorController {
   @ApiNoContentResponse({
     description: 'Deleted Successfully',
   })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
   @Delete(':id')
   async deleteInspector(
     @Param('id', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
-    return this.inspectorService.deleteInspector(uuid);
+    return await this.inspectorService.deleteInspector(uuid);
   }
 }

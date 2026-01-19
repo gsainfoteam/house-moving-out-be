@@ -20,7 +20,7 @@ class InspectorDto {
   @IsArray()
   @IsDate({ each: true })
   @Type(() => Date)
-  inspectionTimes: Date[];
+  availableTimes: Date[];
 }
 
 export class CreateInspectorsDto {

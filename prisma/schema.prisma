@@ -188,11 +188,11 @@ model InspectionSlot {
 }
 
 model Inspector {
-  uuid            String     @id @default(uuid())
-  name            String
-  email           String     @unique
-  studentNumber   String     @map("student_number")
-  inspectionTimes DateTime[] @map("inspection_times") @db.Time(2)
+  uuid           String     @id @default(uuid())
+  name           String
+  email          String     @unique
+  studentNumber  String     @map("student_number")
+  availableTimes DateTime[] @map("available_times")
 
   @@map("inspector")
 }

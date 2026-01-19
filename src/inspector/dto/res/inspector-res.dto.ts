@@ -3,5 +3,5 @@ export class InspectorResDto {
   name: string;
   email: string;
   studentNumber: string;
-  inspectionTimes: Date[];
+  availableTimes: Date[];
 }
