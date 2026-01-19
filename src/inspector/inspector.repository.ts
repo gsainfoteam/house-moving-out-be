@@ -6,22 +6,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@lib/prisma';
-import { Inspector, Prisma, InspectionSlot } from 'generated/prisma/client';
+import { Prisma } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { TransactionClient } from 'generated/prisma/internal/prismaNamespace';
+import { InspectorWithSlots } from './types/inspector-with-slots.type';
 
 @Injectable()
 export class InspectorRepository {
   private readonly logger = new Logger(InspectorRepository.name);
   constructor(private readonly prismaService: PrismaService) {}
 
-  async findAllInspectors(): Promise<
-    (Inspector & {
-      availableSlots: {
-        inspectionSlot: InspectionSlot;
-      }[];
-    })[]
-  > {
+  async findAllInspectors(): Promise<InspectorWithSlots[]> {
     return await this.prismaService.inspector
       .findMany({
         include: {
@@ -94,13 +89,7 @@ export class InspectorRepository {
       });
   }
 
-  async findInspector(uuid: string): Promise<
-    Inspector & {
-      availableSlots: {
-        inspectionSlot: InspectionSlot;
-      }[];
-    }
-  > {
+  async findInspector(uuid: string): Promise<InspectorWithSlots> {
     return await this.prismaService.inspector
       .findUniqueOrThrow({
         where: { uuid },
