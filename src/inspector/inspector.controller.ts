@@ -17,7 +17,6 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
-  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -57,7 +56,6 @@ export class InspectorController {
   })
   @ApiCreatedResponse({
     description: 'Success',
-    type: Number,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -120,7 +118,7 @@ export class InspectorController {
     summary: 'Delete Inspector',
     description: 'Delete an inspector by ID.',
   })
-  @ApiNoContentResponse({
+  @ApiOkResponse({
     description: 'Deleted Successfully',
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })

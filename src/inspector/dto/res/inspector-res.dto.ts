@@ -37,11 +37,9 @@ export class InspectorResDto {
     description: 'Available inspection times',
     type: [InspectionSlotResDto],
   })
-  @Transform(({ value }: { value: { inspectionSlot: InspectionSlot }[] }) => {
-    const data = value.map((slot) => slot.inspectionSlot);
-    console.log(value);
-    return data;
-  })
+  @Transform(({ value }: { value: { inspectionSlot: InspectionSlot }[] }) =>
+    value.map((slot) => slot.inspectionSlot),
+  )
   availableSlots: InspectionSlotResDto[] | { inspectionSlot: InspectionSlot }[];
 
   @Exclude()
