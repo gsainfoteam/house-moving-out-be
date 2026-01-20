@@ -49,10 +49,6 @@ export class InspectorRepository {
           this.logger.debug(`Conflict email: ${error.message}`);
           throw new ConflictException('Conflict Error');
         }
-        if (error.code === 'P2025') {
-          this.logger.debug(`Inspection slot not found: ${error.message}`);
-          throw new NotFoundException(`Inspection slot not found`);
-        }
         this.logger.error(`createInspectors prisma error: ${error.message}`);
         throw new InternalServerErrorException('Database Error');
       }
@@ -75,11 +71,7 @@ export class InspectorRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2002') {
-            this.logger.debug(`Conflict email: ${error.message}`);
-            throw new ConflictException('Conflict Error');
-          }
-          if (error.code === 'P2025') {
+          if (error.code === 'P2003') {
             this.logger.debug(`Inspection slot not found: ${error.message}`);
             throw new NotFoundException(`Inspection slot not found`);
           }

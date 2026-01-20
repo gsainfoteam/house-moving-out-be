@@ -95,7 +95,6 @@ export class InspectorController {
   })
   @ApiOkResponse({
     description: 'Inspector information has been successfully updated.',
-    type: InspectorResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
