@@ -184,20 +184,20 @@ model InspectionTargetInfo {
 }
 
 model InspectionSlot {
-  uuid                   String                  @id @default(uuid())
-  scheduleId             Int                     @map("schedule_id")
-  startTime              DateTime                @map("start_time")
-  endTime                DateTime                @map("end_time")
-  maxCapacity            Int                     @default(0) @map("max_capacity")
-  reservedCount          Int                     @default(0) @map("reserved_count")
-  maleCapacity           Int                     @default(0) @map("male_capacity")
-  femaleCapacity         Int                     @default(0) @map("female_capacity")
-  maleReservedCount      Int                     @default(0) @map("male_reserved_count")
-  femaleReservedCount    Int                     @default(0) @map("female_reserved_count")
+  uuid                String   @id @default(uuid())
+  scheduleId          Int      @map("schedule_id")
+  startTime           DateTime @map("start_time")
+  endTime             DateTime @map("end_time")
+  maxCapacity         Int      @default(0) @map("max_capacity")
+  reservedCount       Int      @default(0) @map("reserved_count")
+  maleCapacity        Int      @default(0) @map("male_capacity")
+  femaleCapacity      Int      @default(0) @map("female_capacity")
+  maleReservedCount   Int      @default(0) @map("male_reserved_count")
+  femaleReservedCount Int      @default(0) @map("female_reserved_count")
 
   inspectionApplications InspectionApplication[]
-  inspectors InspectorAvailableSlot[]
-  schedule MoveOutSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  inspectors             InspectorAvailableSlot[]
+  schedule               MoveOutSchedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
   @@index([scheduleId, startTime])
   @@map("inspection_slot")
