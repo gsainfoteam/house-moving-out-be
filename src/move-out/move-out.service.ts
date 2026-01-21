@@ -536,10 +536,6 @@ export class MoveOutService {
           tx,
         );
 
-        if (!slot) {
-          throw new NotFoundException('Inspection slot not found.');
-        }
-
         if (slot.reservedCount >= slot.maxCapacity) {
           throw new ConflictException('Inspection slot is already full.');
         }

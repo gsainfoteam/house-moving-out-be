@@ -344,13 +344,17 @@ export class MoveOutRepository {
   async findInspectionSlotByUuidInTx(
     slotUuid: string,
     tx: PrismaTransaction,
-  ): Promise<InspectionSlot | null> {
+  ): Promise<InspectionSlot> {
     return await tx.inspectionSlot
-      .findUnique({
+      .findUniqueOrThrow({
         where: { uuid: slotUuid },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
+            throw new NotFoundException('Inspection slot not found.');
+          }
           this.logger.error(
             `findInspectionSlotByUuidInTx prisma error: ${error.message}`,
           );
@@ -387,6 +391,10 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
+            throw new NotFoundException('Inspection slot not found.');
+          }
           this.logger.error(
             `incrementSlotReservedCountInTx prisma error: ${error.message}`,
           );
@@ -423,6 +431,10 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
+            throw new NotFoundException('Inspection slot not found.');
+          }
           this.logger.error(
             `decrementSlotReservedCountInTx prisma error: ${error.message}`,
           );
