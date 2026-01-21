@@ -493,10 +493,6 @@ export class MoveOutService {
             tx,
           );
 
-        if (!schedule) {
-          throw new NotFoundException('Inspection schedule not found.');
-        }
-
         const now = new Date();
         if (now < schedule.applicationStartTime) {
           throw new ForbiddenException(
