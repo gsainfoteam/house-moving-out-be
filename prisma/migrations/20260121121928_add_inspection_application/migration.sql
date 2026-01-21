@@ -155,6 +155,24 @@ CREATE TABLE "inspection_application" (
     CONSTRAINT "inspection_application_pkey" PRIMARY KEY ("uuid")
 );
 
+-- CreateTable
+CREATE TABLE "inspector_available_slot" (
+    "inspector_uuid" TEXT NOT NULL,
+    "inspection_slot_uuid" TEXT NOT NULL,
+
+    CONSTRAINT "inspector_available_slot_pkey" PRIMARY KEY ("inspector_uuid","inspection_slot_uuid")
+);
+
+-- CreateTable
+CREATE TABLE "inspector" (
+    "uuid" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "student_number" TEXT NOT NULL,
+
+    CONSTRAINT "inspector_pkey" PRIMARY KEY ("uuid")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "admin_email_key" ON "admin"("email");
 
@@ -218,6 +236,9 @@ CREATE INDEX "inspection_application_inspection_slot_uuid_idx" ON "inspection_ap
 -- CreateIndex
 CREATE UNIQUE INDEX "inspection_application_inspection_target_info_uuid_key" ON "inspection_application"("inspection_target_info_uuid");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "inspector_email_key" ON "inspector"("email");
+
 -- AddForeignKey
 ALTER TABLE "admin_refresh_token" ADD CONSTRAINT "admin_refresh_token_admin_uuid_fkey" FOREIGN KEY ("admin_uuid") REFERENCES "admin"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -253,3 +274,9 @@ ALTER TABLE "inspection_application" ADD CONSTRAINT "inspection_application_insp
 
 -- AddForeignKey
 ALTER TABLE "inspection_application" ADD CONSTRAINT "inspection_application_inspection_slot_uuid_fkey" FOREIGN KEY ("inspection_slot_uuid") REFERENCES "inspection_slot"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inspector_available_slot" ADD CONSTRAINT "inspector_available_slot_inspector_uuid_fkey" FOREIGN KEY ("inspector_uuid") REFERENCES "inspector"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inspector_available_slot" ADD CONSTRAINT "inspector_available_slot_inspection_slot_uuid_fkey" FOREIGN KEY ("inspection_slot_uuid") REFERENCES "inspection_slot"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
