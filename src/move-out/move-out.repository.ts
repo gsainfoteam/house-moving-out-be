@@ -241,10 +241,7 @@ export class MoveOutRepository {
         data: inspectionTargetInfos.map((target) => ({
           currentSemesterUuid,
           nextSemesterUuid,
-          houseName: target.houseName,
-          roomNumber: target.roomNumber,
-          studentName: target.studentName,
-          admissionYear: target.admissionYear,
+          ...target,
         })),
       })
       .catch((error) => {
