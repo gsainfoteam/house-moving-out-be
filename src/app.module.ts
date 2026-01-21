@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { MoveOutModule } from './move-out/move-out.module';
 import { LoggerModule } from '@lib/logger';
+import { InspectorModule } from './inspector/inspector.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { LoggerModule } from '@lib/logger';
     AuthModule,
     MoveOutModule,
     LoggerModule,
+    InspectorModule,
   ],
   controllers: [],
   providers: [],

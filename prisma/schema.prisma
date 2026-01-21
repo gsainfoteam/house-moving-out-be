@@ -194,8 +194,9 @@ model InspectionSlot {
   femaleCapacity         Int                     @default(0) @map("female_capacity")
   maleReservedCount      Int                     @default(0) @map("male_reserved_count")
   femaleReservedCount    Int                     @default(0) @map("female_reserved_count")
-  inspectionApplications InspectionApplication[]
 
+  inspectionApplications InspectionApplication[]
+  inspectors InspectorAvailableSlot[]
   schedule MoveOutSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
   @@index([scheduleId, startTime])
@@ -220,4 +221,26 @@ model InspectionApplication {
   @@index([inspectionTargetInfoUuid])
   @@index([inspectionSlotUuid])
   @@map("inspection_application")
+}
+
+model InspectorAvailableSlot {
+  inspectorUuid      String @map("inspector_uuid")
+  inspectionSlotUuid String @map("inspection_slot_uuid")
+
+  inspector      Inspector      @relation(fields: [inspectorUuid], references: [uuid], onDelete: Cascade)
+  inspectionSlot InspectionSlot @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
+
+  @@id([inspectorUuid, inspectionSlotUuid])
+  @@map("inspector_available_slot")
+}
+
+model Inspector {
+  uuid          String @id @default(uuid())
+  name          String
+  email         String @unique
+  studentNumber String @map("student_number")
+
+  availableSlots InspectorAvailableSlot[]
+
+  @@map("inspector")
 }
