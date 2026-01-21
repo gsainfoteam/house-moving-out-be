@@ -212,7 +212,6 @@ export class MoveOutController {
     );
 
     return {
-      message: 'Inspection application completed successfully.',
       applicationUuid,
     };
   }
