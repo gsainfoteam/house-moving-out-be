@@ -26,6 +26,18 @@ export class MoveOutScheduleResDto {
   applicationEndTime: Date;
 
   @ApiProperty({
+    description: '현재 학기 UUID',
+    example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
+  })
+  currentSemesterUuid: string;
+
+  @ApiProperty({
+    description: '다음 학기 UUID',
+    example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
+  })
+  nextSemesterUuid: string;
+
+  @ApiProperty({
     description: '생성 날짜',
     example: '2025-11-30T15:00:00.000Z',
   })

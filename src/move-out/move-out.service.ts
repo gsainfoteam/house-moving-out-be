@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
 import { MoveOutSchedule, Season } from 'generated/prisma/client';
@@ -22,6 +24,8 @@ import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { InspectionTargetCount } from './types/inspection-target-count.type';
+import { User } from 'generated/prisma/client';
+import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 
 @Loggable()
 @Injectable()
@@ -40,9 +44,34 @@ export class MoveOutService {
   ): Promise<MoveOutSchedule> {
     this.validateScheduleAndRanges(createMoveOutScheduleDto);
 
-    const targetCounts = this.calculateTargetCounts();
+    const currentSemester: Semester = {
+      year: createMoveOutScheduleDto.currentYear,
+      season: createMoveOutScheduleDto.currentSeason,
+    };
+    const nextSemester: Semester = {
+      year: createMoveOutScheduleDto.nextYear,
+      season: createMoveOutScheduleDto.nextSeason,
+    };
 
-    const { inspectionTimeRange, ...scheduleData } = createMoveOutScheduleDto;
+    this.validateSemesterOrder(currentSemester, nextSemester);
+
+    const currentSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        currentSemester.year,
+        currentSemester.season,
+      );
+    const nextSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        nextSemester.year,
+        nextSemester.season,
+      );
+
+    const targetCounts = await this.calculateTargetCounts(
+      currentSemesterEntity.uuid,
+      nextSemesterEntity.uuid,
+    );
+
+    const { inspectionTimeRange } = createMoveOutScheduleDto;
     const generatedSlots = this.generateSlots(
       inspectionTimeRange,
       this.SLOT_DURATION_MINUTES,
@@ -53,16 +82,27 @@ export class MoveOutService {
       );
     }
 
-    const maxCapacity = this.calculateMaxCapacity(
-      generatedSlots.length,
-      targetCounts,
-      this.WEIGHT_FACTOR,
-    );
+    const { maleCapacity, femaleCapacity, maxCapacity } =
+      this.calculateCapacity(
+        generatedSlots.length,
+        targetCounts,
+        this.WEIGHT_FACTOR,
+      );
 
     const slotsData = generatedSlots.map((slot) => ({
       ...slot,
       maxCapacity,
+      maleCapacity,
+      femaleCapacity,
     }));
+
+    const scheduleData = {
+      title: createMoveOutScheduleDto.title,
+      applicationStartTime: createMoveOutScheduleDto.applicationStartTime,
+      applicationEndTime: createMoveOutScheduleDto.applicationEndTime,
+      currentSemesterUuid: currentSemesterEntity.uuid,
+      nextSemesterUuid: nextSemesterEntity.uuid,
+    };
 
     return await this.moveOutRepository.createMoveOutSchedule(
       scheduleData,
@@ -149,20 +189,20 @@ export class MoveOutService {
 
     const result = await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        const existingTarget =
-          await this.moveOutRepository.findFirstInspectionTargetBySemestersInTx(
+        const existingTargetInfo =
+          await this.moveOutRepository.findFirstInspectionTargetInfoBySemestersInTx(
             currentSemesterEntity.uuid,
             nextSemesterEntity.uuid,
             tx,
           );
 
-        if (existingTarget !== null) {
+        if (existingTargetInfo !== null) {
           throw new ConflictException(
-            `Inspection targets already exist for current semester (${currentSemester.year} ${currentSemester.season}) and next semester (${nextSemester.year} ${nextSemester.season}). Use update endpoint to modify existing data.`,
+            `Inspection target info already exist for current semester (${currentSemester.year} ${currentSemester.season}) and next semester (${nextSemester.year} ${nextSemester.season}). Use update endpoint to modify existing data.`,
           );
         }
 
-        return await this.moveOutRepository.createInspectionTargetsInTx(
+        return await this.moveOutRepository.createInspectionTargetInfosInTx(
           currentSemesterEntity.uuid,
           nextSemesterEntity.uuid,
           inspectionTargets,
@@ -192,7 +232,7 @@ export class MoveOutService {
       for (const currentSemesterStudent of currentSemesterRoom.students) {
         if (
           !currentSemesterStudent.name ||
-          !currentSemesterStudent.studentNumber
+          !currentSemesterStudent.admissionYear
         ) {
           continue;
         }
@@ -202,7 +242,7 @@ export class MoveOutService {
             houseName: currentSemesterRoom.houseName,
             roomNumber: currentSemesterRoom.roomNumber,
             studentName: currentSemesterStudent.name,
-            studentNumber: currentSemesterStudent.studentNumber,
+            admissionYear: currentSemesterStudent.admissionYear,
           });
           continue;
         }
@@ -210,8 +250,8 @@ export class MoveOutService {
         const studentStillInRoom = nextSemesterRoom.students.some(
           (nextSemesterStudent) =>
             currentSemesterStudent.name === nextSemesterStudent.name &&
-            currentSemesterStudent.studentNumber ===
-              nextSemesterStudent.studentNumber,
+            currentSemesterStudent.admissionYear ===
+              nextSemesterStudent.admissionYear,
         );
 
         if (!studentStillInRoom) {
@@ -219,7 +259,7 @@ export class MoveOutService {
             houseName: currentSemesterRoom.houseName,
             roomNumber: currentSemesterRoom.roomNumber,
             studentName: currentSemesterStudent.name,
-            studentNumber: currentSemesterStudent.studentNumber,
+            admissionYear: currentSemesterStudent.admissionYear,
           });
         }
       }
@@ -228,9 +268,34 @@ export class MoveOutService {
     return inspectionTargets;
   }
 
-  private calculateTargetCounts(): InspectionTargetCount {
-    // Mocking 함수.
-    return { male: 150, female: 150 };
+  private async calculateTargetCounts(
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+  ): Promise<InspectionTargetCount> {
+    const targets =
+      await this.moveOutRepository.findInspectionTargetHouseNamesBySemesters(
+        currentSemesterUuid,
+        nextSemesterUuid,
+      );
+
+    const counts: InspectionTargetCount = { male: 0, female: 0 };
+
+    for (const { houseName } of targets) {
+      const isMale = this.extractGenderFromHouseName(houseName);
+      if (isMale) {
+        counts.male += 1;
+      } else {
+        counts.female += 1;
+      }
+    }
+
+    if (counts.male === 0 && counts.female === 0) {
+      throw new BadRequestException(
+        'Inspection target info not found for the given semesters.',
+      );
+    }
+
+    return counts;
   }
 
   private generateSlots(
@@ -258,14 +323,38 @@ export class MoveOutService {
     return slots;
   }
 
-  private calculateMaxCapacity(
+  private calculateCapacity(
     totalSlots: number,
     targetCounts: InspectionTargetCount,
     weightFactor: number,
-  ): number {
-    const weightedTotalCount =
-      (targetCounts.male + targetCounts.female) * weightFactor;
-    return Math.ceil(weightedTotalCount / totalSlots);
+  ): {
+    maleCapacity: number;
+    femaleCapacity: number;
+    maxCapacity: number;
+  } {
+    const totalTargetCount = targetCounts.male + targetCounts.female;
+    const weightedTotalCount = totalTargetCount * weightFactor;
+    const totalCapacity = Math.ceil(weightedTotalCount / totalSlots);
+
+    if (totalTargetCount === 0) {
+      return {
+        maleCapacity: 0,
+        femaleCapacity: 0,
+        maxCapacity: 0,
+      };
+    }
+
+    const maleRatio = targetCounts.male / totalTargetCount;
+    const femaleRatio = targetCounts.female / totalTargetCount;
+
+    const maleCapacity = Math.ceil(totalCapacity * maleRatio);
+    const femaleCapacity = Math.ceil(totalCapacity * femaleRatio);
+
+    return {
+      maleCapacity,
+      femaleCapacity,
+      maxCapacity: maleCapacity + femaleCapacity,
+    };
   }
 
   private validateScheduleAndRanges(scheduleData: {
@@ -355,5 +444,129 @@ export class MoveOutService {
         );
       }
     }
+  }
+
+  private extractAdmissionYear(studentNumber: string): string {
+    if (!studentNumber || studentNumber.length < 4) {
+      throw new BadRequestException('Invalid student number format');
+    }
+    return studentNumber.substring(2, 4);
+  }
+
+  private extractGenderFromHouseName(houseName: string): boolean {
+    const lastParenMatch = houseName.match(/\(([^()]*)\)\s*$/);
+    const genderToken = lastParenMatch?.[1]?.trim();
+
+    if (genderToken === '남') {
+      return true;
+    }
+    if (genderToken === '여') {
+      return false;
+    }
+
+    throw new BadRequestException(
+      `Invalid InspectionTargetInfo.houseName format. Expected last token "(남)" or "(여)". Regenerate inspection targets and retry. Invalid houseName: ${houseName}`,
+    );
+  }
+
+  async applyInspection(
+    user: User,
+    { inspectionSlotUuid }: ApplyInspectionDto,
+  ): Promise<{ applicationUuid: string }> {
+    const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+    return await this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const schedule =
+          await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
+            inspectionSlotUuid,
+            tx,
+          );
+
+        if (!schedule) {
+          throw new NotFoundException('Inspection schedule not found.');
+        }
+
+        const now = new Date();
+        if (now < schedule.applicationStartTime) {
+          throw new ForbiddenException(
+            'Application period has not started yet.',
+          );
+        }
+
+        if (now > schedule.applicationEndTime) {
+          throw new ForbiddenException('Application period has ended.');
+        }
+
+        const inspectionTargetInfo =
+          await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
+            admissionYear,
+            user.name,
+            schedule.currentSemesterUuid,
+            schedule.nextSemesterUuid,
+            tx,
+          );
+
+        if (!inspectionTargetInfo) {
+          throw new NotFoundException('Inspection target info not found.');
+        }
+
+        const isMale = this.extractGenderFromHouseName(
+          inspectionTargetInfo.houseName,
+        );
+
+        const existingApplication =
+          await this.moveOutRepository.findInspectionApplicationByTargetInfoInTx(
+            inspectionTargetInfo.uuid,
+            tx,
+          );
+
+        if (existingApplication) {
+          throw new ConflictException('Inspection application already exists.');
+        }
+
+        const slot = await this.moveOutRepository.findInspectionSlotByUuidInTx(
+          inspectionSlotUuid,
+          tx,
+        );
+
+        if (!slot) {
+          throw new NotFoundException('Inspection slot not found.');
+        }
+
+        if (slot.reservedCount >= slot.maxCapacity) {
+          throw new ConflictException('Inspection slot is already full.');
+        }
+
+        if (isMale) {
+          if (slot.maleReservedCount >= slot.maleCapacity) {
+            throw new ConflictException('Male capacity is already full.');
+          }
+        } else {
+          if (slot.femaleReservedCount >= slot.femaleCapacity) {
+            throw new ConflictException('Female capacity is already full.');
+          }
+        }
+
+        await this.moveOutRepository.incrementSlotReservedCountInTx(
+          inspectionSlotUuid,
+          isMale,
+          tx,
+        );
+
+        const application =
+          await this.moveOutRepository.createInspectionApplicationInTx(
+            user.uuid,
+            inspectionTargetInfo.uuid,
+            inspectionSlotUuid,
+            tx,
+          );
+
+        return { applicationUuid: application.uuid };
+      },
+      {
+        isolationLevel: 'Serializable',
+      },
+    );
   }
 }

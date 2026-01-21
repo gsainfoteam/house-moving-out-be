@@ -99,24 +99,24 @@ export class ExcelParserService {
         }
 
         const roomKey = `${section.houseName}|${row.room}`;
-        const students: Array<{ name?: string; studentNumber?: string }> = [];
+        const students: Array<{ name?: string; admissionYear?: string }> = [];
 
-        if (row.student1?.name || row.student1?.studentNumber) {
+        if (row.student1?.name || row.student1?.admissionYear) {
           students.push({
             name: row.student1.name,
-            studentNumber: row.student1.studentNumber,
+            admissionYear: row.student1.admissionYear,
           });
         }
-        if (row.student2?.name || row.student2?.studentNumber) {
+        if (row.student2?.name || row.student2?.admissionYear) {
           students.push({
             name: row.student2.name,
-            studentNumber: row.student2.studentNumber,
+            admissionYear: row.student2.admissionYear,
           });
         }
-        if (row.student3?.name || row.student3?.studentNumber) {
+        if (row.student3?.name || row.student3?.admissionYear) {
           students.push({
             name: row.student3.name,
-            studentNumber: row.student3.studentNumber,
+            admissionYear: row.student3.admissionYear,
           });
         }
 
@@ -299,7 +299,7 @@ export class ExcelParserService {
         if (!isInfo3 || value1 || value2) {
           (rowData as Record<string, unknown>)[studentGroup.name] = {
             name: value1,
-            studentNumber: value2,
+            admissionYear: value2,
           };
         }
       }

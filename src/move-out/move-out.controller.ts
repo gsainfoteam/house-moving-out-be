@@ -8,7 +8,6 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   UploadedFile,
-  Query,
   Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -19,6 +18,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -26,13 +26,20 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
+import { UserGuard } from 'src/auth/guard/user.guard';
+import { GetUser } from 'src/auth/decorator/get-user.decorator';
 import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
-import { UploadExcelDto } from './dto/req/upload-excel.dto';
-import { CreateInspectionTargetsQueryDto } from './dto/req/create-inspection-targets-query.dto';
+import {
+  CreateInspectionTargetsDto,
+  CreateInspectionTargetsSwaggerDto,
+} from './dto/req/create-inspection-targets.dto';
 import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
 import { Semester } from './types/semester.type';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
+import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
+import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
+import { User } from 'generated/prisma/browser';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -51,6 +58,7 @@ export class MoveOutController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
+  @ApiBody({ type: CreateMoveOutScheduleDto })
   @UseGuards(AdminGuard)
   @Post('schedule')
   async createMoveOutSchedule(
@@ -131,7 +139,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: UploadExcelDto })
+  @ApiBody({ type: CreateInspectionTargetsSwaggerDto })
   @UseGuards(AdminGuard)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -143,15 +151,15 @@ export class MoveOutController {
   @Post('inspection-targets')
   async compareSheets(
     @UploadedFile() file: Express.Multer.File,
-    @Query() queryDto: CreateInspectionTargetsQueryDto,
+    @Body() createInspectionTargetsDto: CreateInspectionTargetsDto,
   ): Promise<CreateInspectionTargetsResDto> {
     const currentSemester: Semester = {
-      year: queryDto.currentYear,
-      season: queryDto.currentSeason,
+      year: createInspectionTargetsDto.currentYear,
+      season: createInspectionTargetsDto.currentSeason,
     };
     const nextSemester: Semester = {
-      year: queryDto.nextYear,
-      season: queryDto.nextSeason,
+      year: createInspectionTargetsDto.nextYear,
+      season: createInspectionTargetsDto.nextSeason,
     };
 
     const savedCount =
@@ -164,6 +172,42 @@ export class MoveOutController {
     return {
       message: 'Inspection targets successfully created',
       count: savedCount,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Apply for Inspection',
+    description:
+      'User applies for inspection. The user must be in the inspection target list and apply within the application period.',
+  })
+  @ApiCreatedResponse({
+    description: 'Inspection application completed successfully.',
+    type: ApplyInspectionResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Application period has ended',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found - Inspection target info or slot not found',
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Post('application')
+  async applyInspection(
+    @GetUser() user: User,
+    @Body() applyInspectionDto: ApplyInspectionDto,
+  ): Promise<ApplyInspectionResDto> {
+    const { applicationUuid } = await this.moveOutService.applyInspection(
+      user,
+      applyInspectionDto,
+    );
+
+    return {
+      message: 'Inspection application completed successfully.',
+      applicationUuid,
     };
   }
 }

@@ -1,17 +1,19 @@
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@lib/prisma';
-import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import {
-  InspectionTarget,
+  InspectionTargetInfo,
   MoveOutSchedule,
   Semester,
   Season,
   Prisma,
+  InspectionSlot,
+  InspectionApplication,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -27,7 +29,14 @@ export class MoveOutRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createMoveOutSchedule(
-    scheduleData: Omit<CreateMoveOutScheduleDto, 'inspectionTimeRange'>,
+    scheduleData: Pick<
+      MoveOutSchedule,
+      | 'title'
+      | 'applicationStartTime'
+      | 'applicationEndTime'
+      | 'currentSemesterUuid'
+      | 'nextSemesterUuid'
+    >,
     slotsData: Prisma.InspectionSlotCreateManyScheduleInput[],
   ): Promise<MoveOutSchedule> {
     return await this.prismaService.moveOutSchedule
@@ -53,27 +62,6 @@ export class MoveOutRepository {
       });
   }
 
-  async findMoveOutScheduleById(id: number): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
-      .findUniqueOrThrow({
-        where: { id },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`MoveOutSchedule not found: ${id}`);
-            throw new NotFoundException(`Not Found Error`);
-          }
-          this.logger.error(
-            `findMoveOutScheduleById prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findMoveOutScheduleById error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async findMoveOutScheduleWithSlotsById(
     id: number,
   ): Promise<MoveOutScheduleWithSlots> {
@@ -82,6 +70,8 @@ export class MoveOutRepository {
         where: { id },
         include: {
           inspectionSlots: true,
+          currentSemester: true,
+          nextSemester: true,
         },
       })
       .catch((error) => {
@@ -152,12 +142,71 @@ export class MoveOutRepository {
       });
   }
 
-  async findFirstInspectionTargetBySemestersInTx(
+  async findSemesterByYearAndSeason(
+    year: number,
+    season: Season,
+  ): Promise<Semester> {
+    return await this.prismaService.semester
+      .findUniqueOrThrow({
+        where: {
+          year_season: {
+            year,
+            season,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `Semester not found: year=${year}, season=${season}`,
+            );
+            throw new NotFoundException('Semester not found.');
+          }
+          this.logger.error(
+            `findSemesterByYearAndSeason prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findSemesterByYearAndSeason error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findInspectionTargetHouseNamesBySemesters(
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+  ): Promise<Array<Pick<InspectionTargetInfo, 'houseName'>>> {
+    return await this.prismaService.inspectionTargetInfo
+      .findMany({
+        where: {
+          currentSemesterUuid,
+          nextSemesterUuid,
+        },
+        select: {
+          houseName: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findInspectionTargetHouseNamesBySemesters prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findInspectionTargetHouseNamesBySemesters error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findFirstInspectionTargetInfoBySemestersInTx(
     currentSemesterUuid: string,
     nextSemesterUuid: string,
     tx: PrismaTransaction,
-  ): Promise<Pick<InspectionTarget, 'uuid'> | null> {
-    return await tx.inspectionTarget
+  ): Promise<Pick<InspectionTargetInfo, 'uuid'> | null> {
+    return await tx.inspectionTargetInfo
       .findFirst({
         where: {
           currentSemesterUuid,
@@ -170,43 +219,275 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `findFirstInspectionTargetBySemestersInTx prisma error: ${error.message}`,
+            `findFirstInspectionTargetInfoBySemestersInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(
-          `findFirstInspectionTargetBySemestersInTx error: ${error}`,
+          `findFirstInspectionTargetInfoBySemestersInTx error: ${error}`,
         );
         throw new InternalServerErrorException('Unknown Error');
       });
   }
 
-  async createInspectionTargetsInTx(
+  async createInspectionTargetInfosInTx(
     currentSemesterUuid: string,
     nextSemesterUuid: string,
-    inspectionTargets: InspectionTargetStudent[],
+    inspectionTargetInfos: InspectionTargetStudent[],
     tx: PrismaTransaction,
   ): Promise<{ count: number }> {
-    return await tx.inspectionTarget
+    return await tx.inspectionTargetInfo
       .createMany({
-        data: inspectionTargets.map((target) => ({
+        data: inspectionTargetInfos.map((target) => ({
           currentSemesterUuid,
           nextSemesterUuid,
           houseName: target.houseName,
           roomNumber: target.roomNumber,
           studentName: target.studentName,
-          studentNumber: target.studentNumber,
+          admissionYear: target.admissionYear,
         })),
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `createInspectionTargetsInTx prisma error: ${error.message}`,
+            `createInspectionTargetInfosInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`createInspectionTargetsInTx error: ${error}`);
+        this.logger.error(`createInspectionTargetInfosInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
+  }
+
+  async findInspectionTargetInfoByUserInfo(
+    admissionYear: string,
+    studentName: string,
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+  ): Promise<InspectionTargetInfo | null> {
+    return await this.prismaService.inspectionTargetInfo
+      .findUnique({
+        where: {
+          inspection_target_with_specific_semester: {
+            currentSemesterUuid,
+            nextSemesterUuid,
+            admissionYear,
+            studentName,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findInspectionTargetInfoByUserInfo prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findInspectionTargetInfoByUserInfo error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findInspectionTargetInfoByUserInfoInTx(
+    admissionYear: string,
+    studentName: string,
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionTargetInfo | null> {
+    return await tx.inspectionTargetInfo
+      .findUnique({
+        where: {
+          inspection_target_with_specific_semester: {
+            currentSemesterUuid,
+            nextSemesterUuid,
+            admissionYear,
+            studentName,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findInspectionTargetInfoByUserInfoInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findInspectionTargetInfoByUserInfoInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findInspectionApplicationByTargetInfoInTx(
+    inspectionTargetInfoUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplication | null> {
+    return await tx.inspectionApplication
+      .findUnique({
+        where: {
+          inspectionTargetInfoUuid,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findInspectionApplicationByTargetInfoInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findInspectionApplicationByTargetInfoInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findInspectionSlotByUuidInTx(
+    slotUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionSlot | null> {
+    return await tx.inspectionSlot
+      .findUnique({
+        where: { uuid: slotUuid },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findInspectionSlotByUuidInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findInspectionSlotByUuidInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async incrementSlotReservedCountInTx(
+    slotUuid: string,
+    isMale: boolean,
+    tx: PrismaTransaction,
+  ): Promise<InspectionSlot> {
+    return await tx.inspectionSlot
+      .update({
+        where: { uuid: slotUuid },
+        data: {
+          reservedCount: {
+            increment: 1,
+          },
+          maleReservedCount: isMale
+            ? {
+                increment: 1,
+              }
+            : undefined,
+          femaleReservedCount: !isMale
+            ? {
+                increment: 1,
+              }
+            : undefined,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `incrementSlotReservedCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`incrementSlotReservedCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async decrementSlotReservedCountInTx(
+    slotUuid: string,
+    isMale: boolean,
+    tx: PrismaTransaction,
+  ): Promise<InspectionSlot> {
+    return await tx.inspectionSlot
+      .update({
+        where: { uuid: slotUuid },
+        data: {
+          reservedCount: {
+            decrement: 1,
+          },
+          maleReservedCount: isMale
+            ? {
+                decrement: 1,
+              }
+            : undefined,
+          femaleReservedCount: !isMale
+            ? {
+                decrement: 1,
+              }
+            : undefined,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `decrementSlotReservedCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`decrementSlotReservedCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async createInspectionApplicationInTx(
+    userUuid: string,
+    inspectionTargetInfoUuid: string,
+    inspectionSlotUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplication> {
+    return await tx.inspectionApplication
+      .create({
+        data: {
+          userUuid,
+          inspectionTargetInfoUuid,
+          inspectionSlotUuid,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            throw new ConflictException(
+              'Inspection application already exists.',
+            );
+          }
+          this.logger.error(
+            `createInspectionApplicationInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`createInspectionApplicationInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findMoveOutScheduleBySlotUuidInTx(
+    slotUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<MoveOutSchedule | null> {
+    try {
+      const slot = await tx.inspectionSlot.findUnique({
+        where: { uuid: slotUuid },
+        include: {
+          schedule: true,
+        },
+      });
+      return slot?.schedule || null;
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        this.logger.error(
+          `findMoveOutScheduleBySlotUuidInTx prisma error: ${error.message}`,
+        );
+        throw new InternalServerErrorException('Database Error');
+      }
+      this.logger.error(`findMoveOutScheduleBySlotUuidInTx error: ${error}`);
+      throw new InternalServerErrorException('Unknown Error');
+    }
   }
 }

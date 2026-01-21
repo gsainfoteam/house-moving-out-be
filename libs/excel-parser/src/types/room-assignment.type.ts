@@ -13,7 +13,7 @@ export type ParsedExcelRow = {
 
 export type StudentInfo = {
   name?: string;
-  studentNumber?: string;
+  admissionYear?: string;
 };
 
 export type InfoGroup = {
@@ -26,6 +26,6 @@ export type RoomInfo = {
   roomNumber: string;
   students: Array<{
     name?: string;
-    studentNumber?: string;
+    admissionYear?: string;
   }>;
 };
