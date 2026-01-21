@@ -16,6 +16,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiConflictResponse,
   ApiConsumes,
   ApiCreatedResponse,
   ApiForbiddenResponse,
@@ -187,10 +188,15 @@ export class MoveOutController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
-    description: 'Forbidden - Application period has ended',
+    description:
+      'Forbidden - Application period has not started yet or has already ended',
   })
   @ApiNotFoundResponse({
     description: 'Not Found - Inspection target info or slot not found',
+  })
+  @ApiConflictResponse({
+    description:
+      'Conflict - Application already exists or inspection slot is full',
   })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
