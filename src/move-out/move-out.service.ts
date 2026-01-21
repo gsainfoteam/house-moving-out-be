@@ -44,13 +44,24 @@ export class MoveOutService {
   ): Promise<MoveOutSchedule> {
     this.validateScheduleAndRanges(createMoveOutScheduleDto);
 
+    const {
+      title,
+      applicationStartTime,
+      applicationEndTime,
+      currentYear,
+      currentSeason,
+      nextYear,
+      nextSeason,
+      inspectionTimeRange,
+    } = createMoveOutScheduleDto;
+
     const currentSemester: Semester = {
-      year: createMoveOutScheduleDto.currentYear,
-      season: createMoveOutScheduleDto.currentSeason,
+      year: currentYear,
+      season: currentSeason,
     };
     const nextSemester: Semester = {
-      year: createMoveOutScheduleDto.nextYear,
-      season: createMoveOutScheduleDto.nextSeason,
+      year: nextYear,
+      season: nextSeason,
     };
 
     this.validateSemesterOrder(currentSemester, nextSemester);
@@ -71,7 +82,6 @@ export class MoveOutService {
       nextSemesterEntity.uuid,
     );
 
-    const { inspectionTimeRange } = createMoveOutScheduleDto;
     const generatedSlots = this.generateSlots(
       inspectionTimeRange,
       this.SLOT_DURATION_MINUTES,
@@ -97,9 +107,9 @@ export class MoveOutService {
     }));
 
     const scheduleData = {
-      title: createMoveOutScheduleDto.title,
-      applicationStartTime: createMoveOutScheduleDto.applicationStartTime,
-      applicationEndTime: createMoveOutScheduleDto.applicationEndTime,
+      title,
+      applicationStartTime,
+      applicationEndTime,
       currentSemesterUuid: currentSemesterEntity.uuid,
       nextSemesterUuid: nextSemesterEntity.uuid,
     };
