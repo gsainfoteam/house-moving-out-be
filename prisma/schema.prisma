@@ -218,7 +218,6 @@ model InspectionApplication {
   inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
 
   @@unique([inspectionTargetInfoUuid])
-  @@index([inspectionTargetInfoUuid])
   @@index([inspectionSlotUuid])
   @@map("inspection_application")
 }

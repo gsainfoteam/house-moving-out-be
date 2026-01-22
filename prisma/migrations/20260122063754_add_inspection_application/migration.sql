@@ -70,9 +70,6 @@ CREATE TABLE "inspection_application" (
 );
 
 -- CreateIndex
-CREATE INDEX "inspection_application_inspection_target_info_uuid_idx" ON "inspection_application"("inspection_target_info_uuid");
-
--- CreateIndex
 CREATE INDEX "inspection_application_inspection_slot_uuid_idx" ON "inspection_application"("inspection_slot_uuid");
 
 -- CreateIndex
