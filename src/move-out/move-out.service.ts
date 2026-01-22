@@ -513,16 +513,6 @@ export class MoveOutService {
           inspectionTargetInfo.houseName,
         );
 
-        const existingApplication =
-          await this.moveOutRepository.findInspectionApplicationByTargetInfoInTx(
-            inspectionTargetInfo.uuid,
-            tx,
-          );
-
-        if (existingApplication) {
-          throw new ConflictException('Inspection application already exists.');
-        }
-
         const slot = await this.moveOutRepository.findInspectionSlotByUuidInTx(
           inspectionSlotUuid,
           tx,

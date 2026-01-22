@@ -320,30 +320,6 @@ export class MoveOutRepository {
       });
   }
 
-  async findInspectionApplicationByTargetInfoInTx(
-    inspectionTargetInfoUuid: string,
-    tx: PrismaTransaction,
-  ): Promise<InspectionApplication | null> {
-    return await tx.inspectionApplication
-      .findUnique({
-        where: {
-          inspectionTargetInfoUuid,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findInspectionApplicationByTargetInfoInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(
-          `findInspectionApplicationByTargetInfoInTx error: ${error}`,
-        );
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async findInspectionSlotByUuidInTx(
     slotUuid: string,
     tx: PrismaTransaction,
@@ -404,46 +380,6 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`incrementSlotReservedCountInTx error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async decrementSlotReservedCountInTx(
-    slotUuid: string,
-    isMale: boolean,
-    tx: PrismaTransaction,
-  ): Promise<InspectionSlot> {
-    return await tx.inspectionSlot
-      .update({
-        where: { uuid: slotUuid },
-        data: {
-          reservedCount: {
-            decrement: 1,
-          },
-          maleReservedCount: isMale
-            ? {
-                decrement: 1,
-              }
-            : undefined,
-          femaleReservedCount: !isMale
-            ? {
-                decrement: 1,
-              }
-            : undefined,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
-            throw new NotFoundException('Inspection slot not found.');
-          }
-          this.logger.error(
-            `decrementSlotReservedCountInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`decrementSlotReservedCountInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
