@@ -256,35 +256,6 @@ export class MoveOutRepository {
       });
   }
 
-  async findInspectionTargetInfoByUserInfo(
-    admissionYear: string,
-    studentName: string,
-    currentSemesterUuid: string,
-    nextSemesterUuid: string,
-  ): Promise<InspectionTargetInfo | null> {
-    return await this.prismaService.inspectionTargetInfo
-      .findUnique({
-        where: {
-          inspection_target_with_specific_semester: {
-            currentSemesterUuid,
-            nextSemesterUuid,
-            admissionYear,
-            studentName,
-          },
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findInspectionTargetInfoByUserInfo prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findInspectionTargetInfoByUserInfo error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async findInspectionTargetInfoByUserInfoInTx(
     admissionYear: string,
     studentName: string,
