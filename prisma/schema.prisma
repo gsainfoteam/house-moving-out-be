@@ -52,8 +52,9 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  userRefreshTokens UserRefreshToken[]
-  userConsents      UserConsent[]
+  userRefreshTokens      UserRefreshToken[]
+  userConsents           UserConsent[]
+  inspectionApplications InspectionApplication[]
 
   @@map("user")
 }
@@ -131,10 +132,16 @@ model MoveOutSchedule {
   title                String
   applicationStartTime DateTime         @map("application_start_time")
   applicationEndTime   DateTime         @map("application_end_time")
+  currentSemesterUuid  String           @map("current_semester_uuid")
+  nextSemesterUuid     String           @map("next_semester_uuid")
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at")
   inspectionSlots      InspectionSlot[]
 
+  currentSemester Semester @relation("ScheduleCurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
+  nextSemester    Semester @relation("ScheduleNextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
+
+  @@unique([currentSemesterUuid, nextSemesterUuid])
   @@map("move_out_schedule")
 }
 
@@ -144,59 +151,83 @@ model Semester {
   season    Season
   createdAt DateTime @default(now()) @map("created_at")
 
-  currentSemesterTargets InspectionTarget[] @relation("CurrentSemester")
-  nextSemesterTargets    InspectionTarget[] @relation("NextSemester")
+  currentSemesterTargetInfo InspectionTargetInfo[] @relation("CurrentSemester")
+  nextSemesterTargetInfo    InspectionTargetInfo[] @relation("NextSemester")
+  currentSemesterSchedules  MoveOutSchedule[]      @relation("ScheduleCurrentSemester")
+  nextSemesterSchedules     MoveOutSchedule[]      @relation("ScheduleNextSemester")
 
   @@unique([year, season])
   @@map("semester")
 }
 
-model InspectionTarget {
+model InspectionTargetInfo {
   uuid                String   @id @default(uuid())
   currentSemesterUuid String   @map("current_semester_uuid")
   nextSemesterUuid    String   @map("next_semester_uuid")
   houseName           String   @map("house_name")
   roomNumber          String   @map("room_number")
   studentName         String   @map("student_name")
-  studentNumber       String   @map("student_number")
-  isApplied           Boolean  @default(false) @map("is_applied")
-  isPassed            Boolean? @map("is_passed")
-  reInspectionCount   Int      @default(0) @map("re_inspection_count")
+  admissionYear       String   @map("admission_year")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
 
-  currentSemester Semester @relation("CurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
-  nextSemester    Semester @relation("NextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
+  currentSemester       Semester               @relation("CurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
+  nextSemester          Semester               @relation("NextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
+  inspectionApplication InspectionApplication?
 
+  @@unique([currentSemesterUuid, nextSemesterUuid, admissionYear, studentName], name: "inspection_target_with_specific_semester")
   @@index([currentSemesterUuid])
   @@index([nextSemesterUuid])
   @@index([currentSemesterUuid, nextSemesterUuid, houseName, roomNumber])
+  @@index([admissionYear, studentName])
   @@map("inspection_target")
 }
 
 model InspectionSlot {
-  id            String          @id @default(uuid())
-  scheduleId    Int             @map("schedule_id")
-  schedule      MoveOutSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  startTime     DateTime        @map("start_time")
-  endTime       DateTime        @map("end_time")
-  maxCapacity   Int             @default(0) @map("max_capacity")
-  reservedCount Int             @default(0) @map("reserved_count")
+  uuid                String   @id @default(uuid())
+  scheduleId          Int      @map("schedule_id")
+  startTime           DateTime @map("start_time")
+  endTime             DateTime @map("end_time")
+  maleCapacity        Int      @default(0) @map("male_capacity")
+  femaleCapacity      Int      @default(0) @map("female_capacity")
+  maleReservedCount   Int      @default(0) @map("male_reserved_count")
+  femaleReservedCount Int      @default(0) @map("female_reserved_count")
 
-  inspectors InspectorAvailableSlot[]
+  inspectionApplications InspectionApplication[]
+  inspectors             InspectorAvailableSlot[]
+  schedule               MoveOutSchedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
   @@index([scheduleId, startTime])
   @@map("inspection_slot")
 }
 
+model InspectionApplication {
+  uuid                     String   @id @default(uuid())
+  userUuid                 String   @map("user_uuid")
+  inspectionTargetInfoUuid String   @map("inspection_target_info_uuid")
+  inspectionSlotUuid       String   @map("inspection_slot_uuid")
+  isPassed                 Boolean? @map("is_passed")
+  reInspectionCount        Int      @default(0) @map("re_inspection_count")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  inspectionTargetInfo InspectionTargetInfo @relation(fields: [inspectionTargetInfoUuid], references: [uuid], onDelete: Cascade)
+  inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
+
+  @@unique([inspectionTargetInfoUuid])
+  @@index([inspectionSlotUuid])
+  @@map("inspection_application")
+}
+
 model InspectorAvailableSlot {
-  inspectorUuid    String @map("inspector_id")
-  inspectionSlotId String @map("inspection_slot_id")
+  inspectorUuid      String @map("inspector_uuid")
+  inspectionSlotUuid String @map("inspection_slot_uuid")
 
   inspector      Inspector      @relation(fields: [inspectorUuid], references: [uuid], onDelete: Cascade)
-  inspectionSlot InspectionSlot @relation(fields: [inspectionSlotId], references: [id], onDelete: Cascade)
+  inspectionSlot InspectionSlot @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
 
-  @@id([inspectorUuid, inspectionSlotId])
+  @@id([inspectorUuid, inspectionSlotUuid])
   @@map("inspector_available_slot")
 }
 

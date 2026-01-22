@@ -2,13 +2,14 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
 import { MoveOutScheduleResDto } from './move-out-schedule-res.dto';
+import { SemesterResDto } from './semester-res.dto';
 
 export class InspectionSlotResDto {
   @ApiProperty({
     description: '검사 슬롯 고유 ID (UUID)',
     example: '56557838-403f-431f-8da2-669f7b5aadd6',
   })
-  id: string;
+  uuid: string;
 
   @ApiProperty({
     description: '퇴사 검사 일정 ID',
@@ -29,16 +30,28 @@ export class InspectionSlotResDto {
   endTime: Date;
 
   @ApiProperty({
-    description: '최대 수용 인원',
-    example: 12,
+    description: '남자 최대 수용 인원',
+    example: 7,
   })
-  maxCapacity: number;
+  maleCapacity: number;
 
   @ApiProperty({
-    description: '현재 예약된 인원',
+    description: '여자 최대 수용 인원',
+    example: 5,
+  })
+  femaleCapacity: number;
+
+  @ApiProperty({
+    description: '남자 현재 예약된 인원',
     example: 0,
   })
-  reservedCount: number;
+  maleReservedCount: number;
+
+  @ApiProperty({
+    description: '여자 현재 예약된 인원',
+    example: 0,
+  })
+  femaleReservedCount: number;
 }
 
 export class MoveOutScheduleWithSlotsResDto extends MoveOutScheduleResDto {
@@ -49,4 +62,20 @@ export class MoveOutScheduleWithSlotsResDto extends MoveOutScheduleResDto {
   @ValidateNested({ each: true })
   @Type(() => InspectionSlotResDto)
   inspectionSlots: InspectionSlotResDto[];
+
+  @ApiProperty({
+    type: SemesterResDto,
+    description: '현재 학기 정보',
+  })
+  @ValidateNested()
+  @Type(() => SemesterResDto)
+  currentSemester: SemesterResDto;
+
+  @ApiProperty({
+    type: SemesterResDto,
+    description: '다음 학기 정보',
+  })
+  @ValidateNested()
+  @Type(() => SemesterResDto)
+  nextSemester: SemesterResDto;
 }

@@ -3,7 +3,7 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsInt } from 'class-validator';
 import { Season } from 'generated/prisma/client';
 
-export class CreateInspectionTargetsQueryDto {
+export class CreateInspectionTargetsDto {
   @ApiProperty({
     example: 2025,
     description: 'current semester year',
@@ -35,4 +35,13 @@ export class CreateInspectionTargetsQueryDto {
   })
   @IsEnum(Season)
   nextSeason: Season;
+}
+
+export class CreateInspectionTargetsSwaggerDto extends CreateInspectionTargetsDto {
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Excel file (.xlsx)',
+  })
+  file: Express.Multer.File;
 }

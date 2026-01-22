@@ -1,6 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDate, IsString, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsDate,
+  IsString,
+  IsArray,
+  ValidateNested,
+  IsInt,
+  IsEnum,
+} from 'class-validator';
+import { Season } from 'generated/prisma/client';
 
 export class InspectionTimeRangeDto {
   @ApiProperty({
@@ -43,6 +51,36 @@ export class CreateMoveOutScheduleDto {
   @Type(() => Date)
   @IsDate()
   applicationEndTime: Date;
+
+  @ApiProperty({
+    example: 2025,
+    description: 'Current semester year',
+  })
+  @IsInt()
+  currentYear: number;
+
+  @ApiProperty({
+    example: Season.SPRING,
+    description: 'Current semester season',
+    enum: Season,
+  })
+  @IsEnum(Season)
+  currentSeason: Season;
+
+  @ApiProperty({
+    example: 2025,
+    description: 'Next semester year',
+  })
+  @IsInt()
+  nextYear: number;
+
+  @ApiProperty({
+    example: Season.SUMMER,
+    description: 'Next semester season',
+    enum: Season,
+  })
+  @IsEnum(Season)
+  nextSeason: Season;
 
   @ApiProperty({
     type: [InspectionTimeRangeDto],

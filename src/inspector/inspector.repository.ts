@@ -59,14 +59,14 @@ export class InspectorRepository {
 
   async connectInspectorAndSlotsInTx(
     inspectorUuid: string,
-    inspectionSlotIds: string[],
+    inspectionSlotUuids: string[],
     tx: PrismaTransaction,
   ): Promise<void> {
     await tx.inspectorAvailableSlot
       .createMany({
-        data: inspectionSlotIds.map((inspectionSlotId) => ({
+        data: inspectionSlotUuids.map((inspectionSlotUuid) => ({
           inspectorUuid,
-          inspectionSlotId,
+          inspectionSlotUuid,
         })),
       })
       .catch((error) => {

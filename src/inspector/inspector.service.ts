@@ -22,14 +22,14 @@ export class InspectorService {
 
   async createInspectors({ inspectors }: CreateInspectorsDto): Promise<void> {
     await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
-      for (const { availableSlotIds, ...inspector } of inspectors) {
+      for (const { availableSlotUuids, ...inspector } of inspectors) {
         const { uuid } = await this.inspectorRepository.createInspectorsInTx(
           inspector,
           tx,
         );
         await this.inspectorRepository.connectInspectorAndSlotsInTx(
           uuid,
-          availableSlotIds,
+          availableSlotUuids,
           tx,
         );
       }
@@ -43,7 +43,7 @@ export class InspectorService {
 
   async updateInspector(
     uuid: string,
-    { availableSlotIds }: UpdateInspectorDto,
+    { availableSlotUuids }: UpdateInspectorDto,
   ): Promise<void> {
     await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
       await this.inspectorRepository.deleteInspectorAvailableSlotsInTx(
@@ -52,7 +52,7 @@ export class InspectorService {
       );
       await this.inspectorRepository.connectInspectorAndSlotsInTx(
         uuid,
-        availableSlotIds,
+        availableSlotUuids,
         tx,
       );
     });
