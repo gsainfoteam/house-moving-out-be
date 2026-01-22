@@ -206,13 +206,6 @@ export class MoveOutController {
     @GetUser() user: User,
     @Body() applyInspectionDto: ApplyInspectionDto,
   ): Promise<ApplyInspectionResDto> {
-    const { applicationUuid } = await this.moveOutService.applyInspection(
-      user,
-      applyInspectionDto,
-    );
-
-    return {
-      applicationUuid,
-    };
+    return await this.moveOutService.applyInspection(user, applyInspectionDto);
   }
 }
