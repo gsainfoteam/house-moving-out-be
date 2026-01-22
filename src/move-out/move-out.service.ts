@@ -3,7 +3,6 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
 import { MoveOutSchedule, Season } from 'generated/prisma/client';
@@ -509,10 +508,6 @@ export class MoveOutService {
             schedule.nextSemesterUuid,
             tx,
           );
-
-        if (!inspectionTargetInfo) {
-          throw new NotFoundException('Inspection target info not found.');
-        }
 
         const isMale = this.extractGenderFromHouseName(
           inspectionTargetInfo.houseName,

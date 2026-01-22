@@ -291,9 +291,9 @@ export class MoveOutRepository {
     currentSemesterUuid: string,
     nextSemesterUuid: string,
     tx: PrismaTransaction,
-  ): Promise<InspectionTargetInfo | null> {
+  ): Promise<InspectionTargetInfo> {
     return await tx.inspectionTargetInfo
-      .findUnique({
+      .findUniqueOrThrow({
         where: {
           inspection_target_with_specific_semester: {
             currentSemesterUuid,
@@ -305,6 +305,9 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Inspection target info not found.');
+          }
           this.logger.error(
             `findInspectionTargetInfoByUserInfoInTx prisma error: ${error.message}`,
           );
