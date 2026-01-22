@@ -6,8 +6,8 @@ export class CreateNewPolicyDto {
   @ApiProperty({
     description:
       'Policy type. Must be one of: TERMS_OF_SERVICE, PRIVACY_POLICY',
-    enum: ['TERMS_OF_SERVICE', 'PRIVACY_POLICY'],
-    example: 'TERMS_OF_SERVICE',
+    enum: ConsentType,
+    example: ConsentType.TERMS_OF_SERVICE,
   })
   @IsEnum(ConsentType, {
     message: `type must be one of: ${Object.values(ConsentType).join(', ')}`,
