@@ -1,10 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class ConsentVersionInfo {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Current version of the consent',
     example: null,
-    nullable: true,
   })
   currentVersion?: string | null;
 
