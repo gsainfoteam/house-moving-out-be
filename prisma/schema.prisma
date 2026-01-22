@@ -188,8 +188,6 @@ model InspectionSlot {
   scheduleId          Int      @map("schedule_id")
   startTime           DateTime @map("start_time")
   endTime             DateTime @map("end_time")
-  maxCapacity         Int      @default(0) @map("max_capacity")
-  reservedCount       Int      @default(0) @map("reserved_count")
   maleCapacity        Int      @default(0) @map("male_capacity")
   femaleCapacity      Int      @default(0) @map("female_capacity")
   maleReservedCount   Int      @default(0) @map("male_reserved_count")

@@ -91,16 +91,14 @@ export class MoveOutService {
       );
     }
 
-    const { maleCapacity, femaleCapacity, maxCapacity } =
-      this.calculateCapacity(
-        generatedSlots.length,
-        targetCounts,
-        this.WEIGHT_FACTOR,
-      );
+    const { maleCapacity, femaleCapacity } = this.calculateCapacity(
+      generatedSlots.length,
+      targetCounts,
+      this.WEIGHT_FACTOR,
+    );
 
     const slotsData = generatedSlots.map((slot) => ({
       ...slot,
-      maxCapacity,
       maleCapacity,
       femaleCapacity,
     }));
@@ -339,7 +337,6 @@ export class MoveOutService {
   ): {
     maleCapacity: number;
     femaleCapacity: number;
-    maxCapacity: number;
   } {
     const totalTargetCount = targetCounts.male + targetCounts.female;
     const weightedTotalCount = totalTargetCount * weightFactor;
@@ -349,7 +346,6 @@ export class MoveOutService {
       return {
         maleCapacity: 0,
         femaleCapacity: 0,
-        maxCapacity: 0,
       };
     }
 
@@ -362,7 +358,6 @@ export class MoveOutService {
     return {
       maleCapacity,
       femaleCapacity,
-      maxCapacity: maleCapacity + femaleCapacity,
     };
   }
 
@@ -517,10 +512,6 @@ export class MoveOutService {
           inspectionSlotUuid,
           tx,
         );
-
-        if (slot.reservedCount >= slot.maxCapacity) {
-          throw new ConflictException('Inspection slot is already full.');
-        }
 
         if (isMale) {
           if (slot.maleReservedCount >= slot.maleCapacity) {

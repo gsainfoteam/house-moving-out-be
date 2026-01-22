@@ -3,6 +3,8 @@
 
   - The primary key for the `inspection_slot` table will be changed. If it partially fails, the table could be left without primary key constraint.
   - You are about to drop the column `id` on the `inspection_slot` table. All the data in the column will be lost.
+  - You are about to drop the column `max_capacity` on the `inspection_slot` table. All the data in the column will be lost.
+  - You are about to drop the column `reserved_count` on the `inspection_slot` table. All the data in the column will be lost.
   - You are about to drop the column `is_applied` on the `inspection_target` table. All the data in the column will be lost.
   - You are about to drop the column `is_passed` on the `inspection_target` table. All the data in the column will be lost.
   - You are about to drop the column `re_inspection_count` on the `inspection_target` table. All the data in the column will be lost.
@@ -29,6 +31,8 @@ ALTER TABLE "inspector_available_slot" DROP CONSTRAINT "inspector_available_slot
 -- AlterTable
 ALTER TABLE "inspection_slot" DROP CONSTRAINT "inspection_slot_pkey",
 DROP COLUMN "id",
+DROP COLUMN "max_capacity",
+DROP COLUMN "reserved_count",
 ADD COLUMN     "female_capacity" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "female_reserved_count" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "male_capacity" INTEGER NOT NULL DEFAULT 0,

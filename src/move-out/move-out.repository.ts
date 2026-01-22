@@ -324,9 +324,6 @@ export class MoveOutRepository {
       .update({
         where: { uuid: slotUuid },
         data: {
-          reservedCount: {
-            increment: 1,
-          },
           maleReservedCount: isMale
             ? {
                 increment: 1,

@@ -30,18 +30,6 @@ export class InspectionSlotResDto {
   endTime: Date;
 
   @ApiProperty({
-    description: '최대 수용 인원',
-    example: 12,
-  })
-  maxCapacity: number;
-
-  @ApiProperty({
-    description: '현재 예약된 인원',
-    example: 0,
-  })
-  reservedCount: number;
-
-  @ApiProperty({
     description: '남자 최대 수용 인원',
     example: 7,
   })
