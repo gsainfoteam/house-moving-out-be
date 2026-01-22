@@ -39,21 +39,21 @@ export class MoveOutService {
     private readonly excelValidatorService: ExcelValidatorService,
   ) {}
 
-  async createMoveOutSchedule(
-    createMoveOutScheduleDto: CreateMoveOutScheduleDto,
-  ): Promise<MoveOutSchedule> {
-    this.validateScheduleAndRanges(createMoveOutScheduleDto);
-
-    const {
-      title,
+  async createMoveOutSchedule({
+    title,
+    applicationStartTime,
+    applicationEndTime,
+    currentYear,
+    currentSeason,
+    nextYear,
+    nextSeason,
+    inspectionTimeRange,
+  }: CreateMoveOutScheduleDto): Promise<MoveOutSchedule> {
+    this.validateScheduleAndRanges(
       applicationStartTime,
       applicationEndTime,
-      currentYear,
-      currentSeason,
-      nextYear,
-      nextSeason,
       inspectionTimeRange,
-    } = createMoveOutScheduleDto;
+    );
 
     const currentSemester: Semester = {
       year: currentYear,
@@ -367,14 +367,11 @@ export class MoveOutService {
     };
   }
 
-  private validateScheduleAndRanges(scheduleData: {
-    applicationStartTime: Date;
-    applicationEndTime: Date;
-    inspectionTimeRange: InspectionTimeRangeDto[];
-  }): void {
-    const { applicationStartTime, applicationEndTime, inspectionTimeRange } =
-      scheduleData;
-
+  private validateScheduleAndRanges(
+    applicationStartTime: Date,
+    applicationEndTime: Date,
+    inspectionTimeRange: InspectionTimeRangeDto[],
+  ): void {
     if (!inspectionTimeRange || inspectionTimeRange.length === 0) {
       throw new BadRequestException('Inspection time range must be provided.');
     }
