@@ -5,8 +5,9 @@ class ConsentVersionInfo {
     description: 'Current version of the consent',
     example: null,
     nullable: true,
+    type: String,
   })
-  currentVersion?: string;
+  currentVersion?: string | null;
 
   @ApiProperty({
     description: 'Required version of the consent',
