@@ -1,6 +1,5 @@
 import { PrismaService } from '@lib/prisma';
 import {
-  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -427,36 +426,6 @@ export class AuthRepository {
     }
   }
 
-  async getActivePolicyVersionInTx(
-    type: ConsentType,
-    tx: PrismaTransaction,
-  ): Promise<{ version: string; createdAt: Date } | null> {
-    return await tx.policyVersion
-      .findFirst({
-        where: {
-          type,
-          isActive: true,
-        },
-        select: {
-          version: true,
-          createdAt: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `getActivePolicyVersionInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`getActivePolicyVersionInTx error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async getLatestUserConsentInTx(
     userUuid: string,
     consentType: ConsentType,
@@ -486,56 +455,5 @@ export class AuthRepository {
         this.logger.error(`getLatestUserConsentInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
-  }
-
-  async createNewPolicyVersion({
-    type,
-    version,
-  }: {
-    type: ConsentType;
-    version: string;
-  }): Promise<{
-    uuid: string;
-    type: ConsentType;
-    version: string;
-    isActive: boolean;
-    createdAt: Date;
-  }> {
-    return await this.prismaService.$transaction(async (tx) => {
-      await tx.policyVersion.updateMany({
-        where: {
-          type,
-          isActive: true,
-        },
-        data: {
-          isActive: false,
-        },
-      });
-
-      return await tx.policyVersion
-        .create({
-          data: {
-            type,
-            version,
-            isActive: true,
-          },
-        })
-        .catch((error) => {
-          if (error instanceof PrismaClientKnownRequestError) {
-            if (error.code === 'P2002') {
-              this.logger.debug(
-                `Policy version already exists: ${type} ${version}`,
-              );
-              throw new ConflictException('Policy version already exists');
-            }
-            this.logger.error(
-              `createNewPolicyVersion prisma error: ${error.message}`,
-            );
-            throw new InternalServerErrorException('Database Error');
-          }
-          this.logger.error(`createNewPolicyVersion error: ${error}`);
-          throw new InternalServerErrorException('Unknown Error');
-        });
-    });
   }
 }
