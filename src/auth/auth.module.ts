@@ -10,6 +10,7 @@ import { AdminGuard } from './guard/admin.guard';
 import { AdminStrategy } from './guard/admin.strategy';
 import { UserGuard } from './guard/user.guard';
 import { UserStrategy } from './guard/user.strategy';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UserStrategy } from './guard/user.strategy';
     PrismaModule,
     InfoteamIdpModule,
     JwtModule.register({}),
+    HttpModule,
   ],
   controllers: [AuthController],
   providers: [

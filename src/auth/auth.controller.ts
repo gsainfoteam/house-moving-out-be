@@ -10,7 +10,6 @@ import {
 import {
   ApiBody,
   ApiBearerAuth,
-  ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -23,8 +22,6 @@ import {
 import { JwtToken } from './dto/res/jwt-token.dto';
 import { IssueTokenType } from './types/jwt-token.type';
 import { UserLoginDto } from './dto/req/user-login.dto';
-import { CreateNewPolicyDto } from './dto/req/create-new-policy.dto';
-import { CreateNewPolicyResponseDto } from './dto/res/create-new-policy-response.dto';
 import { ConsentRequiredErrorDto } from './dto/res/consent-required-error.dto';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -115,28 +112,6 @@ export class AuthController {
     res.clearCookie('refresh_token', {
       path: '/auth',
     });
-  }
-
-  @ApiOperation({
-    summary: 'Create New Policy Version',
-    description:
-      'Create a new policy version and set it as the latest active version. When a new policy version is created, all existing active policy versions of the same type (TERMS_OF_SERVICE or PRIVACY_POLICY) are automatically deactivated, and the newly created version becomes the active one. This endpoint is only accessible to admin users.',
-  })
-  @ApiBody({ type: CreateNewPolicyDto })
-  @ApiCreatedResponse({
-    type: CreateNewPolicyResponseDto,
-    description: 'Policy version created successfully',
-  })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiConflictResponse({ description: 'Policy version already exists' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @Post('admin/policy')
-  @UseGuards(AdminGuard)
-  async createNewPolicyVersion(
-    @Body() createNewPolicyDto: CreateNewPolicyDto,
-  ): Promise<CreateNewPolicyResponseDto> {
-    return await this.authService.createNewPolicyVersion(createNewPolicyDto);
   }
 
   @ApiOperation({

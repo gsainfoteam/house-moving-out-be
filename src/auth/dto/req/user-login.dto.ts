@@ -27,7 +27,7 @@ export class UserLoginDto {
 
   @ApiPropertyOptional({
     description: 'Version of terms of service',
-    example: '1.0.0',
+    example: '260301',
   })
   @ValidateIf((o: UserLoginDto) => o.agreedToTerms === true)
   @IsDefined()
@@ -37,7 +37,7 @@ export class UserLoginDto {
 
   @ApiPropertyOptional({
     description: 'Version of privacy policy',
-    example: '1.0.0',
+    example: '260301',
   })
   @ValidateIf((o: UserLoginDto) => o.agreedToPrivacy === true)
   @IsDefined()

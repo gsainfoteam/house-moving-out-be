@@ -1,8 +1,3 @@
-export interface PolicyVersion {
-  version: string;
-  createdAt: Date;
-}
-
 export interface UserConsent {
   version: string;
   agreedAt: Date;
@@ -20,4 +15,20 @@ export interface ConsentData {
   agreedToPrivacy?: boolean;
   termsVersion?: string;
   privacyVersion?: string;
+}
+
+export interface ValidatedConsentData {
+  termsVersion: string;
+  privacyVersion: string;
+}
+
+export interface LatestPolicyVersionResponse {
+  service: string;
+  privacy: string;
+  tos: string;
+}
+
+export interface LatestPolicyVersions {
+  terms: string;
+  privacy: string;
 }

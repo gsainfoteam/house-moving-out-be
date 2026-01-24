@@ -1,5 +1,10 @@
 import { InfoteamIdpService } from '@lib/infoteam-idp';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthRepository } from './auth.repository';
 import { Admin, ConsentType, User } from 'generated/prisma/client';
@@ -9,17 +14,21 @@ import { ConfigService } from '@nestjs/config';
 import ms, { StringValue } from 'ms';
 import { ConsentRequiredException } from './exceptions/consent-required.exception';
 import {
-  PolicyVersion,
   UserConsent,
   ConsentRequirement,
   ConsentData,
+  ValidatedConsentData,
+  LatestPolicyVersionResponse,
+  LatestPolicyVersions,
 } from './types/consent.type';
 import { PrismaTransaction } from '../common/types';
 import { PrismaService } from '@lib/prisma';
-import { CreateNewPolicyResponseDto } from './dto/res/create-new-policy-response.dto';
-import { UserLoginDto } from './dto/req/user-login.dto';
-import { CreateNewPolicyDto } from './dto/req/create-new-policy.dto';
 import { Loggable } from '@lib/logger';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom, TimeoutError, throwError } from 'rxjs';
+import { catchError, map, timeout } from 'rxjs/operators';
+import { AxiosError } from 'axios';
+import { UserLoginDto } from './dto/req/user-login.dto';
 
 @Loggable()
 @Injectable()
@@ -35,6 +44,9 @@ export class AuthService {
   private readonly userJwtIssuer: string;
   private readonly userRefreshTokenExpire: StringValue;
   private readonly refreshTokenHmacSecret: string;
+  private readonly policyApiUrl: string;
+  private readonly ServiceNameForPolicyVersion: string;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     private readonly infoteamIdpService: InfoteamIdpService,
@@ -42,6 +54,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
+    private readonly httpService: HttpService,
   ) {
     this.adminJwtSecret =
       this.configService.getOrThrow<string>('ADMIN_JWT_SECRET');
@@ -68,6 +81,55 @@ export class AuthService {
     this.refreshTokenHmacSecret = this.configService.getOrThrow<string>(
       'REFRESH_TOKEN_HMAC_SECRET',
     );
+    this.policyApiUrl = this.configService.getOrThrow<string>('POLICY_API_URL');
+    this.ServiceNameForPolicyVersion = this.configService.getOrThrow<string>(
+      'SERVICE_NAME_FOR_POLICY_VERSION',
+    );
+  }
+
+  private async getLatestPolicyVersions(): Promise<LatestPolicyVersions> {
+    const { service, tos, privacy } = await firstValueFrom(
+      this.httpService.get<LatestPolicyVersionResponse>(this.policyApiUrl).pipe(
+        timeout(10_000),
+        map((res) => res.data),
+        catchError((err: unknown) => {
+          if (err instanceof TimeoutError) {
+            this.logger.error('Policy API timeout after 10000ms');
+            return throwError(
+              () => new InternalServerErrorException('Policy API timeout'),
+            );
+          }
+
+          const axiosErr = err as AxiosError;
+          this.logger.error(axiosErr?.message ?? 'Unknown error');
+          return throwError(
+            () =>
+              new InternalServerErrorException(
+                'Failed to fetch policy versions',
+              ),
+          );
+        }),
+      ),
+    );
+
+    if (service !== this.ServiceNameForPolicyVersion) {
+      this.logger.error('Service name for policy version mismatch');
+      throw new InternalServerErrorException(
+        'Service name for policy version mismatch',
+      );
+    }
+
+    if (!tos || !privacy) {
+      this.logger.error('Missing required policy version fields');
+      throw new InternalServerErrorException(
+        'Missing required policy version fields',
+      );
+    }
+
+    return {
+      terms: tos,
+      privacy: privacy,
+    };
   }
 
   async adminLogin(auth: string): Promise<IssueTokenType> {
@@ -132,6 +194,8 @@ export class AuthService {
       privacyVersion: body?.privacyVersion,
     };
 
+    const latestPolicyVersions = await this.getLatestPolicyVersions();
+
     const { refreshToken, sessionId, expiredAt } =
       await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
         const user = await this.authRepository.upsertUserInTx(userinfo, tx);
@@ -139,6 +203,7 @@ export class AuthService {
         await this.validateAndHandleConsentsInTransaction(
           user,
           consentData,
+          latestPolicyVersions,
           tx,
         );
 
@@ -183,41 +248,30 @@ export class AuthService {
   private async validateAndHandleConsentsInTransaction(
     user: User,
     consentData: ConsentData,
+    latestPolicyVersions: LatestPolicyVersions,
     tx: PrismaTransaction,
   ): Promise<void> {
-    const [
-      activeTermsPolicy,
-      activePrivacyPolicy,
-      latestTermsConsent,
-      latestPrivacyConsent,
-    ] = await Promise.all([
-      this.authRepository.getActivePolicyVersionInTx(
-        ConsentType.TERMS_OF_SERVICE,
-        tx,
-      ),
-      this.authRepository.getActivePolicyVersionInTx(
-        ConsentType.PRIVACY_POLICY,
-        tx,
-      ),
-      this.authRepository.getLatestUserConsentInTx(
-        user.uuid,
-        ConsentType.TERMS_OF_SERVICE,
-        tx,
-      ),
-      this.authRepository.getLatestUserConsentInTx(
-        user.uuid,
-        ConsentType.PRIVACY_POLICY,
-        tx,
-      ),
-    ]);
+    const [latestTermsUserConsent, latestPrivacyUserConsent] =
+      await Promise.all([
+        this.authRepository.getLatestUserConsentInTx(
+          user.uuid,
+          ConsentType.TERMS_OF_SERVICE,
+          tx,
+        ),
+        this.authRepository.getLatestUserConsentInTx(
+          user.uuid,
+          ConsentType.PRIVACY_POLICY,
+          tx,
+        ),
+      ]);
 
     const termsRequirement = this.checkConsentRequirement(
-      latestTermsConsent,
-      activeTermsPolicy,
+      latestTermsUserConsent,
+      latestPolicyVersions.terms,
     );
     const privacyRequirement = this.checkConsentRequirement(
-      latestPrivacyConsent,
-      activePrivacyPolicy,
+      latestPrivacyUserConsent,
+      latestPolicyVersions.privacy,
     );
 
     if (termsRequirement.needsConsent || privacyRequirement.needsConsent) {
@@ -225,13 +279,14 @@ export class AuthService {
         consentData,
         termsRequirement,
         privacyRequirement,
-        activeTermsPolicy,
-        activePrivacyPolicy,
       );
 
       await this.saveUserConsentsInTransaction(
         user,
-        consentData,
+        {
+          termsVersion: consentData.termsVersion!,
+          privacyVersion: consentData.privacyVersion!,
+        },
         termsRequirement.needsConsent,
         privacyRequirement.needsConsent,
         tx,
@@ -241,31 +296,30 @@ export class AuthService {
 
   private checkConsentRequirement(
     latestConsent: UserConsent | null,
-    activePolicy: PolicyVersion | null,
+    activePolicyVersion: string,
   ): ConsentRequirement {
     const needsConsent: boolean =
-      !latestConsent ||
-      (activePolicy !== null && latestConsent.version !== activePolicy.version);
+      !latestConsent || latestConsent.version !== activePolicyVersion;
     const hasNeverConsented: boolean = !latestConsent;
 
     return {
       needsConsent,
       hasNeverConsented,
       currentVersion: latestConsent?.version,
-      requiredVersion: activePolicy?.version ?? 'POLICY_NOT_SET',
+      requiredVersion: activePolicyVersion,
     };
   }
 
   private validateConsentData(
-    consentData: ConsentData,
+    {
+      agreedToTerms,
+      agreedToPrivacy,
+      termsVersion,
+      privacyVersion,
+    }: ConsentData,
     termsRequirement: ConsentRequirement,
     privacyRequirement: ConsentRequirement,
-    activeTermsPolicy: PolicyVersion | null,
-    activePrivacyPolicy: PolicyVersion | null,
   ): void {
-    const { agreedToTerms, agreedToPrivacy, termsVersion, privacyVersion } =
-      consentData;
-
     const isFirstLogin =
       termsRequirement.hasNeverConsented ||
       privacyRequirement.hasNeverConsented;
@@ -310,30 +364,35 @@ export class AuthService {
 
     if (
       termsRequirement.needsConsent &&
-      activeTermsPolicy &&
-      termsVersion !== activeTermsPolicy.version
+      termsVersion !== termsRequirement.requiredVersion
     ) {
       versionErrors.terms = {
         currentVersion: termsRequirement.currentVersion,
-        requiredVersion: activeTermsPolicy.version,
+        requiredVersion: termsRequirement.requiredVersion,
       };
     }
 
     if (
       privacyRequirement.needsConsent &&
-      activePrivacyPolicy &&
-      privacyVersion !== activePrivacyPolicy.version
+      privacyVersion !== privacyRequirement.requiredVersion
     ) {
       versionErrors.privacy = {
         currentVersion: privacyRequirement.currentVersion,
-        requiredVersion: activePrivacyPolicy.version,
+        requiredVersion: privacyRequirement.requiredVersion,
       };
     }
 
     if (versionErrors.terms || versionErrors.privacy) {
+      const errorCode = isFirstLogin
+        ? 'CONSENT_REQUIRED'
+        : 'CONSENT_UPDATE_REQUIRED';
+      const errorMessage = isFirstLogin
+        ? 'Invalid consent version for first login'
+        : 'Invalid consent version for updated policy';
+
       throw new ConsentRequiredException(
-        'Invalid consent version',
-        'CONSENT_UPDATE_REQUIRED',
+        errorMessage,
+        errorCode,
         versionErrors,
       );
     }
@@ -341,26 +400,24 @@ export class AuthService {
 
   private async saveUserConsentsInTransaction(
     user: User,
-    consentData: ConsentData,
+    { termsVersion, privacyVersion }: ValidatedConsentData,
     needTermsConsent: boolean,
     needPrivacyConsent: boolean,
     tx: PrismaTransaction,
   ): Promise<void> {
-    const { termsVersion, privacyVersion } = consentData;
-
     const consentsToCreate: Array<{
       consentType: ConsentType;
       version: string;
     }> = [];
 
-    if (needTermsConsent && termsVersion) {
+    if (needTermsConsent) {
       consentsToCreate.push({
         consentType: ConsentType.TERMS_OF_SERVICE,
         version: termsVersion,
       });
     }
 
-    if (needPrivacyConsent && privacyVersion) {
+    if (needPrivacyConsent) {
       consentsToCreate.push({
         consentType: ConsentType.PRIVACY_POLICY,
         version: privacyVersion,
@@ -473,12 +530,5 @@ export class AuthService {
 
   async userLogout(userUuid: string): Promise<void> {
     await this.authRepository.deleteAllUserRefreshTokens(userUuid);
-  }
-
-  async createNewPolicyVersion({
-    type,
-    version,
-  }: CreateNewPolicyDto): Promise<CreateNewPolicyResponseDto> {
-    return await this.authRepository.createNewPolicyVersion({ type, version });
   }
 }

@@ -86,18 +86,6 @@ model UserConsent {
   @@map("user_consent")
 }
 
-model PolicyVersion {
-  uuid      String      @id @default(uuid())
-  type      ConsentType
-  version   String
-  isActive  Boolean     @default(true) @map("is_active")
-  createdAt DateTime    @default(now()) @map("created_at")
-
-  @@unique([type, version])
-  @@index([type, isActive])
-  @@map("policy_version")
-}
-
 model AuditLog {
   uuid        String   @id @default(uuid())
   action      String
