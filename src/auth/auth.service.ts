@@ -45,6 +45,7 @@ export class AuthService {
   private readonly userRefreshTokenExpire: StringValue;
   private readonly refreshTokenHmacSecret: string;
   private readonly policyApiUrl: string;
+  private readonly ServiceNameForPolicyVersion: string;
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
@@ -81,6 +82,9 @@ export class AuthService {
       'REFRESH_TOKEN_HMAC_SECRET',
     );
     this.policyApiUrl = this.configService.getOrThrow<string>('POLICY_API_URL');
+    this.ServiceNameForPolicyVersion = this.configService.getOrThrow<string>(
+      'SERVICE_NAME_FOR_POLICY_VERSION',
+    );
   }
 
   private async getLatestPolicyVersions(): Promise<LatestPolicyVersions> {
@@ -88,10 +92,26 @@ export class AuthService {
       this.httpService.get<LatestPolicyVersionResponse>(this.policyApiUrl).pipe(
         catchError((error: AxiosError) => {
           this.logger.error(error.message);
-          throw new InternalServerErrorException();
+          throw new InternalServerErrorException(
+            'Failed to fetch policy versions',
+          );
         }),
       ),
     );
+
+    if (response.data.service !== this.ServiceNameForPolicyVersion) {
+      this.logger.error('Service name for policy version mismatch');
+      throw new InternalServerErrorException(
+        'Service name for policy version mismatch',
+      );
+    }
+
+    if (!response.data.tos || !response.data.privacy) {
+      this.logger.error('Missing required policy version fields');
+      throw new InternalServerErrorException(
+        'Missing required policy version fields',
+      );
+    }
 
     return {
       terms: response.data.tos,
