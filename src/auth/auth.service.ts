@@ -350,9 +350,16 @@ export class AuthService {
     }
 
     if (versionErrors.terms || versionErrors.privacy) {
+      const errorCode = isFirstLogin
+        ? 'CONSENT_REQUIRED'
+        : 'CONSENT_UPDATE_REQUIRED';
+      const errorMessage = isFirstLogin
+        ? 'Invalid consent version for first login'
+        : 'Invalid consent version for updated policy';
+
       throw new ConsentRequiredException(
-        'Invalid consent version',
-        'CONSENT_UPDATE_REQUIRED',
+        errorMessage,
+        errorCode,
         versionErrors,
       );
     }

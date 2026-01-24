@@ -11,7 +11,7 @@ class ConsentVersionInfo {
 
   @ApiProperty({
     description: 'Required version of the consent',
-    example: '1.0.0',
+    example: '260301',
   })
   requiredVersion: string;
 }
