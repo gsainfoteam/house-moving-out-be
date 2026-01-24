@@ -3,10 +3,12 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEmail,
+  IsEnum,
   IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
+import { Gender } from 'generated/prisma/client';
 
 export class InspectorDto {
   @ApiProperty({
@@ -29,6 +31,14 @@ export class InspectorDto {
   })
   @IsString()
   studentNumber: string;
+
+  @ApiProperty({
+    example: Gender.MALE,
+    description: 'Inspector gender',
+    enum: Gender,
+  })
+  @IsEnum(Gender)
+  gender: Gender;
 
   @ApiProperty({
     example: [
