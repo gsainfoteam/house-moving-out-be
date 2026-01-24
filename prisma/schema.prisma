@@ -231,11 +231,19 @@ model InspectorAvailableSlot {
   @@map("inspector_available_slot")
 }
 
+enum Gender {
+  MALE
+  FEMALE
+
+  @@map("gender")
+}
+
 model Inspector {
   uuid          String @id @default(uuid())
   name          String
   email         String @unique
   studentNumber String @map("student_number")
+  gender        Gender
 
   availableSlots InspectorAvailableSlot[]
 
