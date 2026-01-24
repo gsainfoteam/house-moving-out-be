@@ -25,8 +25,8 @@ import { PrismaTransaction } from '../common/types';
 import { PrismaService } from '@lib/prisma';
 import { Loggable } from '@lib/logger';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { firstValueFrom, TimeoutError, throwError } from 'rxjs';
+import { catchError, map, timeout } from 'rxjs/operators';
 import { AxiosError } from 'axios';
 import { UserLoginDto } from './dto/req/user-login.dto';
 
@@ -88,25 +88,38 @@ export class AuthService {
   }
 
   private async getLatestPolicyVersions(): Promise<LatestPolicyVersions> {
-    const response = await firstValueFrom(
+    const { service, tos, privacy } = await firstValueFrom(
       this.httpService.get<LatestPolicyVersionResponse>(this.policyApiUrl).pipe(
-        catchError((error: AxiosError) => {
-          this.logger.error(error.message);
-          throw new InternalServerErrorException(
-            'Failed to fetch policy versions',
+        timeout(10_000),
+        map((res) => res.data),
+        catchError((err: unknown) => {
+          if (err instanceof TimeoutError) {
+            this.logger.error('Policy API timeout after 10000ms');
+            return throwError(
+              () => new InternalServerErrorException('Policy API timeout'),
+            );
+          }
+
+          const axiosErr = err as AxiosError;
+          this.logger.error(axiosErr?.message ?? 'Unknown error');
+          return throwError(
+            () =>
+              new InternalServerErrorException(
+                'Failed to fetch policy versions',
+              ),
           );
         }),
       ),
     );
 
-    if (response.data.service !== this.ServiceNameForPolicyVersion) {
+    if (service !== this.ServiceNameForPolicyVersion) {
       this.logger.error('Service name for policy version mismatch');
       throw new InternalServerErrorException(
         'Service name for policy version mismatch',
       );
     }
 
-    if (!response.data.tos || !response.data.privacy) {
+    if (!tos || !privacy) {
       this.logger.error('Missing required policy version fields');
       throw new InternalServerErrorException(
         'Missing required policy version fields',
@@ -114,8 +127,8 @@ export class AuthService {
     }
 
     return {
-      terms: response.data.tos,
-      privacy: response.data.privacy,
+      terms: tos,
+      privacy: privacy,
     };
   }
 
