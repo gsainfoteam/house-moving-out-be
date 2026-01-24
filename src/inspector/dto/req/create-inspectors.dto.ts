@@ -8,7 +8,7 @@ import {
   IsUUID,
   ValidateNested,
 } from 'class-validator';
-import { Gender } from 'generated/prisma/enums';
+import { Gender } from 'generated/prisma/client';
 
 export class InspectorDto {
   @ApiProperty({

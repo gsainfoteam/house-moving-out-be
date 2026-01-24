@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { InspectionSlot } from 'generated/prisma/client';
+import { Gender, InspectionSlot } from 'generated/prisma/client';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { InspectionSlotResDto } from 'src/move-out/dto/res/move-out-schedule-with-slots-res.dto';
 
@@ -28,6 +28,13 @@ export class InspectorResDto {
     description: 'Inspector student number',
   })
   studentNumber: string;
+
+  @ApiProperty({
+    example: Gender.MALE,
+    description: 'Inspector gender',
+    enum: Gender,
+  })
+  gender: Gender;
 
   @ApiProperty({
     description: 'Available inspection times',
