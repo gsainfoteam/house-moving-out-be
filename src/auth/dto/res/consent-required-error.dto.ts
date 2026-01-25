@@ -48,8 +48,9 @@ export class ConsentRequiredErrorDto {
   })
   statusCode: number;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: RequiredConsents,
+    description: 'Required consent information',
   })
-  requiredConsents?: RequiredConsents;
+  requiredConsents: RequiredConsents;
 }
