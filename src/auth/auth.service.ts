@@ -353,7 +353,16 @@ export class AuthService {
           ? 'Consent required for first login'
           : 'Consent required for updated policy',
         isFirstLogin ? 'CONSENT_REQUIRED' : 'CONSENT_UPDATE_REQUIRED',
-        missingConsents,
+        {
+          terms: {
+            currentVersion: termsRequirement.currentVersion,
+            requiredVersion: termsRequirement.requiredVersion,
+          },
+          privacy: {
+            currentVersion: privacyRequirement.currentVersion,
+            requiredVersion: privacyRequirement.requiredVersion,
+          },
+        },
       );
     }
 
@@ -390,11 +399,16 @@ export class AuthService {
         ? 'Invalid consent version for first login'
         : 'Invalid consent version for updated policy';
 
-      throw new ConsentRequiredException(
-        errorMessage,
-        errorCode,
-        versionErrors,
-      );
+      throw new ConsentRequiredException(errorMessage, errorCode, {
+        terms: {
+          currentVersion: termsRequirement.currentVersion,
+          requiredVersion: termsRequirement.requiredVersion,
+        },
+        privacy: {
+          currentVersion: privacyRequirement.currentVersion,
+          requiredVersion: privacyRequirement.requiredVersion,
+        },
+      });
     }
   }
 

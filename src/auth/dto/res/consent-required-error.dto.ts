@@ -17,15 +17,17 @@ class ConsentVersionInfo {
 }
 
 class RequiredConsents {
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: ConsentVersionInfo,
+    description: 'Terms of service consent information',
   })
-  terms?: ConsentVersionInfo;
+  terms: ConsentVersionInfo;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: ConsentVersionInfo,
+    description: 'Privacy policy consent information',
   })
-  privacy?: ConsentVersionInfo;
+  privacy: ConsentVersionInfo;
 }
 
 export class ConsentRequiredErrorDto {
@@ -48,8 +50,9 @@ export class ConsentRequiredErrorDto {
   })
   statusCode: number;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: RequiredConsents,
+    description: 'Required consent information',
   })
-  requiredConsents?: RequiredConsents;
+  requiredConsents: RequiredConsents;
 }
