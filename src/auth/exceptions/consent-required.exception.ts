@@ -5,8 +5,8 @@ export class ConsentRequiredException extends HttpException {
     message: string,
     errorCode: string,
     requiredConsents: {
-      terms?: { currentVersion?: string; requiredVersion: string };
-      privacy?: { currentVersion?: string; requiredVersion: string };
+      terms: { currentVersion?: string; requiredVersion: string };
+      privacy: { currentVersion?: string; requiredVersion: string };
     },
   ) {
     super(
