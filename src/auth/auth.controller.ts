@@ -1,15 +1,15 @@
 import {
+  Body,
   Controller,
   Post,
   Req,
   Res,
   UnauthorizedException,
   UseGuards,
-  Body,
 } from '@nestjs/common';
 import {
-  ApiBody,
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -19,100 +19,19 @@ import {
   ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { JwtToken } from './dto/res/jwt-token.dto';
-import { IssueTokenType } from './types/jwt-token.type';
+import { Request, Response } from 'express';
+import { User } from 'generated/prisma/client';
+import { AuthService } from './auth.service';
+import { GetUser } from './decorator/get-user.decorator';
 import { UserLoginDto } from './dto/req/user-login.dto';
 import { ConsentRequiredErrorDto } from './dto/res/consent-required-error.dto';
-import { Request, Response } from 'express';
-import { AuthService } from './auth.service';
-import { AdminGuard } from './guard/admin.guard';
-import { GetAdmin } from './decorator/get-admin.decorator';
+import { JwtToken } from './dto/res/jwt-token.dto';
 import { UserGuard } from './guard/user.guard';
-import { GetUser } from './decorator/get-user.decorator';
-import { Admin, User } from 'generated/prisma/client';
+import { IssueTokenType } from './types/jwt-token.type';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @ApiOperation({
-    summary: 'Login',
-    description: 'Issue JWT token for admin',
-  })
-  @ApiOkResponse({ type: JwtToken, description: 'Return jwt token' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiOAuth2(['email', 'profile', 'student_id', 'phone_number'], 'oauth2')
-  @Post('admin/login')
-  async adminLogin(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<JwtToken> {
-    const auth = req.headers['authorization'];
-    if (!auth) throw new UnauthorizedException();
-
-    const { access_token, refresh_token, refreshTokenExpiredAt } =
-      await this.authService.adminLogin(auth);
-    res.cookie('refresh_token', refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      expires: refreshTokenExpiredAt,
-      path: '/auth',
-    });
-
-    return { access_token };
-  }
-
-  @ApiOperation({
-    summary: 'Refresh token',
-    description: 'Refresh the access token for admin',
-  })
-  @ApiCreatedResponse({ type: JwtToken, description: 'Return jwt token' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @Post('admin/refresh')
-  async adminRefresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<JwtToken> {
-    const refreshToken = req.cookies['refresh_token'] as string;
-    if (!refreshToken) throw new UnauthorizedException();
-
-    const { access_token, refresh_token, refreshTokenExpiredAt } =
-      await this.authService.adminRefresh(refreshToken);
-    res.cookie('refresh_token', refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      expires: refreshTokenExpiredAt,
-      path: '/auth',
-    });
-
-    return { access_token };
-  }
-
-  @ApiOperation({
-    summary: 'Logout',
-    description:
-      'Logout the admin from the cookie. Delete the refresh token from DB.',
-  })
-  @ApiOkResponse({ description: 'Logout' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @Post('admin/logout')
-  @UseGuards(AdminGuard)
-  async adminLogout(
-    @GetAdmin() admin: Admin,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<void> {
-    await this.authService.adminLogout(admin.uuid);
-    res.clearCookie('refresh_token', {
-      path: '/auth',
-    });
-  }
 
   @ApiOperation({
     summary: 'User Login',

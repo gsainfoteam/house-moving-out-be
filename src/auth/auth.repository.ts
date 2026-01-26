@@ -5,11 +5,9 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { AdminRefreshToken, UserRefreshToken } from 'generated/prisma/browser';
+import { UserRefreshToken } from 'generated/prisma/browser';
 import { Admin, ConsentType, User } from 'generated/prisma/client';
-import ms, { StringValue } from 'ms';
 import { PrismaTransaction } from '../common/types';
 import { UserInfo } from '@lib/infoteam-idp/types/userInfo.type';
 import { Loggable } from '@lib/logger';
@@ -18,19 +16,7 @@ import { Loggable } from '@lib/logger';
 @Injectable()
 export class AuthRepository {
   private readonly logger = new Logger(AuthRepository.name);
-  private readonly adminRefreshTokenExpire: number;
-  private readonly userRefreshTokenExpire: number;
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly configService: ConfigService,
-  ) {
-    this.adminRefreshTokenExpire = ms(
-      this.configService.getOrThrow<StringValue>('ADMIN_REFRESH_TOKEN_EXPIRE'),
-    );
-    this.userRefreshTokenExpire = ms(
-      this.configService.getOrThrow<StringValue>('USER_REFRESH_TOKEN_EXPIRE'),
-    );
-  }
+  constructor(private readonly prismaService: PrismaService) {}
 
   async findAdmin(uuid: string): Promise<Admin> {
     return await this.prismaService.admin
@@ -49,126 +35,6 @@ export class AuthRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findAdmin error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async setAdminRefreshToken(
-    uuid: string,
-    hashedRefreshToken: string,
-    sessionId: string,
-    expiredAt: Date,
-  ): Promise<void> {
-    await this.prismaService.adminRefreshToken
-      .create({
-        data: {
-          adminUuid: uuid,
-          refreshToken: hashedRefreshToken,
-          sessionId,
-          expiredAt,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `setAdminRefreshToken prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`setAdminRefreshToken error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async findAdminByRefreshToken(
-    hashedRefreshToken: string,
-  ): Promise<Pick<AdminRefreshToken, 'adminUuid' | 'sessionId' | 'expiredAt'>> {
-    return await this.prismaService.adminRefreshToken
-      .findUniqueOrThrow({
-        where: {
-          refreshToken: hashedRefreshToken,
-          expiredAt: { gt: new Date() },
-        },
-        select: {
-          adminUuid: true,
-          sessionId: true,
-          expiredAt: true,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug('admin refresh token not found');
-            throw new UnauthorizedException();
-          }
-          this.logger.error(
-            `findAdminByRefreshToken prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findAdminByRefreshToken error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async findAdminRefreshTokenBySessionId(
-    adminUuid: string,
-    sessionId: string,
-  ): Promise<AdminRefreshToken | null> {
-    return await this.prismaService.adminRefreshToken
-      .findFirst({
-        where: {
-          adminUuid,
-          sessionId,
-          expiredAt: { gt: new Date() },
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findAdminRefreshTokenBySessionId prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findAdminRefreshTokenBySessionId error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async deleteAdminRefreshToken(hashedRefreshToken: string): Promise<void> {
-    await this.prismaService.adminRefreshToken
-      .deleteMany({
-        where: {
-          refreshToken: hashedRefreshToken,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `deleteAdminRefreshToken prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`deleteAdminRefreshToken error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async deleteAllAdminRefreshTokens(adminUuid: string): Promise<void> {
-    await this.prismaService.adminRefreshToken
-      .deleteMany({
-        where: {
-          adminUuid,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `deleteAllAdminRefreshTokens prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`deleteAllAdminRefreshTokens error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
