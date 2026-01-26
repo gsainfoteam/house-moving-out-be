@@ -156,6 +156,7 @@ model InspectionTargetInfo {
   roomNumber          String   @map("room_number")
   studentName         String   @map("student_name")
   admissionYear       String   @map("admission_year")
+  inspectionCount     Int      @default(0) @map("inspection_count")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -195,7 +196,6 @@ model InspectionApplication {
   inspectionTargetInfoUuid String   @map("inspection_target_info_uuid")
   inspectionSlotUuid       String   @map("inspection_slot_uuid")
   isPassed                 Boolean? @map("is_passed")
-  reInspectionCount        Int      @default(0) @map("re_inspection_count")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
 
