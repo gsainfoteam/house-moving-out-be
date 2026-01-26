@@ -20,9 +20,11 @@ model Admin {
   email         String @unique
   phoneNumber   String @map("phone_number")
   studentNumber String @map("student_number")
+  userUuid      String @unique @map("user_uuid")
 
   adminRefreshTokens AdminRefreshToken[]
   auditLogs          AuditLog[]
+  user               User                @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
 
   @@map("admin")
 }
@@ -55,6 +57,7 @@ model User {
   userRefreshTokens      UserRefreshToken[]
   userConsents           UserConsent[]
   inspectionApplications InspectionApplication[]
+  admin                  Admin?
 
   @@map("user")
 }
