@@ -43,7 +43,7 @@ export class InspectorController {
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
+  @ApiBearerAuth('user')
   @UseGuards(AdminGuard)
   @Get()
   async getInspectors(): Promise<InspectorResDto[]> {
@@ -61,7 +61,7 @@ export class InspectorController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiConflictResponse({ description: 'Conflict' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
+  @ApiBearerAuth('user')
   @UseGuards(AdminGuard)
   @Post()
   async createInspectors(@Body() dto: CreateInspectorsDto): Promise<void> {
@@ -80,7 +80,7 @@ export class InspectorController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
+  @ApiBearerAuth('user')
   @UseGuards(AdminGuard)
   @Get(':id')
   async getInspector(
@@ -100,7 +100,7 @@ export class InspectorController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
+  @ApiBearerAuth('user')
   @UseGuards(AdminGuard)
   @Patch(':id')
   async updateInspector(
@@ -124,7 +124,7 @@ export class InspectorController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
+  @ApiBearerAuth('user')
   @UseGuards(AdminGuard)
   @Delete(':id')
   async deleteInspector(
