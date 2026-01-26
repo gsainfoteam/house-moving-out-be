@@ -14,6 +14,7 @@ import {
   Prisma,
   InspectionSlot,
   InspectionApplication,
+  Gender,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -356,6 +357,7 @@ export class MoveOutRepository {
     userUuid: string,
     inspectionTargetInfoUuid: string,
     inspectionSlotUuid: string,
+    inspectorUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
@@ -364,6 +366,7 @@ export class MoveOutRepository {
           userUuid,
           inspectionTargetInfoUuid,
           inspectionSlotUuid,
+          inspectorUuid,
         },
       })
       .catch((error) => {
@@ -407,6 +410,41 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findMoveOutScheduleBySlotUuidInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findAvailableInspectorBySlotUuidInTx(
+    slotUuid: string,
+    gender: Gender,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.inspector
+      .findFirstOrThrow({
+        where: {
+          availableSlots: { some: { inspectionSlotUuid: slotUuid } },
+          gender,
+        },
+        orderBy: {
+          applications: {
+            _count: 'asc',
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
+            throw new NotFoundException('Inspection slot not found.');
+          }
+          this.logger.error(
+            `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findAvailableInspectorBySlotUuidInTx error: ${error}`,
+        );
         throw new InternalServerErrorException('Unknown Error');
       });
   }

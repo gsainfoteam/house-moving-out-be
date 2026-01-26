@@ -198,10 +198,12 @@ model InspectionApplication {
   reInspectionCount        Int      @default(0) @map("re_inspection_count")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+  inspectorUuid            String   @map("inspector_uuid")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   inspectionTargetInfo InspectionTargetInfo @relation(fields: [inspectionTargetInfoUuid], references: [uuid], onDelete: Cascade)
   inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
+  inspector            Inspector            @relation(fields: [inspectorUuid], references: [uuid])
 
   @@unique([inspectionTargetInfoUuid])
   @@index([inspectionSlotUuid])
@@ -234,6 +236,7 @@ model Inspector {
   gender        Gender
 
   availableSlots InspectorAvailableSlot[]
+  applications   InspectionApplication[]
 
   @@map("inspector")
 }

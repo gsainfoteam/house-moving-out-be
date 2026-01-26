@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { MoveOutSchedule, Season } from 'generated/prisma/client';
+import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
 import {
   CreateMoveOutScheduleDto,
@@ -529,11 +529,19 @@ export class MoveOutService {
           tx,
         );
 
+        const inspector =
+          await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
+            inspectionSlotUuid,
+            isMale ? Gender.MALE : Gender.FEMALE,
+            tx,
+          );
+
         const application =
           await this.moveOutRepository.createInspectionApplicationInTx(
             user.uuid,
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
+            inspector.uuid,
             tx,
           );
 
