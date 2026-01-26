@@ -478,8 +478,8 @@ export class MoveOutService {
 
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        const schedule =
-          await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
+        const { schedule, ...slot } =
+          await this.moveOutRepository.findInspectionSlotByUuidInTx(
             inspectionSlotUuid,
             tx,
           );
@@ -506,11 +506,6 @@ export class MoveOutService {
 
         const isMale = this.extractGenderFromHouseName(
           inspectionTargetInfo.houseName,
-        );
-
-        const slot = await this.moveOutRepository.findInspectionSlotByUuidInTx(
-          inspectionSlotUuid,
-          tx,
         );
 
         if (isMale) {
