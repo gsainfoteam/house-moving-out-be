@@ -22,25 +22,10 @@ model Admin {
   studentNumber String @map("student_number")
   userUuid      String @unique @map("user_uuid")
 
-  adminRefreshTokens AdminRefreshToken[]
-  auditLogs          AuditLog[]
-  user               User                @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  auditLogs AuditLog[]
+  user      User       @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
 
   @@map("admin")
-}
-
-model AdminRefreshToken {
-  uuid         String   @id @default(uuid())
-  adminUuid    String   @map("admin_uuid")
-  refreshToken String   @unique @map("refresh_token")
-  sessionId    String   @map("session_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  expiredAt    DateTime @map("expired_at")
-
-  admin Admin @relation(fields: [adminUuid], references: [uuid], onDelete: Cascade)
-
-  @@index([adminUuid, sessionId])
-  @@map("admin_refresh_token")
 }
 
 model User {
