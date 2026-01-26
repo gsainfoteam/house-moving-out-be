@@ -291,16 +291,42 @@ export class MoveOutRepository {
       });
   }
 
-  async updateInspectionCountInTx(
+  async incrementInspectionCountInTx(
     targetUuid: string,
-    amount: number,
     tx: PrismaTransaction,
   ) {
     return await tx.inspectionTargetInfo
       .update({
         where: { uuid: targetUuid },
         data: {
-          inspectionCount: { increment: amount },
+          inspectionCount: { increment: 1 },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
+            throw new NotFoundException('Inspection target info not found.');
+          }
+          this.logger.error(
+            `updateInspectionCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectionCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async decrementInspectionCountInTx(
+    targetUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.inspectionTargetInfo
+      .update({
+        where: { uuid: targetUuid },
+        data: {
+          inspectionCount: { increment: -1 },
         },
       })
       .catch((error) => {
