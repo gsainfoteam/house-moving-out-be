@@ -6,10 +6,10 @@
 
 */
 -- AlterTable
-ALTER TABLE "admin" ADD COLUMN     "user_uuid" TEXT NOT NULL;
+-- ALTER TABLE "admin" ADD COLUMN     "user_uuid" TEXT NOT NULL;
 
 -- CreateIndex
-CREATE UNIQUE INDEX "admin_user_uuid_key" ON "admin"("user_uuid");
+-- CREATE UNIQUE INDEX "admin_user_uuid_key" ON "admin"("user_uuid");
 
 -- AddForeignKey
-ALTER TABLE "admin" ADD CONSTRAINT "admin_user_uuid_fkey" FOREIGN KEY ("user_uuid") REFERENCES "user"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
+-- ALTER TABLE "admin" ADD CONSTRAINT "admin_user_uuid_fkey" FOREIGN KEY ("user_uuid") REFERENCES "user"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
