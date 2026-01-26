@@ -20,10 +20,9 @@ model Admin {
   email         String @unique
   phoneNumber   String @map("phone_number")
   studentNumber String @map("student_number")
-  userUuid      String @unique @map("user_uuid")
 
   auditLogs AuditLog[]
-  user      User       @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  user      User       @relation(fields: [uuid], references: [uuid], onDelete: Cascade)
 
   @@map("admin")
 }
