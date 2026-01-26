@@ -42,7 +42,7 @@ export class AuthRepository {
   async upsertUserInTx(
     { uuid, name, email, phoneNumber, studentNumber }: UserInfo,
     tx: PrismaTransaction,
-  ): Promise<User> {
+  ): Promise<User & { admin: Admin | null }> {
     return await tx.user
       .upsert({
         where: { uuid },
@@ -59,6 +59,7 @@ export class AuthRepository {
           phoneNumber,
           studentNumber,
         },
+        include: { admin: true },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
@@ -185,9 +186,11 @@ export class AuthRepository {
       });
   }
 
-  async findUserByRefreshToken(
-    hashedRefreshToken: string,
-  ): Promise<Pick<UserRefreshToken, 'userUuid' | 'sessionId' | 'expiredAt'>> {
+  async findUserByRefreshToken(hashedRefreshToken: string): Promise<
+    Pick<UserRefreshToken, 'userUuid' | 'sessionId' | 'expiredAt'> & {
+      user: { admin: Admin | null };
+    }
+  > {
     return await this.prismaService.userRefreshToken
       .findUniqueOrThrow({
         where: {
@@ -198,6 +201,7 @@ export class AuthRepository {
           userUuid: true,
           sessionId: true,
           expiredAt: true,
+          user: { select: { admin: true } },
         },
       })
       .catch((error) => {
@@ -247,6 +251,7 @@ export class AuthRepository {
           uuid,
           deletedAt: null,
         },
+        include: { admin: true },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
