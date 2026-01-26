@@ -291,6 +291,34 @@ export class MoveOutRepository {
       });
   }
 
+  async updateInspectionCountInTx(
+    targetUuid: string,
+    amount: number,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.inspectionTargetInfo
+      .update({
+        where: { uuid: targetUuid },
+        data: {
+          inspectionCount: { increment: amount },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
+            throw new NotFoundException('Inspection target info not found.');
+          }
+          this.logger.error(
+            `updateInspectionCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectionCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findInspectionSlotByUuidInTx(
     slotUuid: string,
     tx: PrismaTransaction,
@@ -379,6 +407,32 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`createInspectionApplicationInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteInspectionApplicationInTx(
+    applicationUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.inspectionApplication
+      .delete({
+        where: { uuid: applicationUuid },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `deleteInspectionApplicationInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteInspectionApplicationInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
