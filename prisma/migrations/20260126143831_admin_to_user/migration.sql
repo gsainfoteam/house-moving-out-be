@@ -9,3 +9,6 @@ ALTER TABLE "admin_refresh_token" DROP CONSTRAINT "admin_refresh_token_admin_uui
 
 -- DropTable
 DROP TABLE "admin_refresh_token";
+
+-- AddForeignKey
+ALTER TABLE "admin" ADD CONSTRAINT "admin_uuid_fkey" FOREIGN KEY ("uuid") REFERENCES "user"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
