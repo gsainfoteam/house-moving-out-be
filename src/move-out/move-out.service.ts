@@ -3,9 +3,16 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
+import {
+  Gender,
+  InspectionApplication,
+  Inspector,
+  MoveOutSchedule,
+  Season,
+} from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
 import {
   CreateMoveOutScheduleDto,
@@ -526,7 +533,7 @@ export class MoveOutService {
           tx,
         );
 
-        const inspector =
+        const inspectors =
           await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
             inspectionSlotUuid,
             isMale ? Gender.MALE : Gender.FEMALE,
@@ -534,11 +541,35 @@ export class MoveOutService {
           );
 
         if (
-          inspector.applications.length >= this.MAX_APPLICATIONS_PER_INSPECTOR
+          !inspectors ||
+          inspectors[0].applications.length >=
+            this.MAX_APPLICATIONS_PER_INSPECTOR
         ) {
-          throw new ConflictException(
-            'Inspector has reached maximum applications.',
-          );
+          throw new NotFoundException('No available inspector found.');
+        }
+
+        let assignedInspector:
+          | (Inspector & { applications: InspectionApplication[] })
+          | null = null;
+
+        for (const inspector of inspectors) {
+          const lockedInspector =
+            await this.moveOutRepository.exclusiveLockInspectorInTx(
+              inspector.uuid,
+              inspectionSlotUuid,
+              tx,
+            );
+          if (
+            lockedInspector.applications.length <
+            this.MAX_APPLICATIONS_PER_INSPECTOR
+          ) {
+            assignedInspector = lockedInspector;
+            break;
+          }
+        }
+
+        if (!assignedInspector) {
+          throw new NotFoundException('No available inspector found.');
         }
 
         const application =
@@ -546,14 +577,11 @@ export class MoveOutService {
             user.uuid,
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
-            inspector.uuid,
+            assignedInspector.uuid,
             tx,
           );
 
         return { applicationUuid: application.uuid };
-      },
-      {
-        isolationLevel: 'Serializable',
       },
     );
   }

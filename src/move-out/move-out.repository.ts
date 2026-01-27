@@ -392,9 +392,9 @@ export class MoveOutRepository {
     slotUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
-  ): Promise<Inspector & { applications: InspectionApplication[] }> {
+  ): Promise<(Inspector & { applications: InspectionApplication[] })[]> {
     return await tx.inspector
-      .findFirstOrThrow({
+      .findMany({
         where: {
           availableSlots: { some: { inspectionSlotUuid: slotUuid } },
           gender,
@@ -412,12 +412,6 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(
-              `Inspector not found for slot uuid: ${slotUuid}, gender: ${gender}`,
-            );
-            throw new NotFoundException('Inspector not found.');
-          }
           this.logger.error(
             `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
           );
@@ -426,6 +420,37 @@ export class MoveOutRepository {
         this.logger.error(
           `findAvailableInspectorBySlotUuidInTx error: ${error}`,
         );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async exclusiveLockInspectorInTx(
+    inspectorUuid: string,
+    slotUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<Inspector & { applications: InspectionApplication[] }> {
+    return await tx.inspector
+      .update({
+        where: { uuid: inspectorUuid },
+        data: {},
+        include: {
+          applications: {
+            where: { inspectionSlotUuid: slotUuid },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`Inspector not found: ${inspectorUuid}`);
+            throw new NotFoundException('Inspector not found.');
+          }
+          this.logger.error(
+            `exclusiveLockInspectorInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`exclusiveLockInspectorInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
