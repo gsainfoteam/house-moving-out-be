@@ -410,8 +410,10 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
-            throw new NotFoundException('Inspection slot not found.');
+            this.logger.debug(
+              `Inspector not found for slot uuid: ${slotUuid}, gender: ${gender}`,
+            );
+            throw new NotFoundException('Inspector not found.');
           }
           this.logger.error(
             `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
