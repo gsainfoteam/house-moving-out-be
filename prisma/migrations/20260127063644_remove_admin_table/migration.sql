@@ -19,11 +19,16 @@ CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER');
 ALTER TABLE "audit_log" DROP CONSTRAINT "audit_log_admin_uuid_fkey";
 
 -- AlterTable
+ALTER TABLE "audit_log" ADD COLUMN "user_uuid";
+UPDATE "audit_log" SET "user_uuid" = "admin_uuid";
 ALTER TABLE "audit_log" DROP COLUMN "admin_uuid",
-ADD COLUMN     "user_uuid" TEXT NOT NULL;
+MODIFY COLUMN     "user_uuid" TEXT NOT NULL;
 
 -- AlterTable
 ALTER TABLE "user" ADD COLUMN     "role" "Role" NOT NULL DEFAULT 'USER';
+
+-- Update admin users
+UPDATE "user" SET "role" = 'ADMIN' WHERE FROM "admin" WHERE "user".email = "admin".email;
 
 -- DropTable
 DROP TABLE "admin";
