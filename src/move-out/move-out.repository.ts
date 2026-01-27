@@ -404,12 +404,12 @@ export class MoveOutRepository {
             where: { inspectionSlotUuid },
           },
         },
+        orderBy: {
+          applications: {
+            _count: 'asc',
+          },
+        },
       })
-      .then((inspectors) =>
-        inspectors.sort(
-          (a, b) => a.applications.length - b.applications.length,
-        ),
-      )
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
