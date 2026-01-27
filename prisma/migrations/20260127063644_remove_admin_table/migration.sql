@@ -28,7 +28,10 @@ ALTER TABLE "audit_log" ALTER COLUMN "user_uuid" SET NOT NULL;
 ALTER TABLE "user" ADD COLUMN     "role" "Role" NOT NULL DEFAULT 'USER';
 
 -- Update admin users
-UPDATE "user" SET "role" = 'ADMIN' WHERE FROM "admin" WHERE "user".email = "admin".email;
+UPDATE "user"
+SET "role" = 'ADMIN'
+FROM "admin"
+WHERE "user"."uuid" = "admin"."uuid";
 
 -- DropTable
 DROP TABLE "admin";
