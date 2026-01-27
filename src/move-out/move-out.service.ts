@@ -33,6 +33,7 @@ import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
+import { InspectorWithApplications } from 'src/inspector/types/inspector-with-applications.type';
 
 @Loggable()
 @Injectable()
@@ -548,9 +549,7 @@ export class MoveOutService {
           throw new NotFoundException('No available inspector found.');
         }
 
-        let assignedInspector:
-          | (Inspector & { applications: InspectionApplication[] })
-          | null = null;
+        let assignedInspector: InspectorWithApplications | null = null;
 
         for (const inspector of inspectors) {
           const lockedInspector =

@@ -15,7 +15,6 @@ import {
   InspectionSlot,
   InspectionApplication,
   Gender,
-  Inspector,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -23,6 +22,7 @@ import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { Loggable } from '@lib/logger';
+import { InspectorWithApplications } from 'src/inspector/types/inspector-with-applications.type';
 
 @Loggable()
 @Injectable()
@@ -392,7 +392,7 @@ export class MoveOutRepository {
     slotUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
-  ): Promise<(Inspector & { applications: InspectionApplication[] })[]> {
+  ): Promise<InspectorWithApplications[]> {
     return await tx.inspector
       .findMany({
         where: {
@@ -428,7 +428,7 @@ export class MoveOutRepository {
     inspectorUuid: string,
     slotUuid: string,
     tx: PrismaTransaction,
-  ): Promise<Inspector & { applications: InspectionApplication[] }> {
+  ): Promise<InspectorWithApplications> {
     return await tx.inspector
       .update({
         where: { uuid: inspectorUuid },
