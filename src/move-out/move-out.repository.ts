@@ -20,6 +20,7 @@ import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto
 import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
+import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
 
 @Loggable()
@@ -487,6 +488,40 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findMoveOutScheduleBySlotUuidInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findApplicationByUserAndSemestersInTx(
+    userUuid: string,
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplicationWithDetails | null> {
+    return await tx.inspectionApplication
+      .findFirst({
+        where: {
+          userUuid,
+          inspectionTargetInfo: {
+            currentSemesterUuid,
+            nextSemesterUuid,
+          },
+        },
+        include: {
+          inspectionSlot: true,
+          inspectionTargetInfo: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findApplicationByUserAndSemesterInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findApplicationByUserAndSemesterInTx error: ${error}`,
+        );
         throw new InternalServerErrorException('Unknown Error');
       });
   }
