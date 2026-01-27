@@ -6,13 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import {
-  Gender,
-  InspectionApplication,
-  Inspector,
-  MoveOutSchedule,
-  Season,
-} from 'generated/prisma/client';
+import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
 import {
   CreateMoveOutScheduleDto,
@@ -542,7 +536,7 @@ export class MoveOutService {
           );
 
         if (
-          !inspectors ||
+          inspectors.length === 0 ||
           inspectors[0].applications.length >=
             this.MAX_APPLICATIONS_PER_INSPECTOR
         ) {

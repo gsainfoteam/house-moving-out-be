@@ -389,19 +389,19 @@ export class MoveOutRepository {
   }
 
   async findAvailableInspectorBySlotUuidInTx(
-    slotUuid: string,
+    inspectionSlotUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
   ): Promise<InspectorWithApplications[]> {
     return await tx.inspector
       .findMany({
         where: {
-          availableSlots: { some: { inspectionSlotUuid: slotUuid } },
+          availableSlots: { some: { inspectionSlotUuid } },
           gender,
         },
         include: {
           applications: {
-            where: { inspectionSlotUuid: slotUuid },
+            where: { inspectionSlotUuid },
           },
         },
         orderBy: {
@@ -426,7 +426,7 @@ export class MoveOutRepository {
 
   async exclusiveLockInspectorInTx(
     inspectorUuid: string,
-    slotUuid: string,
+    inspectionSlotUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectorWithApplications> {
     return await tx.inspector
@@ -435,7 +435,7 @@ export class MoveOutRepository {
         data: {},
         include: {
           applications: {
-            where: { inspectionSlotUuid: slotUuid },
+            where: { inspectionSlotUuid },
           },
         },
       })
