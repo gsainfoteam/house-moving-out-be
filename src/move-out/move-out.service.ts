@@ -535,14 +535,6 @@ export class MoveOutService {
             tx,
           );
 
-        if (
-          inspectors.length === 0 ||
-          inspectors[0].applications.length >=
-            this.MAX_APPLICATIONS_PER_INSPECTOR
-        ) {
-          throw new NotFoundException('No available inspector found.');
-        }
-
         let assignedInspector: InspectorWithApplications | null = null;
 
         for (const inspector of inspectors) {
