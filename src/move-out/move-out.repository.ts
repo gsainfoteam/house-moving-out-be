@@ -15,6 +15,7 @@ import {
   InspectionSlot,
   InspectionApplication,
   Gender,
+  Inspector,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -391,7 +392,7 @@ export class MoveOutRepository {
     slotUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
-  ) {
+  ): Promise<Inspector & { applications: InspectionApplication[] }> {
     return await tx.inspector
       .findFirstOrThrow({
         where: {

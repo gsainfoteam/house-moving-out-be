@@ -25,6 +25,7 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
+import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 
 @Loggable()
 @Injectable()
@@ -474,7 +475,7 @@ export class MoveOutService {
   async applyInspection(
     user: User,
     { inspectionSlotUuid }: ApplyInspectionDto,
-  ): Promise<{ applicationUuid: string }> {
+  ): Promise<ApplyInspectionResDto> {
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return await this.prismaService.$transaction(
