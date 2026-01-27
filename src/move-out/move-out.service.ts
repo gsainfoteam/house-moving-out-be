@@ -534,7 +534,7 @@ export class MoveOutService {
           );
 
         if (
-          inspector.applications.length > this.MAX_APPLICATIONS_PER_INSPECTOR
+          inspector.applications.length >= this.MAX_APPLICATIONS_PER_INSPECTOR
         ) {
           throw new ConflictException(
             'Inspector has reached maximum applications.',
