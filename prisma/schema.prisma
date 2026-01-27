@@ -15,14 +15,10 @@ datasource db {
 }
 
 model Admin {
-  uuid          String @id
-  name          String
-  email         String @unique
-  phoneNumber   String @map("phone_number")
-  studentNumber String @map("student_number")
+  uuid  String @id @default(uuid())
+  email String @unique
 
   auditLogs AuditLog[]
-  user      User       @relation(fields: [uuid], references: [uuid], onDelete: Cascade)
 
   @@map("admin")
 }
@@ -41,7 +37,6 @@ model User {
   userRefreshTokens      UserRefreshToken[]
   userConsents           UserConsent[]
   inspectionApplications InspectionApplication[]
-  admin                  Admin?
 
   @@map("user")
 }
