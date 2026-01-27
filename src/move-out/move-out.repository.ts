@@ -452,7 +452,7 @@ export class MoveOutRepository {
             this.logger.debug(
               `InspectionApplication not found: ${applicationUuid}`,
             );
-            throw new NotFoundException('Inspection application not found.');
+            throw new NotFoundException('Not Found Error');
           }
           this.logger.error(
             `deleteInspectionApplicationInTx prisma error: ${error.message}`,
@@ -522,6 +522,34 @@ export class MoveOutRepository {
         this.logger.error(
           `findApplicationByUserAndSemesterInTx error: ${error}`,
         );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findActiveScheduleInTx(
+    tx: PrismaTransaction,
+  ): Promise<MoveOutSchedule> {
+    return await tx.moveOutSchedule
+      .findFirstOrThrow({
+        where: {
+          isActive: true,
+        },
+        orderBy: {
+          id: 'desc',
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('Activated MoveOut-Schedule not found');
+            throw new NotFoundException('Not Found Error');
+          }
+          this.logger.error(
+            `findActiveScheduleInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findActiveScheduleInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
