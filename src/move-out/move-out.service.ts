@@ -31,6 +31,7 @@ import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 export class MoveOutService {
   private readonly SLOT_DURATION_MINUTES = 30;
   private readonly WEIGHT_FACTOR = 1.5;
+  private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -530,6 +531,14 @@ export class MoveOutService {
             isMale ? Gender.MALE : Gender.FEMALE,
             tx,
           );
+
+        if (
+          inspector.applications.length > this.MAX_APPLICATIONS_PER_INSPECTOR
+        ) {
+          throw new ConflictException(
+            'Inspector has reached maximum applications.',
+          );
+        }
 
         const application =
           await this.moveOutRepository.createInspectionApplicationInTx(

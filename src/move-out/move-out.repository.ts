@@ -398,6 +398,9 @@ export class MoveOutRepository {
           availableSlots: { some: { inspectionSlotUuid: slotUuid } },
           gender,
         },
+        include: {
+          applications: true,
+        },
         orderBy: {
           applications: {
             _count: 'asc',
