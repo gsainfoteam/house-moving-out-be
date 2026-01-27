@@ -116,12 +116,8 @@ export class AuthService {
     };
   }
 
-  async findAdmin(user: User): Promise<Admin | null> {
-    try {
-      return this.authRepository.findAdmin(user.email);
-    } catch {
-      return null;
-    }
+  async findAdmin(user: User): Promise<Admin> {
+    return this.authRepository.findAdmin(user.email);
   }
 
   async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {

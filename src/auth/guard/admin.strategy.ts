@@ -26,7 +26,6 @@ export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
 
     const user = await this.authService.findUser(sub);
     const admin = await this.authService.findAdmin(user);
-    if (!admin) throw new UnauthorizedException('user is not an admin');
     const refreshToken = await this.authService.findUserRefreshTokenBySessionId(
       sub,
       sessionId,
