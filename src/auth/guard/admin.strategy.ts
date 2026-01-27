@@ -35,6 +35,6 @@ export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
       throw new UnauthorizedException('invalid session');
     }
 
-    return user;
+    return { user, admin };
   }
 }
