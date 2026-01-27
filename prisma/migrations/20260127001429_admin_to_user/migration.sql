@@ -10,9 +10,6 @@ ALTER TABLE "admin_refresh_token" DROP CONSTRAINT "admin_refresh_token_admin_uui
 -- DropTable
 DROP TABLE "admin_refresh_token";
 
--- AddForeignKey
-ALTER TABLE "admin" ADD CONSTRAINT "admin_uuid_fkey" FOREIGN KEY ("uuid") REFERENCES "user"("uuid") ON DELETE CASCADE ON UPDATE CASCADE;
-
 /*
   Warnings:
 
@@ -21,8 +18,6 @@ ALTER TABLE "admin" ADD CONSTRAINT "admin_uuid_fkey" FOREIGN KEY ("uuid") REFERE
   - You are about to drop the column `student_number` on the `admin` table. All the data in the column will be lost.
 
 */
--- DropForeignKey
-ALTER TABLE "admin" DROP CONSTRAINT "admin_uuid_fkey";
 
 -- AlterTable
 ALTER TABLE "admin" DROP COLUMN "name",
