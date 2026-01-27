@@ -530,6 +530,7 @@ export class MoveOutService {
 
         const inspectors =
           await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
+            user.email,
             inspectionSlotUuid,
             isMale ? Gender.MALE : Gender.FEMALE,
             tx,

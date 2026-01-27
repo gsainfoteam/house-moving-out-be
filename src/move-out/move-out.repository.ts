@@ -389,6 +389,7 @@ export class MoveOutRepository {
   }
 
   async findAvailableInspectorBySlotUuidInTx(
+    userEmail: string,
     inspectionSlotUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
@@ -396,6 +397,7 @@ export class MoveOutRepository {
     return await tx.inspector
       .findMany({
         where: {
+          email: { not: userEmail },
           availableSlots: { some: { inspectionSlotUuid } },
           gender,
         },
