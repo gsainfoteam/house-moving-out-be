@@ -116,8 +116,12 @@ export class AuthService {
     };
   }
 
-  async findAdmin(uuid: string): Promise<Admin> {
-    return this.authRepository.findAdmin(uuid);
+  async findAdmin(user: User): Promise<Admin | null> {
+    try {
+      return this.authRepository.findAdmin(user.email);
+    } catch {
+      return null;
+    }
   }
 
   async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
@@ -134,7 +138,7 @@ export class AuthService {
 
     const latestPolicyVersions = await this.getLatestPolicyVersions();
 
-    const { refreshToken, isAdmin, sessionId, expiredAt } =
+    const { refreshToken, sessionId, expiredAt } =
       await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
         const user = await this.authRepository.upsertUserInTx(userinfo, tx);
 
@@ -163,14 +167,13 @@ export class AuthService {
 
         return {
           refreshToken: token,
-          isAdmin: user.admin !== null,
           sessionId,
           expiredAt,
         };
       });
 
     const accessToken = this.jwtService.sign(
-      { sessionId, isAdmin },
+      { sessionId },
       {
         subject: userinfo.uuid,
         secret: this.userJwtSecret,
@@ -418,12 +421,8 @@ export class AuthService {
 
   async userRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
-    const {
-      userUuid,
-      sessionId,
-      expiredAt,
-      user: { admin },
-    } = await this.authRepository.findUserByRefreshToken(hashedToken);
+    const { userUuid, sessionId, expiredAt } =
+      await this.authRepository.findUserByRefreshToken(hashedToken);
 
     await this.authRepository.deleteUserRefreshToken(hashedToken);
 
@@ -437,7 +436,7 @@ export class AuthService {
     );
     return {
       access_token: this.jwtService.sign(
-        { sessionId, isAdmin: admin !== null },
+        { sessionId },
         {
           subject: userUuid,
           secret: this.userJwtSecret,

@@ -18,17 +18,15 @@ export class AuthRepository {
   private readonly logger = new Logger(AuthRepository.name);
   constructor(private readonly prismaService: PrismaService) {}
 
-  async findAdmin(uuid: string): Promise<Admin> {
+  async findAdmin(email: string): Promise<Admin> {
     return await this.prismaService.admin
       .findUniqueOrThrow({
-        where: {
-          uuid,
-        },
+        where: { email },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`admin not found: ${uuid}`);
+            this.logger.debug(`admin not found: ${email}`);
             throw new UnauthorizedException();
           }
           this.logger.error(`findAdmin prisma error: ${error.message}`);
@@ -42,7 +40,7 @@ export class AuthRepository {
   async upsertUserInTx(
     { uuid, name, email, phoneNumber, studentNumber }: UserInfo,
     tx: PrismaTransaction,
-  ): Promise<User & { admin: Admin | null }> {
+  ): Promise<User> {
     return await tx.user
       .upsert({
         where: { uuid },
@@ -59,7 +57,6 @@ export class AuthRepository {
           phoneNumber,
           studentNumber,
         },
-        include: { admin: true },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
@@ -186,11 +183,9 @@ export class AuthRepository {
       });
   }
 
-  async findUserByRefreshToken(hashedRefreshToken: string): Promise<
-    Pick<UserRefreshToken, 'userUuid' | 'sessionId' | 'expiredAt'> & {
-      user: { admin: Admin | null };
-    }
-  > {
+  async findUserByRefreshToken(
+    hashedRefreshToken: string,
+  ): Promise<Pick<UserRefreshToken, 'userUuid' | 'sessionId' | 'expiredAt'>> {
     return await this.prismaService.userRefreshToken
       .findUniqueOrThrow({
         where: {
@@ -201,7 +196,6 @@ export class AuthRepository {
           userUuid: true,
           sessionId: true,
           expiredAt: true,
-          user: { select: { admin: true } },
         },
       })
       .catch((error) => {
@@ -251,7 +245,6 @@ export class AuthRepository {
           uuid,
           deletedAt: null,
         },
-        include: { admin: true },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
