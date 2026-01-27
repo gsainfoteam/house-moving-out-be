@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AuthRepository } from './auth.repository';
-import { Admin, ConsentType, User } from 'generated/prisma/client';
+import { ConsentType, User } from 'generated/prisma/client';
 import * as crypto from 'crypto';
 import { IssueTokenType } from './types/jwt-token.type';
 import { ConfigService } from '@nestjs/config';
@@ -114,10 +114,6 @@ export class AuthService {
       terms: tos,
       privacy: privacy,
     };
-  }
-
-  async findAdmin(user: User): Promise<Admin> {
-    return this.authRepository.findAdmin(user.email);
   }
 
   async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {

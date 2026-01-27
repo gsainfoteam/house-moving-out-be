@@ -1,9 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { JwtPayload } from 'jsonwebtoken';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from '../auth.service';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
@@ -25,7 +25,9 @@ export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
     if (!sessionId) throw new UnauthorizedException('sessionId missing');
 
     const user = await this.authService.findUser(sub);
-    const admin = await this.authService.findAdmin(user);
+    if (user.role !== 'ADMIN') {
+      throw new UnauthorizedException('user is not admin');
+    }
     const refreshToken = await this.authService.findUserRefreshTokenBySessionId(
       sub,
       sessionId,
@@ -34,6 +36,6 @@ export class AdminStrategy extends PassportStrategy(Strategy, 'admin') {
       throw new UnauthorizedException('invalid session');
     }
 
-    return { user, admin };
+    return user;
   }
 }

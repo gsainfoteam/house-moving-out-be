@@ -1,3 +1,5 @@
+import { UserInfo } from '@lib/infoteam-idp/types/userInfo.type';
+import { Loggable } from '@lib/logger';
 import { PrismaService } from '@lib/prisma';
 import {
   Injectable,
@@ -7,35 +9,14 @@ import {
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UserRefreshToken } from 'generated/prisma/browser';
-import { Admin, ConsentType, User } from 'generated/prisma/client';
+import { ConsentType, User } from 'generated/prisma/client';
 import { PrismaTransaction } from '../common/types';
-import { UserInfo } from '@lib/infoteam-idp/types/userInfo.type';
-import { Loggable } from '@lib/logger';
 
 @Loggable()
 @Injectable()
 export class AuthRepository {
   private readonly logger = new Logger(AuthRepository.name);
   constructor(private readonly prismaService: PrismaService) {}
-
-  async findAdmin(email: string): Promise<Admin> {
-    return await this.prismaService.admin
-      .findUniqueOrThrow({
-        where: { email },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`admin not found: ${email}`);
-            throw new UnauthorizedException();
-          }
-          this.logger.error(`findAdmin prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findAdmin error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
 
   async upsertUserInTx(
     { uuid, name, email, phoneNumber, studentNumber }: UserInfo,
