@@ -400,7 +400,9 @@ export class MoveOutRepository {
           gender,
         },
         include: {
-          applications: true,
+          applications: {
+            where: { inspectionSlotUuid: slotUuid },
+          },
         },
         orderBy: {
           applications: {
