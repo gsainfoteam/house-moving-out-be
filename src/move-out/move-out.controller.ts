@@ -9,6 +9,8 @@ import {
   ClassSerializerInterceptor,
   UploadedFile,
   Get,
+  Delete,
+  Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
@@ -21,6 +23,7 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -40,7 +43,10 @@ import { Semester } from './types/semester.type';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
+import { InspectionResDto } from './dto/res/inspection-res.dto';
+import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { User } from 'generated/prisma/browser';
+import { UpdateInspectionResDto } from './dto/res/update-inspection-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -207,5 +213,73 @@ export class MoveOutController {
     @Body() applyInspectionDto: ApplyInspectionDto,
   ): Promise<ApplyInspectionResDto> {
     return await this.moveOutService.applyInspection(user, applyInspectionDto);
+  }
+
+  @ApiOperation({
+    summary: 'Get My Inspection Application',
+    description:
+      "Retrieve the current user's inspection application for the active move-out schedule.",
+  })
+  @ApiOkResponse({
+    description: 'The inspection application has been successfully retrieved.',
+    type: InspectionResDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('application/my')
+  async findMyInspection(@GetUser() user: User): Promise<InspectionResDto> {
+    return await this.moveOutService.findMyInspection(user);
+  }
+
+  @ApiOperation({
+    summary: 'Update My Inspection Application',
+    description:
+      "Update the current user's inspection application to a new inspection slot.",
+  })
+  @ApiOkResponse({
+    description: 'The inspection application has been successfully updated.',
+    type: UpdateInspectionResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Cannot modify within 1 hour of the start time',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found',
+  })
+  @ApiConflictResponse({ description: 'Conflict - New slot is already full' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Patch('application')
+  async updateInspection(
+    @GetUser() user: User,
+    @Body() updateInspectionDto: UpdateInspectionDto,
+  ): Promise<UpdateInspectionResDto> {
+    return this.moveOutService.updateInspection(user, updateInspectionDto);
+  }
+
+  @ApiOperation({
+    summary: 'Cancel My Inspection Application',
+    description:
+      "Cancel the current user's inspection application. If canceled within 1 hour of the inspection time, it will be recorded as a 'no-show' and consume an application attempt.",
+  })
+  @ApiNoContentResponse({
+    description: 'The inspection application has been successfully canceled.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Delete('application')
+  async cancelInspection(@GetUser() user: User): Promise<void> {
+    return this.moveOutService.cancelInspection(user);
   }
 }
