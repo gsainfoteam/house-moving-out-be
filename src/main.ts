@@ -113,7 +113,9 @@ async function bootstrap() {
       oauth2RedirectUrl: `${configService.getOrThrow<string>('API_URL')}/api/oauth2-redirect.html`,
       initOAuth: {
         usePkceWithAuthorizationCodeGrant: true,
+        clientId: configService.getOrThrow<string>('CLIENT_ID'),
       },
+      persistAuthorization: true,
     },
   });
 
