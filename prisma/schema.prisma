@@ -14,6 +14,29 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+
+  @@map("consent_type")
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  FALL
+  WINTER
+
+  @@map("season")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+
+  @@map("gender")
+}
+
 enum Role {
   ADMIN
   USER
@@ -77,22 +100,6 @@ model AuditLog {
 
   @@index([performedAt])
   @@map("audit_log")
-}
-
-enum ConsentType {
-  TERMS_OF_SERVICE
-  PRIVACY_POLICY
-
-  @@map("consent_type")
-}
-
-enum Season {
-  SPRING
-  SUMMER
-  FALL
-  WINTER
-
-  @@map("season")
 }
 
 model MoveOutSchedule {
@@ -178,10 +185,12 @@ model InspectionApplication {
   reInspectionCount        Int      @default(0) @map("re_inspection_count")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+  inspectorUuid            String   @map("inspector_uuid")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   inspectionTargetInfo InspectionTargetInfo @relation(fields: [inspectionTargetInfoUuid], references: [uuid], onDelete: Cascade)
   inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
+  inspector            Inspector            @relation(fields: [inspectorUuid], references: [uuid])
 
   @@unique([inspectionTargetInfoUuid])
   @@index([inspectionSlotUuid])
@@ -199,13 +208,6 @@ model InspectorAvailableSlot {
   @@map("inspector_available_slot")
 }
 
-enum Gender {
-  MALE
-  FEMALE
-
-  @@map("gender")
-}
-
 model Inspector {
   uuid          String @id @default(uuid())
   name          String
@@ -214,6 +216,7 @@ model Inspector {
   gender        Gender
 
   availableSlots InspectorAvailableSlot[]
+  applications   InspectionApplication[]
 
   @@map("inspector")
 }

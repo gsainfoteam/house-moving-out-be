@@ -14,6 +14,7 @@ import {
   Prisma,
   InspectionSlot,
   InspectionApplication,
+  Gender,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -21,6 +22,7 @@ import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { Loggable } from '@lib/logger';
+import { InspectorWithApplications } from 'src/inspector/types/inspector-with-applications.type';
 
 @Loggable()
 @Injectable()
@@ -294,10 +296,11 @@ export class MoveOutRepository {
   async findInspectionSlotByUuidInTx(
     slotUuid: string,
     tx: PrismaTransaction,
-  ): Promise<InspectionSlot> {
+  ): Promise<InspectionSlot & { schedule: MoveOutSchedule }> {
     return await tx.inspectionSlot
       .findUniqueOrThrow({
         where: { uuid: slotUuid },
+        include: { schedule: true },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
@@ -356,6 +359,7 @@ export class MoveOutRepository {
     userUuid: string,
     inspectionTargetInfoUuid: string,
     inspectionSlotUuid: string,
+    inspectorUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
@@ -364,6 +368,7 @@ export class MoveOutRepository {
           userUuid,
           inspectionTargetInfoUuid,
           inspectionSlotUuid,
+          inspectorUuid,
         },
       })
       .catch((error) => {
@@ -383,30 +388,71 @@ export class MoveOutRepository {
       });
   }
 
-  async findMoveOutScheduleBySlotUuidInTx(
-    slotUuid: string,
+  async findAvailableInspectorBySlotUuidInTx(
+    userEmail: string,
+    inspectionSlotUuid: string,
+    gender: Gender,
     tx: PrismaTransaction,
-  ): Promise<MoveOutSchedule> {
-    return await tx.inspectionSlot
-      .findUniqueOrThrow({
-        where: { uuid: slotUuid },
+  ): Promise<InspectorWithApplications[]> {
+    return await tx.inspector
+      .findMany({
+        where: {
+          email: { not: userEmail },
+          availableSlots: { some: { inspectionSlotUuid } },
+          gender,
+        },
         include: {
-          schedule: true,
+          applications: {
+            where: { inspectionSlotUuid },
+          },
+        },
+        orderBy: {
+          applications: {
+            _count: 'asc',
+          },
         },
       })
-      .then((slot) => slot.schedule)
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
-            throw new NotFoundException('Inspection slot not found.');
-          }
           this.logger.error(
-            `findMoveOutScheduleBySlotUuidInTx prisma error: ${error.message}`,
+            `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findMoveOutScheduleBySlotUuidInTx error: ${error}`);
+        this.logger.error(
+          `findAvailableInspectorBySlotUuidInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async exclusiveLockInspectorInTx(
+    inspectorUuid: string,
+    inspectionSlotUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectorWithApplications> {
+    return await tx.inspector
+      .update({
+        where: { uuid: inspectorUuid },
+        data: {},
+        include: {
+          applications: {
+            where: { inspectionSlotUuid },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`Inspector not found: ${inspectorUuid}`);
+            throw new NotFoundException('Inspector not found.');
+          }
+          this.logger.error(
+            `exclusiveLockInspectorInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`exclusiveLockInspectorInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

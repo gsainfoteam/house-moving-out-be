@@ -3,9 +3,10 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { MoveOutSchedule, Season } from 'generated/prisma/client';
+import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
 import {
   CreateMoveOutScheduleDto,
@@ -25,12 +26,15 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
+import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
+import { InspectorWithApplications } from 'src/inspector/types/inspector-with-applications.type';
 
 @Loggable()
 @Injectable()
 export class MoveOutService {
   private readonly SLOT_DURATION_MINUTES = 30;
   private readonly WEIGHT_FACTOR = 1.5;
+  private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -473,13 +477,13 @@ export class MoveOutService {
   async applyInspection(
     user: User,
     { inspectionSlotUuid }: ApplyInspectionDto,
-  ): Promise<{ applicationUuid: string }> {
+  ): Promise<ApplyInspectionResDto> {
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        const schedule =
-          await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
+        const { schedule, ...slot } =
+          await this.moveOutRepository.findInspectionSlotByUuidInTx(
             inspectionSlotUuid,
             tx,
           );
@@ -508,11 +512,6 @@ export class MoveOutService {
           inspectionTargetInfo.houseName,
         );
 
-        const slot = await this.moveOutRepository.findInspectionSlotByUuidInTx(
-          inspectionSlotUuid,
-          tx,
-        );
-
         if (isMale) {
           if (slot.maleReservedCount >= slot.maleCapacity) {
             throw new ConflictException('Male capacity is already full.');
@@ -529,18 +528,46 @@ export class MoveOutService {
           tx,
         );
 
+        const inspectors =
+          await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
+            user.email,
+            inspectionSlotUuid,
+            isMale ? Gender.MALE : Gender.FEMALE,
+            tx,
+          );
+
+        let assignedInspector: InspectorWithApplications | null = null;
+
+        for (const inspector of inspectors) {
+          const lockedInspector =
+            await this.moveOutRepository.exclusiveLockInspectorInTx(
+              inspector.uuid,
+              inspectionSlotUuid,
+              tx,
+            );
+          if (
+            lockedInspector.applications.length <
+            this.MAX_APPLICATIONS_PER_INSPECTOR
+          ) {
+            assignedInspector = lockedInspector;
+            break;
+          }
+        }
+
+        if (!assignedInspector) {
+          throw new NotFoundException('No available inspector found.');
+        }
+
         const application =
           await this.moveOutRepository.createInspectionApplicationInTx(
             user.uuid,
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
+            assignedInspector.uuid,
             tx,
           );
 
         return { applicationUuid: application.uuid };
-      },
-      {
-        isolationLevel: 'Serializable',
       },
     );
   }
