@@ -21,12 +21,28 @@ import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { Loggable } from '@lib/logger';
+import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 
 @Loggable()
 @Injectable()
 export class MoveOutRepository {
   private readonly logger = new Logger(MoveOutRepository.name);
   constructor(private readonly prismaService: PrismaService) {}
+
+  async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
+    return await this.prismaService.moveOutSchedule
+      .findMany()
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findAllMoveOutSchedules prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findAllMoveOutSchedules error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 
   async createMoveOutSchedule(
     scheduleData: Pick<
@@ -86,6 +102,36 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findMoveOutScheduleWithSlotsById error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findInspectorBySlotUuid(uuid: string): Promise<InspectorWithSlots[]> {
+    return await this.prismaService.inspector
+      .findMany({
+        where: {
+          availableSlots: {
+            some: {
+              inspectionSlotUuid: uuid,
+            },
+          },
+        },
+        include: {
+          availableSlots: {
+            include: {
+              inspectionSlot: true,
+            },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findInspectorBySlotUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findInspectorBySlotUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
