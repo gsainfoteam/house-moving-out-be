@@ -9,6 +9,7 @@ import {
   ClassSerializerInterceptor,
   UploadedFile,
   Get,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
@@ -41,6 +42,7 @@ import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 import { User } from 'generated/prisma/browser';
+import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -141,6 +143,26 @@ export class MoveOutController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<MoveOutScheduleWithSlotsResDto> {
     return await this.moveOutService.findMoveOutScheduleWithSlots(id);
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspectors using slot uuid',
+    description:
+      'Get available inspectors for a move out schedule using slot UUID.',
+  })
+  @ApiOkResponse({
+    description: 'The available inspectors has been successfully retrieved.',
+    type: [InspectorResDto],
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('schedule/:id/inspector')
+  async findInspectorsBySlotUuid(
+    @Param('id', ParseUUIDPipe) uuid: string,
+  ): Promise<InspectorResDto[]> {
+    return await this.moveOutService.findInspectorsBySlotUuid(uuid);
   }
 
   @ApiOperation({

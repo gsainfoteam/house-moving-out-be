@@ -25,6 +25,7 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
+import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 
 @Loggable()
 @Injectable()
@@ -145,6 +146,12 @@ export class MoveOutService {
     id: number,
   ): Promise<MoveOutScheduleWithSlots> {
     return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
+  }
+
+  async findInspectorsBySlotUuid(uuid: string): Promise<InspectorResDto[]> {
+    const inspectors =
+      await this.moveOutRepository.findInspectorBySlotUuid(uuid);
+    return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
   async compareTwoSheetsAndFindInspectionTargets(
