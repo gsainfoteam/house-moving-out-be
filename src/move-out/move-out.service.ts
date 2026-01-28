@@ -38,6 +38,10 @@ export class MoveOutService {
     private readonly excelValidatorService: ExcelValidatorService,
   ) {}
 
+  async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
+    return await this.moveOutRepository.findAllMoveOutSchedules();
+  }
+
   async createMoveOutSchedule({
     title,
     applicationStartTime,

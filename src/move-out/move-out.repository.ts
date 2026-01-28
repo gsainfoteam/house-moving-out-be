@@ -28,6 +28,21 @@ export class MoveOutRepository {
   private readonly logger = new Logger(MoveOutRepository.name);
   constructor(private readonly prismaService: PrismaService) {}
 
+  async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
+    return await this.prismaService.moveOutSchedule
+      .findMany()
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findAllMoveOutSchedules prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findAllMoveOutSchedules error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async createMoveOutSchedule(
     scheduleData: Pick<
       MoveOutSchedule,

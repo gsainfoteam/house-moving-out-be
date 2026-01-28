@@ -48,6 +48,23 @@ export class MoveOutController {
   constructor(private readonly moveOutService: MoveOutService) {}
 
   @ApiOperation({
+    summary: 'Get All Move Out Schedules',
+    description: 'Retrieve all move out schedules.',
+  })
+  @ApiOkResponse({
+    description: 'The move out schedules have been successfully retrieved.',
+    type: [MoveOutScheduleResDto],
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('schedule')
+  async findAllMoveOutSchedules(): Promise<MoveOutScheduleResDto[]> {
+    return await this.moveOutService.findAllMoveOutSchedules();
+  }
+
+  @ApiOperation({
     summary: 'Create Move Out Schedule',
     description: 'Create a new move out schedule.',
   })
