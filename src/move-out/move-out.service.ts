@@ -554,4 +554,17 @@ export class MoveOutService {
       },
     );
   }
+
+  private async findCurrentApplication(
+    userUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    const schedule = await this.moveOutRepository.findActiveScheduleInTx(tx);
+    return await this.moveOutRepository.findApplicationByUserAndSemestersInTx(
+      userUuid,
+      schedule.currentSemesterUuid,
+      schedule.nextSemesterUuid,
+      tx,
+    );
+  }
 }
