@@ -115,7 +115,6 @@ async function bootstrap() {
         usePkceWithAuthorizationCodeGrant: true,
         clientId: configService.getOrThrow<string>('CLIENT_ID'),
       },
-      persistAuthorization: true,
     },
   });
 
