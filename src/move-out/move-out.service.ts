@@ -25,12 +25,14 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
+import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 
 @Loggable()
 @Injectable()
 export class MoveOutService {
   private readonly SLOT_DURATION_MINUTES = 30;
   private readonly WEIGHT_FACTOR = 1.5;
+  private readonly UPDATE_DEADLINE_HOURS = 1;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -553,6 +555,122 @@ export class MoveOutService {
         isolationLevel: 'Serializable',
       },
     );
+  }
+
+  async updateInspection(
+    user: User,
+    { inspectionSlotUuid }: UpdateInspectionDto,
+  ) {
+    const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
+    const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+    return this.prismaService.$transaction(async (tx) => {
+      const application = await this.findCurrentApplication(user.uuid, tx);
+
+      const now = new Date();
+      const timeDiff =
+        application.inspectionSlot.startTime.getTime() - now.getTime();
+
+      const schedule =
+        await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
+          inspectionSlotUuid,
+          tx,
+        );
+
+      const inspectionTargetInfo =
+        await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
+          admissionYear,
+          user.name,
+          schedule.currentSemesterUuid,
+          schedule.nextSemesterUuid,
+          tx,
+        );
+
+      const isMale = this.extractGenderFromHouseName(
+        inspectionTargetInfo.houseName,
+      );
+
+      const updatedSlot =
+        await this.moveOutRepository.findInspectionSlotByUuidInTx(
+          inspectionSlotUuid,
+          tx,
+        );
+
+      if (timeDiff < UPDATE_DEADLINE_MS) {
+        throw new ForbiddenException(
+          'Cannot modify the inspection time within 1 hour of the start time.',
+        );
+      }
+
+      if (isMale) {
+        if (updatedSlot.maleReservedCount >= updatedSlot.maleCapacity) {
+          throw new ConflictException('Male capacity is already full.');
+        }
+      } else {
+        if (updatedSlot.femaleReservedCount >= updatedSlot.femaleCapacity) {
+          throw new ConflictException('Female capacity is already full.');
+        }
+      }
+
+      if (inspectionTargetInfo.inspectionCount > 3) {
+        throw new ConflictException('Inspection count limit(3times) exceeded.');
+      }
+
+      await this.moveOutRepository.decrementSlotReservedCountInTx(
+        application.inspectionSlotUuid,
+        isMale,
+        tx,
+      );
+
+      await this.moveOutRepository.incrementSlotReservedCountInTx(
+        inspectionSlotUuid,
+        isMale,
+        tx,
+      );
+
+      const updatedApplication =
+        await this.moveOutRepository.updateInspectionApplicationInTx(
+          application.uuid,
+          inspectionSlotUuid,
+          tx,
+        );
+
+      return { applicationUuid: updatedApplication.uuid };
+    });
+  }
+
+  async cancelInspection(user: User): Promise<void> {
+    const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
+
+    return await this.prismaService.$transaction(async (tx) => {
+      const application = await this.findCurrentApplication(user.uuid, tx);
+
+      const now = new Date();
+      const timeDiff =
+        application.inspectionSlot.startTime.getTime() - now.getTime();
+
+      if (timeDiff >= UPDATE_DEADLINE_MS) {
+        await this.moveOutRepository.decrementInspectionCountInTx(
+          application.inspectionTargetInfo.uuid,
+          tx,
+        );
+      }
+
+      const isMale = this.extractGenderFromHouseName(
+        application.inspectionTargetInfo.houseName,
+      );
+
+      await this.moveOutRepository.decrementSlotReservedCountInTx(
+        application.inspectionSlotUuid,
+        isMale,
+        tx,
+      );
+
+      await this.moveOutRepository.deleteInspectionApplicationInTx(
+        application.uuid,
+        tx,
+      );
+    });
   }
 
   private async findCurrentApplication(

@@ -407,6 +407,43 @@ export class MoveOutRepository {
       });
   }
 
+  async decrementSlotReservedCountInTx(
+    slotUuid: string,
+    isMale: boolean,
+    tx: PrismaTransaction,
+  ): Promise<InspectionSlot> {
+    return await tx.inspectionSlot
+      .update({
+        where: { uuid: slotUuid },
+        data: {
+          maleReservedCount: isMale
+            ? {
+                increment: -1,
+              }
+            : undefined,
+          femaleReservedCount: !isMale
+            ? {
+                increment: -1,
+              }
+            : undefined,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
+            throw new NotFoundException('Inspection slot not found.');
+          }
+          this.logger.error(
+            `incrementSlotReservedCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`incrementSlotReservedCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async createInspectionApplicationInTx(
     userUuid: string,
     inspectionTargetInfoUuid: string,
@@ -434,6 +471,36 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`createInspectionApplicationInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async updateInspectionApplicationInTx(
+    applicationUuid: string,
+    newInspectionSlotUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplication> {
+    return await tx.inspectionApplication
+      .update({
+        where: { uuid: applicationUuid },
+        data: {
+          inspectionSlotUuid: newInspectionSlotUuid,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found for update: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `updateInspectionApplicationInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectionApplicationInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -497,9 +564,9 @@ export class MoveOutRepository {
     currentSemesterUuid: string,
     nextSemesterUuid: string,
     tx: PrismaTransaction,
-  ): Promise<InspectionApplicationWithDetails | null> {
+  ): Promise<InspectionApplicationWithDetails> {
     return await tx.inspectionApplication
-      .findFirst({
+      .findFirstOrThrow({
         where: {
           userUuid,
           inspectionTargetInfo: {
@@ -514,6 +581,10 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('Application not found');
+            throw new NotFoundException('Not Found Error');
+          }
           this.logger.error(
             `findApplicationByUserAndSemesterInTx prisma error: ${error.message}`,
           );
