@@ -26,6 +26,8 @@ import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
+import { InspectionResDto } from './dto/res/inspection-res.dto';
+import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 
 @Loggable()
 @Injectable()
@@ -673,10 +675,22 @@ export class MoveOutService {
     });
   }
 
+  async findMyInspection(user: User): Promise<InspectionResDto> {
+    return this.prismaService.$transaction(async (tx) => {
+      const application = await this.findCurrentApplication(user.uuid, tx);
+
+      return {
+        applicationUuid: application.uuid,
+        inspectionSlot: { ...application.inspectionSlot },
+        isPassed: application.isPassed ?? undefined,
+      };
+    });
+  }
+
   private async findCurrentApplication(
     userUuid: string,
     tx: PrismaTransaction,
-  ) {
+  ): Promise<InspectionApplicationWithDetails> {
     const schedule = await this.moveOutRepository.findActiveScheduleInTx(tx);
     return await this.moveOutRepository.findApplicationByUserAndSemestersInTx(
       userUuid,

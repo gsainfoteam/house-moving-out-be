@@ -310,11 +310,11 @@ export class MoveOutRepository {
             throw new NotFoundException('Inspection target info not found.');
           }
           this.logger.error(
-            `updateInspectionCountInTx prisma error: ${error.message}`,
+            `incrementInspectionCountInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`updateInspectionCountInTx error: ${error}`);
+        this.logger.error(`incrementInspectionCountInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -337,11 +337,11 @@ export class MoveOutRepository {
             throw new NotFoundException('Inspection target info not found.');
           }
           this.logger.error(
-            `updateInspectionCountInTx prisma error: ${error.message}`,
+            `decrementInspectionCountInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`updateInspectionCountInTx error: ${error}`);
+        this.logger.error(`decrementInspectionCountInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -435,11 +435,11 @@ export class MoveOutRepository {
             throw new NotFoundException('Inspection slot not found.');
           }
           this.logger.error(
-            `incrementSlotReservedCountInTx prisma error: ${error.message}`,
+            `decrementSlotReservedCountInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`incrementSlotReservedCountInTx error: ${error}`);
+        this.logger.error(`decrementSlotReservedCountInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -586,12 +586,12 @@ export class MoveOutRepository {
             throw new NotFoundException('Not Found Error');
           }
           this.logger.error(
-            `findApplicationByUserAndSemesterInTx prisma error: ${error.message}`,
+            `findApplicationByUserAndSemestersInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(
-          `findApplicationByUserAndSemesterInTx error: ${error}`,
+          `findApplicationByUserAndSemestersInTx error: ${error}`,
         );
         throw new InternalServerErrorException('Unknown Error');
       });
