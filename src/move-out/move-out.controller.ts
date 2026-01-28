@@ -158,9 +158,9 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('schedule/:id/inspector')
+  @Get('schedule/:slotUuid/inspector')
   async findInspectorsBySlotUuid(
-    @Param('id', ParseUUIDPipe) uuid: string,
+    @Param('slotUuid', ParseUUIDPipe) uuid: string,
   ): Promise<InspectorResDto[]> {
     return await this.moveOutService.findInspectorsBySlotUuid(uuid);
   }
