@@ -523,9 +523,19 @@ export class MoveOutService {
           }
         }
 
+        if (inspectionTargetInfo.inspectionCount > 3) {
+          throw new ConflictException(
+            'Inspection count limit(3times) exceeded.',
+          );
+        }
+
         await this.moveOutRepository.incrementSlotReservedCountInTx(
           inspectionSlotUuid,
           isMale,
+          tx,
+        );
+        await this.moveOutRepository.incrementInspectionCountInTx(
+          inspectionTargetInfo.uuid,
           tx,
         );
 
