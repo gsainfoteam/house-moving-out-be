@@ -35,6 +35,7 @@ export class MoveOutService {
   private readonly SLOT_DURATION_MINUTES = 30;
   private readonly WEIGHT_FACTOR = 1.5;
   private readonly UPDATE_DEADLINE_HOURS = 1;
+  private readonly INSPECTION_COUNT_LIMIT = 3;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -527,7 +528,9 @@ export class MoveOutService {
           }
         }
 
-        if (inspectionTargetInfo.inspectionCount > 3) {
+        if (
+          inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT
+        ) {
           throw new ConflictException(
             'Inspection count limit(3times) exceeded.',
           );
@@ -614,7 +617,7 @@ export class MoveOutService {
         }
       }
 
-      if (inspectionTargetInfo.inspectionCount > 3) {
+      if (inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT) {
         throw new ConflictException('Inspection count limit(3times) exceeded.');
       }
 
