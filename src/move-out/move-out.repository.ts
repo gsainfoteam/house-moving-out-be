@@ -20,6 +20,7 @@ import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto
 import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
+import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 
@@ -337,6 +338,60 @@ export class MoveOutRepository {
       });
   }
 
+  async incrementInspectionCountInTx(
+    targetUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.inspectionTargetInfo
+      .update({
+        where: { uuid: targetUuid },
+        data: {
+          inspectionCount: { increment: 1 },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
+            throw new NotFoundException('Inspection target info not found.');
+          }
+          this.logger.error(
+            `incrementInspectionCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`incrementInspectionCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async decrementInspectionCountInTx(
+    targetUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.inspectionTargetInfo
+      .update({
+        where: { uuid: targetUuid },
+        data: {
+          inspectionCount: { increment: -1 },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
+            throw new NotFoundException('Inspection target info not found.');
+          }
+          this.logger.error(
+            `decrementInspectionCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`decrementInspectionCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findInspectionSlotByUuidInTx(
     slotUuid: string,
     tx: PrismaTransaction,
@@ -398,6 +453,43 @@ export class MoveOutRepository {
       });
   }
 
+  async decrementSlotReservedCountInTx(
+    slotUuid: string,
+    isMale: boolean,
+    tx: PrismaTransaction,
+  ): Promise<InspectionSlot> {
+    return await tx.inspectionSlot
+      .update({
+        where: { uuid: slotUuid },
+        data: {
+          maleReservedCount: isMale
+            ? {
+                increment: -1,
+              }
+            : undefined,
+          femaleReservedCount: !isMale
+            ? {
+                increment: -1,
+              }
+            : undefined,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
+            throw new NotFoundException('Inspection slot not found.');
+          }
+          this.logger.error(
+            `decrementSlotReservedCountInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`decrementSlotReservedCountInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async createInspectionApplicationInTx(
     userUuid: string,
     inspectionTargetInfoUuid: string,
@@ -429,6 +521,62 @@ export class MoveOutRepository {
       });
   }
 
+  async updateInspectionApplicationInTx(
+    applicationUuid: string,
+    newInspectionSlotUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplication> {
+    return await tx.inspectionApplication
+      .update({
+        where: { uuid: applicationUuid },
+        data: {
+          inspectionSlotUuid: newInspectionSlotUuid,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found for update: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `updateInspectionApplicationInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectionApplicationInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteInspectionApplicationInTx(
+    applicationUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.inspectionApplication
+      .delete({
+        where: { uuid: applicationUuid },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Not Found Error');
+          }
+          this.logger.error(
+            `deleteInspectionApplicationInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteInspectionApplicationInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findMoveOutScheduleBySlotUuidInTx(
     slotUuid: string,
     tx: PrismaTransaction,
@@ -453,6 +601,72 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findMoveOutScheduleBySlotUuidInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findApplicationByUserAndSemestersInTx(
+    userUuid: string,
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplicationWithDetails> {
+    return await tx.inspectionApplication
+      .findFirstOrThrow({
+        where: {
+          userUuid,
+          inspectionTargetInfo: {
+            currentSemesterUuid,
+            nextSemesterUuid,
+          },
+        },
+        include: {
+          inspectionSlot: true,
+          inspectionTargetInfo: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('Application not found');
+            throw new NotFoundException('Not Found Error');
+          }
+          this.logger.error(
+            `findApplicationByUserAndSemestersInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findApplicationByUserAndSemestersInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findActiveScheduleInTx(
+    tx: PrismaTransaction,
+  ): Promise<MoveOutSchedule> {
+    return await tx.moveOutSchedule
+      .findFirstOrThrow({
+        where: {
+          isActive: true,
+        },
+        orderBy: {
+          id: 'desc',
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('Activated MoveOut-Schedule not found');
+            throw new NotFoundException('Not Found Error');
+          }
+          this.logger.error(
+            `findActiveScheduleInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findActiveScheduleInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
