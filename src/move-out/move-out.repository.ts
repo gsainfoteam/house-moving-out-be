@@ -425,35 +425,4 @@ export class MoveOutRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
-
-  async exclusiveLockInspectorInTx(
-    inspectorUuid: string,
-    inspectionSlotUuid: string,
-    tx: PrismaTransaction,
-  ): Promise<InspectorWithApplications> {
-    return await tx.inspector
-      .update({
-        where: { uuid: inspectorUuid },
-        data: {},
-        include: {
-          applications: {
-            where: { inspectionSlotUuid },
-          },
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`Inspector not found: ${inspectorUuid}`);
-            throw new NotFoundException('Inspector not found.');
-          }
-          this.logger.error(
-            `exclusiveLockInspectorInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`exclusiveLockInspectorInTx error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
 }

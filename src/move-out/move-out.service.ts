@@ -539,17 +539,10 @@ export class MoveOutService {
         let assignedInspector: InspectorWithApplications | null = null;
 
         for (const inspector of inspectors) {
-          const lockedInspector =
-            await this.moveOutRepository.exclusiveLockInspectorInTx(
-              inspector.uuid,
-              inspectionSlotUuid,
-              tx,
-            );
           if (
-            lockedInspector.applications.length <
-            this.MAX_APPLICATIONS_PER_INSPECTOR
+            inspector.applications.length < this.MAX_APPLICATIONS_PER_INSPECTOR
           ) {
-            assignedInspector = lockedInspector;
+            assignedInspector = inspector;
             break;
           }
         }
@@ -568,6 +561,9 @@ export class MoveOutService {
           );
 
         return { applicationUuid: application.uuid };
+      },
+      {
+        isolationLevel: 'Serializable',
       },
     );
   }
