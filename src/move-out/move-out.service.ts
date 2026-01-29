@@ -569,79 +569,88 @@ export class MoveOutService {
     const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
-    return this.prismaService.$transaction(async (tx) => {
-      const application = await this.findCurrentApplication(user.uuid, tx);
+    return this.prismaService.$transaction(
+      async (tx) => {
+        const application = await this.findCurrentApplication(user.uuid, tx);
 
-      const now = new Date();
-      const timeDiff =
-        application.inspectionSlot.startTime.getTime() - now.getTime();
+        const now = new Date();
+        const timeDiff =
+          application.inspectionSlot.startTime.getTime() - now.getTime();
 
-      const schedule =
-        await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
-          inspectionSlotUuid,
-          tx,
+        const schedule =
+          await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
+            inspectionSlotUuid,
+            tx,
+          );
+
+        const inspectionTargetInfo =
+          await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
+            admissionYear,
+            user.name,
+            schedule.currentSemesterUuid,
+            schedule.nextSemesterUuid,
+            tx,
+          );
+
+        const isMale = this.extractGenderFromHouseName(
+          inspectionTargetInfo.houseName,
         );
 
-      const inspectionTargetInfo =
-        await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
-          admissionYear,
-          user.name,
-          schedule.currentSemesterUuid,
-          schedule.nextSemesterUuid,
-          tx,
-        );
+        const updatedSlot =
+          await this.moveOutRepository.findInspectionSlotByUuidInTx(
+            inspectionSlotUuid,
+            tx,
+          );
 
-      const isMale = this.extractGenderFromHouseName(
-        inspectionTargetInfo.houseName,
-      );
-
-      const updatedSlot =
-        await this.moveOutRepository.findInspectionSlotByUuidInTx(
-          inspectionSlotUuid,
-          tx,
-        );
-
-      if (timeDiff < UPDATE_DEADLINE_MS) {
-        throw new ForbiddenException(
-          'Cannot modify the inspection time within 1 hour of the start time.',
-        );
-      }
-
-      if (isMale) {
-        if (updatedSlot.maleReservedCount >= updatedSlot.maleCapacity) {
-          throw new ConflictException('Male capacity is already full.');
+        if (timeDiff < UPDATE_DEADLINE_MS) {
+          throw new ForbiddenException(
+            'Cannot modify the inspection time within 1 hour of the start time.',
+          );
         }
-      } else {
-        if (updatedSlot.femaleReservedCount >= updatedSlot.femaleCapacity) {
-          throw new ConflictException('Female capacity is already full.');
+
+        if (isMale) {
+          if (updatedSlot.maleReservedCount >= updatedSlot.maleCapacity) {
+            throw new ConflictException('Male capacity is already full.');
+          }
+        } else {
+          if (updatedSlot.femaleReservedCount >= updatedSlot.femaleCapacity) {
+            throw new ConflictException('Female capacity is already full.');
+          }
         }
-      }
 
-      if (inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT) {
-        throw new ConflictException('Inspection count limit(3times) exceeded.');
-      }
+        if (
+          inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT
+        ) {
+          throw new ConflictException(
+            'Inspection count limit(3times) exceeded.',
+          );
+        }
 
-      await this.moveOutRepository.decrementSlotReservedCountInTx(
-        application.inspectionSlotUuid,
-        isMale,
-        tx,
-      );
-
-      await this.moveOutRepository.incrementSlotReservedCountInTx(
-        inspectionSlotUuid,
-        isMale,
-        tx,
-      );
-
-      const updatedApplication =
-        await this.moveOutRepository.updateInspectionApplicationInTx(
-          application.uuid,
-          inspectionSlotUuid,
+        await this.moveOutRepository.decrementSlotReservedCountInTx(
+          application.inspectionSlotUuid,
+          isMale,
           tx,
         );
 
-      return { applicationUuid: updatedApplication.uuid };
-    });
+        await this.moveOutRepository.incrementSlotReservedCountInTx(
+          inspectionSlotUuid,
+          isMale,
+          tx,
+        );
+
+        const updatedApplication =
+          await this.moveOutRepository.updateInspectionApplicationInTx(
+            application.uuid,
+            inspectionSlotUuid,
+            tx,
+          );
+
+        return { applicationUuid: updatedApplication.uuid };
+      },
+      {
+        isolationLevel: 'Serializable',
+      },
+    );
   }
 
   async cancelInspection(user: User): Promise<void> {
