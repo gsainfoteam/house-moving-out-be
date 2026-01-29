@@ -602,6 +602,12 @@ export class MoveOutService {
             tx,
           );
 
+        if (application.inspectionSlot.scheduleId !== updatedSlot.scheduleId) {
+          throw new BadRequestException(
+            'Changes are only possible within the same schedule.',
+          );
+        }
+
         if (timeDiff < UPDATE_DEADLINE_MS) {
           throw new ForbiddenException(
             'Cannot modify the inspection time within 1 hour of the start time.',
@@ -644,12 +650,6 @@ export class MoveOutService {
             inspectionSlotUuid,
             tx,
           );
-
-        if (application.inspectionSlot.scheduleId !== updatedSlot.scheduleId) {
-          throw new BadRequestException(
-            'Changes are only possible within the same schedule.',
-          );
-        }
 
         return { applicationUuid: updatedApplication.uuid };
       },
