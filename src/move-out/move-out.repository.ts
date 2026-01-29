@@ -409,7 +409,6 @@ export class MoveOutRepository {
     inspectorUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
-    console.log(inspectorUuid);
     return await tx.inspectionApplication
       .create({
         data: {
