@@ -444,8 +444,10 @@ export class MoveOutRepository {
     const inspectors = await tx.$queryRaw<Inspector[]>`
       SELECT i.*
       FROM inspector AS i
+      LEFT JOIN inspector_available_slot AS ias ON ias.inspector_uuid = i.uuid
       WHERE i.email != ${userEmail}
         AND i.gender = ${gender}
+        AND ias.inspection_slot_uuid = ${inspectionSlotUuid}
         AND (
           SELECT COUNT(*) 
           FROM inspection_application AS ia
