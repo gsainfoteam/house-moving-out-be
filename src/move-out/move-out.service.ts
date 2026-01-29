@@ -3,7 +3,6 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
 import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
@@ -27,7 +26,6 @@ import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
-import { InspectorWithApplications } from 'src/inspector/types/inspector-with-applications.type';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 
 @Loggable()
@@ -493,7 +491,7 @@ export class MoveOutService {
 
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        const { schedule, ...slot } =
+        const { schedule } =
           await this.moveOutRepository.findInspectionSlotByUuidInTx(
             inspectionSlotUuid,
             tx,
@@ -523,23 +521,24 @@ export class MoveOutService {
           inspectionTargetInfo.houseName,
         );
 
+        const updatedSlot =
+          await this.moveOutRepository.incrementSlotReservedCountInTx(
+            inspectionSlotUuid,
+            isMale,
+            tx,
+          );
+
         if (isMale) {
-          if (slot.maleReservedCount >= slot.maleCapacity) {
+          if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
             throw new ConflictException('Male capacity is already full.');
           }
         } else {
-          if (slot.femaleReservedCount >= slot.femaleCapacity) {
+          if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
             throw new ConflictException('Female capacity is already full.');
           }
         }
 
-        await this.moveOutRepository.incrementSlotReservedCountInTx(
-          inspectionSlotUuid,
-          isMale,
-          tx,
-        );
-
-        const inspectors =
+        const inspector =
           await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
             user.email,
             inspectionSlotUuid,
@@ -547,28 +546,16 @@ export class MoveOutService {
             tx,
           );
 
-        const assignedInspector = inspectors.find(
-          (inspector) =>
-            inspector.applications.length < this.MAX_APPLICATIONS_PER_INSPECTOR,
-        );
-
-        if (!assignedInspector) {
-          throw new NotFoundException('No available inspector found.');
-        }
-
         const application =
           await this.moveOutRepository.createInspectionApplicationInTx(
             user.uuid,
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
-            assignedInspector.uuid,
+            inspector.uuid,
             tx,
           );
 
         return { applicationUuid: application.uuid };
-      },
-      {
-        isolationLevel: 'Serializable',
       },
     );
   }

@@ -15,6 +15,7 @@ import {
   InspectionSlot,
   InspectionApplication,
   Gender,
+  Inspector,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -22,13 +23,13 @@ import { InspectionTargetStudent } from './types/inspection-target.type';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { Loggable } from '@lib/logger';
-import { InspectorWithApplications } from 'src/inspector/types/inspector-with-applications.type';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 
 @Loggable()
 @Injectable()
 export class MoveOutRepository {
   private readonly logger = new Logger(MoveOutRepository.name);
+  private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   constructor(private readonly prismaService: PrismaService) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -408,6 +409,7 @@ export class MoveOutRepository {
     inspectorUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
+    console.log(inspectorUuid);
     return await tx.inspectionApplication
       .create({
         data: {
@@ -439,36 +441,40 @@ export class MoveOutRepository {
     inspectionSlotUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
-  ): Promise<InspectorWithApplications[]> {
-    return await tx.inspector
-      .findMany({
-        where: {
-          email: { not: userEmail },
-          availableSlots: { some: { inspectionSlotUuid } },
-          gender,
-        },
-        include: {
-          applications: {
-            where: { inspectionSlotUuid },
-          },
-        },
-        orderBy: {
-          applications: {
-            _count: 'asc',
-          },
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
+  ): Promise<Inspector> {
+    const inspectors = await tx.$queryRaw<Inspector[]>`
+      SELECT i.*
+      FROM inspector AS i
+      WHERE i.email != ${userEmail}
+        AND i.gender = ${gender}
+        AND (
+          SELECT COUNT(*) 
+          FROM inspection_application AS ia
+          WHERE ia.inspector_uuid = i.uuid 
+            AND ia.inspection_slot_uuid = ${inspectionSlotUuid}
+        ) < ${this.MAX_APPLICATIONS_PER_INSPECTOR}
+      ORDER BY (
+        SELECT COUNT(*) 
+        FROM inspection_application AS ia 
+        WHERE ia.inspector_uuid = i.uuid
+      ) ASC
+      LIMIT 1
+      FOR UPDATE
+    `.catch((error) => {
+      if (error instanceof PrismaClientKnownRequestError) {
         this.logger.error(
-          `findAvailableInspectorBySlotUuidInTx error: ${error}`,
+          `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
         );
-        throw new InternalServerErrorException('Unknown Error');
-      });
+        throw new InternalServerErrorException('Database Error');
+      }
+      this.logger.error(`findAvailableInspectorBySlotUuidInTx error: ${error}`);
+      throw new InternalServerErrorException('Unknown Error');
+    });
+
+    if (inspectors.length === 0) {
+      throw new NotFoundException('No available inspector found.');
+    }
+
+    return inspectors[0];
   }
 }
