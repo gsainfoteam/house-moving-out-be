@@ -694,15 +694,18 @@ export class MoveOutService {
   }
 
   async findMyInspection(user: User): Promise<InspectionResDto> {
-    return this.prismaService.$transaction(async (tx) => {
-      const application = await this.findCurrentApplication(user.uuid, tx);
+    return this.prismaService.$transaction(
+      async (tx) => {
+        const application = await this.findCurrentApplication(user.uuid, tx);
 
-      return {
-        applicationUuid: application.uuid,
-        inspectionSlot: { ...application.inspectionSlot },
-        isPassed: application.isPassed ?? undefined,
-      };
-    });
+        return {
+          applicationUuid: application.uuid,
+          inspectionSlot: { ...application.inspectionSlot },
+          isPassed: application.isPassed ?? undefined,
+        };
+      },
+      { isolationLevel: 'Serializable' },
+    );
   }
 
   private async findCurrentApplication(
