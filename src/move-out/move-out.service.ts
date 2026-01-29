@@ -28,6 +28,7 @@ import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 import { InspectorWithApplications } from 'src/inspector/types/inspector-with-applications.type';
+import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 
 @Loggable()
 @Injectable()
@@ -41,6 +42,10 @@ export class MoveOutService {
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
   ) {}
+
+  async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
+    return await this.moveOutRepository.findAllMoveOutSchedules();
+  }
 
   async createMoveOutSchedule({
     title,
@@ -145,6 +150,12 @@ export class MoveOutService {
     id: number,
   ): Promise<MoveOutScheduleWithSlots> {
     return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
+  }
+
+  async findInspectorsBySlotUuid(uuid: string): Promise<InspectorResDto[]> {
+    const inspectors =
+      await this.moveOutRepository.findInspectorBySlotUuid(uuid);
+    return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
   async compareTwoSheetsAndFindInspectionTargets(

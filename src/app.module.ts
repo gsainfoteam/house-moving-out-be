@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MoveOutModule } from './move-out/move-out.module';
 import { LoggerModule } from '@lib/logger';
 import { InspectorModule } from './inspector/inspector.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { InspectorModule } from './inspector/inspector.module';
     MoveOutModule,
     LoggerModule,
     InspectorModule,
+    UserModule,
   ],
   controllers: [],
   providers: [],
