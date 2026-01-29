@@ -11,6 +11,7 @@ import {
   Get,
   Delete,
   Patch,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
@@ -47,11 +48,29 @@ import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { User } from 'generated/prisma/browser';
 import { UpdateInspectionResDto } from './dto/res/update-inspection-res.dto';
+import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
 export class MoveOutController {
   constructor(private readonly moveOutService: MoveOutService) {}
+
+  @ApiOperation({
+    summary: 'Get All Move Out Schedules',
+    description: 'Retrieve all move out schedules.',
+  })
+  @ApiOkResponse({
+    description: 'The move out schedules have been successfully retrieved.',
+    type: [MoveOutScheduleResDto],
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('schedule')
+  async findAllMoveOutSchedules(): Promise<MoveOutScheduleResDto[]> {
+    return await this.moveOutService.findAllMoveOutSchedules();
+  }
 
   @ApiOperation({
     summary: 'Create Move Out Schedule',
@@ -130,6 +149,26 @@ export class MoveOutController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<MoveOutScheduleWithSlotsResDto> {
     return await this.moveOutService.findMoveOutScheduleWithSlots(id);
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspectors using slot uuid',
+    description:
+      'Get available inspectors for a move out schedule using slot UUID.',
+  })
+  @ApiOkResponse({
+    description: 'The available inspectors has been successfully retrieved.',
+    type: [InspectorResDto],
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('schedule/:slotUuid/inspector')
+  async findInspectorsBySlotUuid(
+    @Param('slotUuid', ParseUUIDPipe) uuid: string,
+  ): Promise<InspectorResDto[]> {
+    return await this.moveOutService.findInspectorsBySlotUuid(uuid);
   }
 
   @ApiOperation({

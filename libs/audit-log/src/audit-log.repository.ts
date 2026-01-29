@@ -16,7 +16,7 @@ export class AuditLogRepository {
   constructor() {}
 
   async createAuditLogInTx(
-    adminUuid: string,
+    userUuid: string,
     action: string,
     data: string,
     tx: PrismaTransaction,
@@ -24,7 +24,7 @@ export class AuditLogRepository {
     await tx.auditLog
       .create({
         data: {
-          adminUuid,
+          userUuid,
           action,
           data,
         },

@@ -14,31 +14,9 @@ datasource db {
   provider = "postgresql"
 }
 
-model Admin {
-  uuid          String @id
-  name          String
-  email         String @unique
-  phoneNumber   String @map("phone_number")
-  studentNumber String @map("student_number")
-
-  adminRefreshTokens AdminRefreshToken[]
-  auditLogs          AuditLog[]
-
-  @@map("admin")
-}
-
-model AdminRefreshToken {
-  uuid         String   @id @default(uuid())
-  adminUuid    String   @map("admin_uuid")
-  refreshToken String   @unique @map("refresh_token")
-  sessionId    String   @map("session_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  expiredAt    DateTime @map("expired_at")
-
-  admin Admin @relation(fields: [adminUuid], references: [uuid], onDelete: Cascade)
-
-  @@index([adminUuid, sessionId])
-  @@map("admin_refresh_token")
+enum Role {
+  ADMIN
+  USER
 }
 
 model User {
@@ -47,6 +25,7 @@ model User {
   email         String @unique
   phoneNumber   String @map("phone_number")
   studentNumber String @map("student_number")
+  role          Role   @default(USER)
 
   deletedAt DateTime? @map("deleted_at")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -55,6 +34,7 @@ model User {
   userRefreshTokens      UserRefreshToken[]
   userConsents           UserConsent[]
   inspectionApplications InspectionApplication[]
+  auditLogs              AuditLog[]
 
   @@map("user")
 }
@@ -90,10 +70,10 @@ model AuditLog {
   uuid        String   @id @default(uuid())
   action      String
   data        String
-  adminUuid   String   @map("admin_uuid")
+  userUuid    String   @map("user_uuid")
   performedAt DateTime @default(now()) @map("performed_at")
 
-  admin Admin @relation(fields: [adminUuid], references: [uuid])
+  user User @relation(fields: [userUuid], references: [uuid])
 
   @@index([performedAt])
   @@map("audit_log")

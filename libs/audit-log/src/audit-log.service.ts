@@ -9,13 +9,13 @@ export class AuditLogService {
   constructor(private readonly auditLogRepository: AuditLogRepository) {}
 
   async createAuditLogInTx(
-    adminUuid: string,
+    userUuid: string,
     action: string,
     data: string,
     tx: PrismaTransaction,
   ) {
     await this.auditLogRepository.createAuditLogInTx(
-      adminUuid,
+      userUuid,
       action,
       data,
       tx,
