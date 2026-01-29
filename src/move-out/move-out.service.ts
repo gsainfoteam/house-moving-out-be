@@ -645,6 +645,12 @@ export class MoveOutService {
             tx,
           );
 
+        if (application.inspectionSlot.scheduleId !== updatedSlot.scheduleId) {
+          throw new BadRequestException(
+            'Changes are only possible within the same schedule.',
+          );
+        }
+
         return { applicationUuid: updatedApplication.uuid };
       },
       {
