@@ -10,6 +10,7 @@ import {
   UploadedFile,
   Get,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
@@ -43,6 +44,8 @@ import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 import { User } from 'generated/prisma/browser';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { GetInspectionTargetsDto } from './dto/req/get-inspection-targets.dto';
+import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -213,6 +216,30 @@ export class MoveOutController {
       message: 'Inspection targets successfully created',
       count: savedCount,
     };
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspection Targets by Semester Combination',
+    description:
+      'Retrieve inspection targets by current/next semester combination.',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets successfully retrieved',
+    type: [InspectionTargetInfoResDto],
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('inspection-targets')
+  async findInspectionTargetsBySemesters(
+    @Query() getInspectionTargetsDto: GetInspectionTargetsDto,
+  ): Promise<InspectionTargetInfoResDto[]> {
+    return await this.moveOutService.findInspectionTargetsBySemesters(
+      getInspectionTargetsDto,
+    );
   }
 
   @ApiOperation({

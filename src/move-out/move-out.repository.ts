@@ -250,6 +250,32 @@ export class MoveOutRepository {
       });
   }
 
+  async findInspectionTargetInfosBySemesters(
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+  ): Promise<InspectionTargetInfo[]> {
+    return await this.prismaService.inspectionTargetInfo
+      .findMany({
+        where: {
+          currentSemesterUuid,
+          nextSemesterUuid,
+        },
+        orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findInspectionTargetInfosBySemesters prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findInspectionTargetInfosBySemesters error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findFirstInspectionTargetInfoBySemestersInTx(
     currentSemesterUuid: string,
     nextSemesterUuid: string,
