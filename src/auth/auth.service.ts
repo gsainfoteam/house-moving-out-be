@@ -1,4 +1,4 @@
-import { InfoteamIdpService } from '@lib/infoteam-idp';
+import { InfoteamAccountService } from '@lib/infoteam-account';
 import {
   Injectable,
   UnauthorizedException,
@@ -44,7 +44,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly infoteamIdpService: InfoteamIdpService,
+    private readonly infoteamAccountService: InfoteamAccountService,
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -117,9 +117,9 @@ export class AuthService {
   }
 
   async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
-    const idpToken = auth.split(' ')[1];
-    if (!idpToken) throw new UnauthorizedException();
-    const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
+    const token = auth.split(' ')[1];
+    if (!token) throw new UnauthorizedException();
+    const userinfo = await this.infoteamAccountService.getUserInfo(token);
 
     const consentData: ConsentData = {
       agreedToTerms: body?.agreedToTerms,
