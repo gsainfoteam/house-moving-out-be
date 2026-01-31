@@ -63,7 +63,7 @@ export class AuthController {
     if (!auth) throw new UnauthorizedException();
 
     const { access_token, refresh_token, refreshTokenExpiredAt } =
-      await this.authService.login(auth, body);
+      await this.authService.userLogin(auth, body);
 
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
@@ -92,7 +92,8 @@ export class AuthController {
     const refreshToken = req.cookies['refresh_token'] as string;
     if (!refreshToken) throw new UnauthorizedException();
 
-    const result: IssueTokenType = await this.authService.refresh(refreshToken);
+    const result: IssueTokenType =
+      await this.authService.userRefresh(refreshToken);
     const { access_token, refresh_token, refreshTokenExpiredAt } = result;
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
@@ -121,7 +122,7 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.logout(user.uuid);
+    await this.authService.userLogout(user.uuid);
     res.clearCookie('refresh_token', {
       path: '/auth',
     });
@@ -156,7 +157,7 @@ export class AuthController {
     if (!auth) throw new UnauthorizedException();
 
     const { access_token, refresh_token, refreshTokenExpiredAt } =
-      await this.authService.login(auth, body);
+      await this.authService.userLogin(auth, body);
 
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
@@ -185,7 +186,7 @@ export class AuthController {
     if (!refreshToken) throw new UnauthorizedException();
 
     const { access_token, refresh_token, refreshTokenExpiredAt } =
-      await this.authService.refresh(refreshToken);
+      await this.authService.userRefresh(refreshToken);
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
@@ -212,7 +213,7 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.logout(user.uuid);
+    await this.authService.userLogout(user.uuid);
     res.clearCookie('refresh_token', {
       path: '/auth',
     });

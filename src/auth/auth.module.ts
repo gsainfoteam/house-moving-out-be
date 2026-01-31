@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@lib/prisma';
-import { InfoteamAccountModule } from 'libs/infoteam-account/src';
+import { InfoteamAccountModule } from '@lib/infoteam-account';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthRepository } from './auth.repository';
 import { AdminGuard } from './guard/admin.guard';

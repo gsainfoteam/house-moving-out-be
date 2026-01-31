@@ -1,4 +1,4 @@
-import { InfoteamAccountService } from 'libs/infoteam-account/src';
+import { InfoteamAccountService } from '@lib/infoteam-account';
 import {
   Injectable,
   UnauthorizedException,
@@ -116,7 +116,7 @@ export class AuthService {
     };
   }
 
-  async login(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
+  async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
     const token = auth.split(' ')[1];
     if (!token) throw new UnauthorizedException();
     const userinfo = await this.infoteamAccountService.getUserInfo(token);
@@ -411,7 +411,7 @@ export class AuthService {
     );
   }
 
-  async refresh(refreshToken: string): Promise<IssueTokenType> {
+  async userRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
     const { userUuid, sessionId, expiredAt } =
       await this.authRepository.findUserByRefreshToken(hashedToken);
@@ -443,7 +443,7 @@ export class AuthService {
     };
   }
 
-  async logout(userUuid: string): Promise<void> {
+  async userLogout(userUuid: string): Promise<void> {
     await this.authRepository.deleteAllUserRefreshTokens(userUuid);
   }
 }
