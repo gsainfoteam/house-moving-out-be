@@ -12,6 +12,7 @@ import {
   Delete,
   Patch,
   ParseUUIDPipe,
+  HttpCode,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
@@ -323,6 +324,7 @@ export class MoveOutController {
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Delete('application/:applicationUuid')
+  @HttpCode(204)
   async cancelInspection(
     @GetUser() user: User,
     @Param('applicationUuid', ParseUUIDPipe) uuid: string,
