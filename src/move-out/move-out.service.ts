@@ -27,7 +27,6 @@ import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
-import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 
 @Loggable()
@@ -575,14 +574,25 @@ export class MoveOutService {
 
   async updateInspection(
     user: User,
+    applicationUuid: string,
     { inspectionSlotUuid }: UpdateInspectionDto,
-  ) {
+  ): Promise<{ applicationUuid: string }> {
     const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return this.prismaService.$transaction(
       async (tx) => {
-        const application = await this.findCurrentApplication(user.uuid, tx);
+        const application =
+          await this.moveOutRepository.findApplicationByUuidInTx(
+            applicationUuid,
+            tx,
+          );
+
+        if (application.userUuid != user.uuid) {
+          throw new ForbiddenException(
+            'The application does not belong to this user.',
+          );
+        }
 
         const now = new Date();
         const timeDiff =
@@ -635,14 +645,6 @@ export class MoveOutService {
           }
         }
 
-        if (
-          inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT
-        ) {
-          throw new ConflictException(
-            'Inspection count limit(3times) exceeded.',
-          );
-        }
-
         await this.moveOutRepository.decrementSlotReservedCountInTx(
           application.inspectionSlotUuid,
           isMale,
@@ -670,65 +672,66 @@ export class MoveOutService {
     );
   }
 
-  async cancelInspection(user: User): Promise<void> {
+  async cancelInspection(user: User, applicationUuid: string): Promise<void> {
     const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
 
-    return await this.prismaService.$transaction(async (tx) => {
-      const application = await this.findCurrentApplication(user.uuid, tx);
+    return await this.prismaService.$transaction(
+      async (tx) => {
+        const application =
+          await this.moveOutRepository.findApplicationByUuidInTx(
+            applicationUuid,
+            tx,
+          );
 
-      const now = new Date();
-      const timeDiff =
-        application.inspectionSlot.startTime.getTime() - now.getTime();
+        if (application.userUuid != user.uuid) {
+          throw new ForbiddenException(
+            'The application does not belong to this user.',
+          );
+        }
 
-      if (timeDiff >= UPDATE_DEADLINE_MS) {
-        await this.moveOutRepository.decrementInspectionCountInTx(
-          application.inspectionTargetInfo.uuid,
+        const now = new Date();
+        const timeDiff =
+          application.inspectionSlot.startTime.getTime() - now.getTime();
+
+        if (timeDiff >= UPDATE_DEADLINE_MS) {
+          await this.moveOutRepository.decrementInspectionCountInTx(
+            application.inspectionTargetInfo.uuid,
+            tx,
+          );
+        }
+
+        const isMale = this.extractGenderFromHouseName(
+          application.inspectionTargetInfo.houseName,
+        );
+
+        await this.moveOutRepository.decrementSlotReservedCountInTx(
+          application.inspectionSlotUuid,
+          isMale,
           tx,
         );
-      }
 
-      const isMale = this.extractGenderFromHouseName(
-        application.inspectionTargetInfo.houseName,
-      );
-
-      await this.moveOutRepository.decrementSlotReservedCountInTx(
-        application.inspectionSlotUuid,
-        isMale,
-        tx,
-      );
-
-      await this.moveOutRepository.deleteInspectionApplicationInTx(
-        application.uuid,
-        tx,
-      );
-    });
-  }
-
-  async findMyInspection(user: User): Promise<InspectionResDto> {
-    return this.prismaService.$transaction(
-      async (tx) => {
-        const application = await this.findCurrentApplication(user.uuid, tx);
-
-        return {
-          applicationUuid: application.uuid,
-          inspectionSlot: { ...application.inspectionSlot },
-          isPassed: application.isPassed ?? undefined,
-        };
+        await this.moveOutRepository.deleteInspectionApplicationInTx(
+          application.uuid,
+          tx,
+        );
       },
       { isolationLevel: 'Serializable' },
     );
   }
 
-  private async findCurrentApplication(
-    userUuid: string,
-    tx: PrismaTransaction,
-  ): Promise<InspectionApplicationWithDetails> {
-    const schedule = await this.moveOutRepository.findActiveScheduleInTx(tx);
-    return await this.moveOutRepository.findApplicationByUserAndSemestersInTx(
-      userUuid,
-      schedule.currentSemesterUuid,
-      schedule.nextSemesterUuid,
-      tx,
-    );
+  async findMyInspection(user: User): Promise<InspectionResDto> {
+    const schedule = await this.moveOutRepository.findActiveSchedule();
+    const application =
+      await this.moveOutRepository.findApplicationByUserAndSemesters(
+        user.uuid,
+        schedule.currentSemesterUuid,
+        schedule.nextSemesterUuid,
+      );
+
+    return {
+      applicationUuid: application.uuid,
+      inspectionSlot: { ...application.inspectionSlot },
+      isPassed: application.isPassed ?? undefined,
+    };
   }
 }

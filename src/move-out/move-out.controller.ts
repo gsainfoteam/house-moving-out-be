@@ -270,7 +270,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Get('application/my')
+  @Get('application/me')
   async findMyInspection(@GetUser() user: User): Promise<InspectionResDto> {
     return await this.moveOutService.findMyInspection(user);
   }
@@ -296,12 +296,17 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Patch('application')
+  @Patch('application/:applicationUuid')
   async updateInspection(
     @GetUser() user: User,
+    @Param('applicationUuid', ParseUUIDPipe) uuid: string,
     @Body() updateInspectionDto: UpdateInspectionDto,
   ): Promise<UpdateInspectionResDto> {
-    return this.moveOutService.updateInspection(user, updateInspectionDto);
+    return this.moveOutService.updateInspection(
+      user,
+      uuid,
+      updateInspectionDto,
+    );
   }
 
   @ApiOperation({
@@ -317,8 +322,11 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Delete('application')
-  async cancelInspection(@GetUser() user: User): Promise<void> {
-    return this.moveOutService.cancelInspection(user);
+  @Delete('application/:applicationUuid')
+  async cancelInspection(
+    @GetUser() user: User,
+    @Param('applicationUuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    return this.moveOutService.cancelInspection(user, uuid);
   }
 }

@@ -605,13 +605,12 @@ export class MoveOutRepository {
       });
   }
 
-  async findApplicationByUserAndSemestersInTx(
+  async findApplicationByUserAndSemesters(
     userUuid: string,
     currentSemesterUuid: string,
     nextSemesterUuid: string,
-    tx: PrismaTransaction,
   ): Promise<InspectionApplicationWithDetails> {
-    return await tx.inspectionApplication
+    return await this.prismaService.inspectionApplication
       .findFirstOrThrow({
         where: {
           userUuid,
@@ -643,10 +642,38 @@ export class MoveOutRepository {
       });
   }
 
-  async findActiveScheduleInTx(
+  async findApplicationByUuidInTx(
+    uuid: string,
     tx: PrismaTransaction,
-  ): Promise<MoveOutSchedule> {
-    return await tx.moveOutSchedule
+  ): Promise<InspectionApplicationWithDetails> {
+    return await tx.inspectionApplication
+      .findFirstOrThrow({
+        where: {
+          uuid,
+        },
+        include: {
+          inspectionSlot: true,
+          inspectionTargetInfo: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('Application not found');
+            throw new NotFoundException('Not Found Error');
+          }
+          this.logger.error(
+            `findApplicationByUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findApplicationByUuid error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findActiveSchedule(): Promise<MoveOutSchedule> {
+    return await this.prismaService.moveOutSchedule
       .findFirstOrThrow({
         where: {
           isActive: true,
