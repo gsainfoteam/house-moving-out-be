@@ -1,4 +1,4 @@
-import { InfoteamIdpService } from '@lib/infoteam-idp';
+import { InfoteamAccountService } from 'libs/infoteam-account/src';
 import {
   Injectable,
   UnauthorizedException,
@@ -44,7 +44,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly infoteamIdpService: InfoteamIdpService,
+    private readonly infoteamAccountService: InfoteamAccountService,
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -116,10 +116,10 @@ export class AuthService {
     };
   }
 
-  async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
-    const idpToken = auth.split(' ')[1];
-    if (!idpToken) throw new UnauthorizedException();
-    const userinfo = await this.infoteamIdpService.getUserInfo(idpToken);
+  async login(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
+    const token = auth.split(' ')[1];
+    if (!token) throw new UnauthorizedException();
+    const userinfo = await this.infoteamAccountService.getUserInfo(token);
 
     const consentData: ConsentData = {
       agreedToTerms: body?.agreedToTerms,
@@ -411,7 +411,7 @@ export class AuthService {
     );
   }
 
-  async userRefresh(refreshToken: string): Promise<IssueTokenType> {
+  async refresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
     const { userUuid, sessionId, expiredAt } =
       await this.authRepository.findUserByRefreshToken(hashedToken);
@@ -443,7 +443,7 @@ export class AuthService {
     };
   }
 
-  async userLogout(userUuid: string): Promise<void> {
+  async logout(userUuid: string): Promise<void> {
     await this.authRepository.deleteAllUserRefreshTokens(userUuid);
   }
 }

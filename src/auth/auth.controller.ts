@@ -45,7 +45,7 @@ export class AuthController {
     description: 'Consent information (required only when consent needed)',
   })
   @ApiOkResponse({ type: JwtToken, description: 'Login success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid IDP token' })
+  @ApiUnauthorizedResponse({ description: 'Invalid Infoteam Account token' })
   @ApiResponse({
     status: 403,
     description: 'Consent required',
@@ -63,9 +63,9 @@ export class AuthController {
     if (!auth) throw new UnauthorizedException();
 
     const { access_token, refresh_token, refreshTokenExpiredAt } =
-      await this.authService.userLogin(auth, body);
+      await this.authService.login(auth, body);
 
-    res.cookie('user_refresh_token', refresh_token, {
+    res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
@@ -89,13 +89,12 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<JwtToken> {
-    const refreshToken = req.cookies['user_refresh_token'] as string;
+    const refreshToken = req.cookies['refresh_token'] as string;
     if (!refreshToken) throw new UnauthorizedException();
 
-    const result: IssueTokenType =
-      await this.authService.userRefresh(refreshToken);
+    const result: IssueTokenType = await this.authService.refresh(refreshToken);
     const { access_token, refresh_token, refreshTokenExpiredAt } = result;
-    res.cookie('user_refresh_token', refresh_token, {
+    res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
@@ -122,8 +121,8 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.userLogout(user.uuid);
-    res.clearCookie('user_refresh_token', {
+    await this.authService.logout(user.uuid);
+    res.clearCookie('refresh_token', {
       path: '/auth',
     });
   }
@@ -139,7 +138,7 @@ export class AuthController {
     description: 'Consent information (required only when consent needed)',
   })
   @ApiOkResponse({ type: JwtToken, description: 'Login success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid IDP token' })
+  @ApiUnauthorizedResponse({ description: 'Invalid Infoteam Account token' })
   @ApiResponse({
     status: 403,
     description: 'Consent required',
@@ -157,9 +156,9 @@ export class AuthController {
     if (!auth) throw new UnauthorizedException();
 
     const { access_token, refresh_token, refreshTokenExpiredAt } =
-      await this.authService.userLogin(auth, body);
+      await this.authService.login(auth, body);
 
-    res.cookie('user_refresh_token', refresh_token, {
+    res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
@@ -182,13 +181,12 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<JwtToken> {
-    const refreshToken = req.cookies['user_refresh_token'] as string;
+    const refreshToken = req.cookies['refresh_token'] as string;
     if (!refreshToken) throw new UnauthorizedException();
 
-    const result: IssueTokenType =
-      await this.authService.userRefresh(refreshToken);
-    const { access_token, refresh_token, refreshTokenExpiredAt } = result;
-    res.cookie('user_refresh_token', refresh_token, {
+    const { access_token, refresh_token, refreshTokenExpiredAt } =
+      await this.authService.refresh(refreshToken);
+    res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
@@ -214,8 +212,8 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.authService.userLogout(user.uuid);
-    res.clearCookie('user_refresh_token', {
+    await this.authService.logout(user.uuid);
+    res.clearCookie('refresh_token', {
       path: '/auth',
     });
   }
