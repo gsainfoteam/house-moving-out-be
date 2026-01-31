@@ -276,6 +276,31 @@ export class MoveOutRepository {
       });
   }
 
+  async deleteInspectionTargetInfosBySemesters(
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+  ): Promise<{ count: number }> {
+    return await this.prismaService.inspectionTargetInfo
+      .deleteMany({
+        where: {
+          currentSemesterUuid,
+          nextSemesterUuid,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `deleteInspectionTargetInfosBySemesters prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `deleteInspectionTargetInfosBySemesters error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findFirstInspectionTargetInfoBySemestersInTx(
     currentSemesterUuid: string,
     nextSemesterUuid: string,

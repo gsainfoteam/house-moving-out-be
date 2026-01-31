@@ -3,7 +3,7 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsInt } from 'class-validator';
 import { Season } from 'generated/prisma/client';
 
-export class GetInspectionTargetsDto {
+export class InspectionTargetsBySemestersQueryDto {
   @ApiProperty({
     example: 2025,
     description: 'current semester year',

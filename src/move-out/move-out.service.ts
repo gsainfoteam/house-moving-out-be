@@ -28,7 +28,7 @@ import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
-import { GetInspectionTargetsDto } from './dto/req/get-inspection-targets.dto';
+import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 
 @Loggable()
@@ -245,7 +245,9 @@ export class MoveOutService {
     currentSeason,
     nextYear,
     nextSeason,
-  }: GetInspectionTargetsDto): Promise<InspectionTargetInfoResDto[]> {
+  }: InspectionTargetsBySemestersQueryDto): Promise<
+    InspectionTargetInfoResDto[]
+  > {
     const currentSemester: Semester = {
       year: currentYear,
       season: currentSeason,
@@ -279,6 +281,53 @@ export class MoveOutService {
     }
 
     return targets.map((target) => new InspectionTargetInfoResDto(target));
+  }
+
+  async deleteInspectionTargetsBySemesters({
+    currentYear,
+    currentSeason,
+    nextYear,
+    nextSeason,
+  }: InspectionTargetsBySemestersQueryDto): Promise<{
+    message: string;
+    count: number;
+  }> {
+    const currentSemester: Semester = {
+      year: currentYear,
+      season: currentSeason,
+    };
+    const nextSemester: Semester = {
+      year: nextYear,
+      season: nextSeason,
+    };
+
+    this.validateSemesterOrder(currentSemester, nextSemester);
+
+    const currentSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        currentSemester.year,
+        currentSemester.season,
+      );
+    const nextSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        nextSemester.year,
+        nextSemester.season,
+      );
+
+    const result =
+      await this.moveOutRepository.deleteInspectionTargetInfosBySemesters(
+        currentSemesterEntity.uuid,
+        nextSemesterEntity.uuid,
+      );
+
+    if (result.count === 0) {
+      throw new NotFoundException('Inspection targets not found');
+    }
+
+    return {
+      message: 'Inspection targets successfully deleted',
+      count: result.count,
+    };
   }
 
   private findInspectionTargetRooms(
