@@ -581,7 +581,7 @@ export class MoveOutService {
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return this.prismaService.$transaction(
-      async (tx) => {
+      async (tx: PrismaTransaction) => {
         const application =
           await this.moveOutRepository.findApplicationByUuidInTx(
             applicationUuid,
@@ -597,6 +597,12 @@ export class MoveOutService {
         const now = new Date();
         const timeDiff =
           application.inspectionSlot.startTime.getTime() - now.getTime();
+
+        if (timeDiff < UPDATE_DEADLINE_MS) {
+          throw new ForbiddenException(
+            'Cannot modify the inspection time within 1 hour of the start time.',
+          );
+        }
 
         const schedule =
           await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
@@ -626,12 +632,6 @@ export class MoveOutService {
         if (application.inspectionSlot.scheduleId !== updatedSlot.scheduleId) {
           throw new BadRequestException(
             'Changes are only possible within the same schedule.',
-          );
-        }
-
-        if (timeDiff < UPDATE_DEADLINE_MS) {
-          throw new ForbiddenException(
-            'Cannot modify the inspection time within 1 hour of the start time.',
           );
         }
 
@@ -676,7 +676,7 @@ export class MoveOutService {
     const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
 
     return await this.prismaService.$transaction(
-      async (tx) => {
+      async (tx: PrismaTransaction) => {
         const application =
           await this.moveOutRepository.findApplicationByUuidInTx(
             applicationUuid,
