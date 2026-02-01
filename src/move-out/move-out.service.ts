@@ -594,9 +594,7 @@ export class MoveOutService {
         }
 
         if (application.inspectionSlotUuid === inspectionSlotUuid) {
-          throw new BadRequestException(
-            'Cannot update to the same inspection slot.',
-          );
+          return { applicationUuid };
         }
 
         const now = new Date();
