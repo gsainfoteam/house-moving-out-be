@@ -150,6 +150,10 @@ export class MoveOutService {
     return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
   }
 
+  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
+    return await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
+  }
+
   async findInspectorsBySlotUuid(uuid: string): Promise<InspectorResDto[]> {
     const inspectors =
       await this.moveOutRepository.findInspectorBySlotUuid(uuid);

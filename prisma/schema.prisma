@@ -102,6 +102,13 @@ model AuditLog {
   @@map("audit_log")
 }
 
+enum ScheduleStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELED
+}
+
 model MoveOutSchedule {
   id                   Int              @id @default(autoincrement())
   title                String
@@ -112,6 +119,7 @@ model MoveOutSchedule {
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at")
   inspectionSlots      InspectionSlot[]
+  status               ScheduleStatus   @default(DRAFT)
 
   currentSemester Semester @relation("ScheduleCurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
   nextSemester    Semester @relation("ScheduleNextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
