@@ -116,7 +116,6 @@ model MoveOutSchedule {
   applicationEndTime   DateTime         @map("application_end_time")
   currentSemesterUuid  String           @map("current_semester_uuid")
   nextSemesterUuid     String           @map("next_semester_uuid")
-  isActive             Boolean          @default(false) @map("is_active")
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at")
   inspectionSlots      InspectionSlot[]

@@ -752,9 +752,8 @@ export class MoveOutRepository {
   async findActiveSchedule(): Promise<MoveOutSchedule> {
     return await this.prismaService.moveOutSchedule
       .findFirstOrThrow({
-        where: {
-          isActive: true,
-        },
+        where: { status: 'ACTIVE' },
+        orderBy: { createdAt: 'desc' },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
