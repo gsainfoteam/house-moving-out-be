@@ -152,7 +152,7 @@ export class MoveOutController {
     type: MoveOutScheduleWithSlotsResDto,
   })
   @ApiNotFoundResponse({ description: 'Not Found' })
-  @ApiBadRequestResponse({ description: 'Invalid ID format' })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')

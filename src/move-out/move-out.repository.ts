@@ -100,11 +100,11 @@ export class MoveOutRepository {
             throw new NotFoundException(`Not Found Error`);
           }
           this.logger.error(
-            `findMoveOutScheduleWithSlotsById prisma error: ${error.message}`,
+            `findMoveOutScheduleWithSlotsByUuid prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findMoveOutScheduleWithSlotsById error: ${error}`);
+        this.logger.error(`findMoveOutScheduleWithSlotsByUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -159,11 +159,11 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `findInspectorBySlotUuid prisma error: ${error.message}`,
+            `findInspectorByScheduleUuid prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findInspectorBySlotUuid error: ${error}`);
+        this.logger.error(`findInspectorByScheduleUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
