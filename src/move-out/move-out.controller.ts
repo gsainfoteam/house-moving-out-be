@@ -59,8 +59,8 @@ export class MoveOutController {
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
   @Get('schedule')
   async findAllMoveOutSchedules(): Promise<MoveOutScheduleResDto[]> {
     return await this.moveOutService.findAllMoveOutSchedules();
@@ -136,8 +136,8 @@ export class MoveOutController {
   @ApiBadRequestResponse({ description: 'Invalid ID format' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
   @Get('schedule/:id')
   async findMoveOutScheduleWithSlots(
     @Param('id', ParseIntPipe) id: number,
