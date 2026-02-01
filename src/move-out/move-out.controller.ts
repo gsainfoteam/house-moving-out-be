@@ -1,19 +1,18 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
-  Post,
-  UseGuards,
-  Param,
-  UseInterceptors,
-  ClassSerializerInterceptor,
-  UploadedFile,
   Get,
+  Param,
   ParseUUIDPipe,
+  Post,
   Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { MoveOutService } from './move-out.service';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -28,25 +27,27 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { User } from 'generated/prisma/browser';
+import { GetUser } from 'src/auth/decorator/get-user.decorator';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { UserGuard } from 'src/auth/guard/user.guard';
-import { GetUser } from 'src/auth/decorator/get-user.decorator';
-import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
-import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
+import { ErrorDto } from 'src/common/dto/error.dto';
+import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import {
   CreateInspectionTargetsDto,
   CreateInspectionTargetsSwaggerDto,
 } from './dto/req/create-inspection-targets.dto';
-import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
-import { Semester } from './types/semester.type';
-import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
-import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
-import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
-import { User } from 'generated/prisma/browser';
-import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
-import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
+import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
+import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
 import { DeleteInspectionTargetsResDto } from './dto/res/delete-inspection-targets-res.dto';
+import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
+import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
+import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
+import { MoveOutService } from './move-out.service';
+import { Semester } from './types/semester.type';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -103,7 +104,7 @@ export class MoveOutController {
       'The move out schedule with slots has been successfully retrieved.',
     type: MoveOutScheduleWithSlotsResDto,
   })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
