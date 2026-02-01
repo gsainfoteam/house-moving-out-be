@@ -525,6 +525,14 @@ export class MoveOutService {
             tx,
           );
 
+        if (
+          inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT
+        ) {
+          throw new ConflictException(
+            'Inspection count limit(3times) exceeded.',
+          );
+        }
+
         const isMale = this.extractGenderFromHouseName(
           inspectionTargetInfo.houseName,
         );
@@ -548,14 +556,6 @@ export class MoveOutService {
           if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
             throw new ConflictException('Female capacity is already full.');
           }
-        }
-
-        if (
-          inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT
-        ) {
-          throw new ConflictException(
-            'Inspection count limit(3times) exceeded.',
-          );
         }
 
         const inspector =
