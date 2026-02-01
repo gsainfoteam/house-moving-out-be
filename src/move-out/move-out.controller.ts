@@ -144,7 +144,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Move Out Schedule with Slots',
     description:
-      'Retrieve a specific move out schedule including its inspection slots by ID.',
+      'Retrieve a specific move out schedule including its inspection slots by UUID.',
   })
   @ApiOkResponse({
     description:
