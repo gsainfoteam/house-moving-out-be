@@ -4,7 +4,6 @@ import {
   Post,
   UseGuards,
   Param,
-  ParseIntPipe,
   UseInterceptors,
   ClassSerializerInterceptor,
   UploadedFile,
@@ -123,7 +122,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Patch('schedule/:id')
+  @Patch('schedule/:uuid')
   @UsePipes(
     new ValidationPipe({
       skipMissingProperties: true,
@@ -133,11 +132,11 @@ export class MoveOutController {
     }),
   )
   async updateMoveOutSchedule(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutScheduleResDto> {
     return await this.moveOutService.updateMoveOutSchedule(
-      id,
+      uuid,
       updateMoveOutScheduleDto,
     );
   } */
@@ -145,7 +144,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Move Out Schedule with Slots',
     description:
-      'Retrieve a specific move out schedule including its inspection slots by ID.',
+      'Retrieve a specific move out schedule including its inspection slots by UUID.',
   })
   @ApiOkResponse({
     description:
@@ -153,22 +152,22 @@ export class MoveOutController {
     type: MoveOutScheduleWithSlotsResDto,
   })
   @ApiNotFoundResponse({ description: 'Not Found' })
-  @ApiBadRequestResponse({ description: 'Invalid ID format' })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('schedule/:id')
+  @Get('schedule/:uuid')
   async findMoveOutScheduleWithSlots(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<MoveOutScheduleWithSlotsResDto> {
-    return await this.moveOutService.findMoveOutScheduleWithSlots(id);
+    return await this.moveOutService.findMoveOutScheduleWithSlots(uuid);
   }
 
   @ApiOperation({
-    summary: 'Get Inspectors using slot uuid',
+    summary: 'Get Inspectors using schedule uuid',
     description:
-      'Get available inspectors for a move out schedule using slot UUID.',
+      'Get available inspectors for a move out schedule using schedule UUID.',
   })
   @ApiOkResponse({
     description: 'The available inspectors has been successfully retrieved.',
@@ -178,11 +177,11 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('schedule/:slotUuid/inspector')
-  async findInspectorsBySlotUuid(
-    @Param('slotUuid', ParseUUIDPipe) uuid: string,
+  @Get('schedule/:uuid/inspector')
+  async findInspectorsByScheduleUuid(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<InspectorResDto[]> {
-    return await this.moveOutService.findInspectorsBySlotUuid(uuid);
+    return await this.moveOutService.findInspectorsByScheduleUuid(uuid);
   }
 
   @ApiOperation({

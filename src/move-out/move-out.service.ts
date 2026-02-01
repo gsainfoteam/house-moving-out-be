@@ -125,11 +125,11 @@ export class MoveOutService {
   }
 
   /* async updateMoveOutSchedule(
-    id: number,
+    uuid: string,
     updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
     const schedule =
-      await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
+      await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuid(uuid);
 
     const updatedMoveOutScheduleDates: MoveOutScheduleDates = {
       ...schedule,
@@ -139,24 +139,26 @@ export class MoveOutService {
     this.validateScheduleAndRanges(updatedMoveOutScheduleDates);
 
     return await this.moveOutRepository.updateMoveOutSchedule(
-      id,
+      uuid,
       updateMoveOutScheduleDto,
     );
   } */
 
   async findMoveOutScheduleWithSlots(
-    id: number,
+    uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
-    return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
+    return await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuid(
+      uuid,
+    );
   }
 
   async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
     return await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
   }
 
-  async findInspectorsBySlotUuid(uuid: string): Promise<InspectorResDto[]> {
+  async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
     const inspectors =
-      await this.moveOutRepository.findInspectorBySlotUuid(uuid);
+      await this.moveOutRepository.findInspectorByScheduleUuid(uuid);
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 

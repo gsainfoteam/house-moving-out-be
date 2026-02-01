@@ -81,12 +81,12 @@ export class MoveOutRepository {
       });
   }
 
-  async findMoveOutScheduleWithSlotsById(
-    id: number,
+  async findMoveOutScheduleWithSlotsByUuid(
+    uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
     return await this.prismaService.moveOutSchedule
       .findUniqueOrThrow({
-        where: { id },
+        where: { uuid },
         include: {
           inspectionSlots: true,
           currentSemester: true,
@@ -96,15 +96,15 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`MoveOutSchedule not found: ${id}`);
+            this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
           }
           this.logger.error(
-            `findMoveOutScheduleWithSlotsById prisma error: ${error.message}`,
+            `findMoveOutScheduleWithSlotsByUuid prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findMoveOutScheduleWithSlotsById error: ${error}`);
+        this.logger.error(`findMoveOutScheduleWithSlotsByUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -136,13 +136,15 @@ export class MoveOutRepository {
       });
   }
 
-  async findInspectorBySlotUuid(uuid: string): Promise<InspectorWithSlots[]> {
+  async findInspectorByScheduleUuid(
+    uuid: string,
+  ): Promise<InspectorWithSlots[]> {
     return await this.prismaService.inspector
       .findMany({
         where: {
           availableSlots: {
             some: {
-              inspectionSlotUuid: uuid,
+              inspectionSlot: { scheduleUuid: uuid },
             },
           },
         },
@@ -157,28 +159,28 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `findInspectorBySlotUuid prisma error: ${error.message}`,
+            `findInspectorByScheduleUuid prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findInspectorBySlotUuid error: ${error}`);
+        this.logger.error(`findInspectorByScheduleUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
 
   async updateMoveOutSchedule(
-    id: number,
+    uuid: string,
     moveOutSchedule: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
     return await this.prismaService.moveOutSchedule
       .update({
-        where: { id },
+        where: { uuid },
         data: moveOutSchedule,
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`MoveOutSchedule not found: ${id}`);
+            this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
           }
           this.logger.error(
