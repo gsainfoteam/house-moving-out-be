@@ -678,9 +678,6 @@ export class MoveOutRepository {
         where: {
           isActive: true,
         },
-        orderBy: {
-          id: 'desc',
-        },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
