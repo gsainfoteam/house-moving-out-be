@@ -110,7 +110,7 @@ enum ScheduleStatus {
 }
 
 model MoveOutSchedule {
-  id                   Int              @id @default(autoincrement())
+  uuid                 String           @id @default(uuid())
   title                String
   applicationStartTime DateTime         @map("application_start_time")
   applicationEndTime   DateTime         @map("application_end_time")
@@ -168,7 +168,7 @@ model InspectionTargetInfo {
 
 model InspectionSlot {
   uuid                String   @id @default(uuid())
-  scheduleId          Int      @map("schedule_id")
+  scheduleUuid        String   @map("schedule_uuid")
   startTime           DateTime @map("start_time")
   endTime             DateTime @map("end_time")
   maleCapacity        Int      @default(0) @map("male_capacity")
@@ -178,9 +178,9 @@ model InspectionSlot {
 
   inspectionApplications InspectionApplication[]
   inspectors             InspectorAvailableSlot[]
-  schedule               MoveOutSchedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  schedule               MoveOutSchedule          @relation(fields: [scheduleUuid], references: [uuid], onDelete: Cascade)
 
-  @@index([scheduleId, startTime])
+  @@index([scheduleUuid, startTime])
   @@map("inspection_slot")
 }
 
