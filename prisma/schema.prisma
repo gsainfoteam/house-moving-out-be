@@ -21,6 +21,15 @@ enum ConsentType {
   @@map("consent_type")
 }
 
+enum ScheduleStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELED
+
+  @@map("schedule_status")
+}
+
 enum Season {
   SPRING
   SUMMER
@@ -40,6 +49,8 @@ enum Gender {
 enum Role {
   ADMIN
   USER
+
+  @@map("role")
 }
 
 model User {
@@ -100,13 +111,6 @@ model AuditLog {
 
   @@index([performedAt])
   @@map("audit_log")
-}
-
-enum ScheduleStatus {
-  DRAFT
-  ACTIVE
-  COMPLETED
-  CANCELED
 }
 
 model MoveOutSchedule {
