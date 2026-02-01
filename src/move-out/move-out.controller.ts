@@ -44,12 +44,11 @@ import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targe
 import { Semester } from './types/semester.type';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
-import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
-import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { User } from 'generated/prisma/browser';
-import { UpdateInspectionResDto } from './dto/res/update-inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
+import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -229,7 +228,7 @@ export class MoveOutController {
   })
   @ApiCreatedResponse({
     description: 'Inspection application completed successfully.',
-    type: ApplyInspectionResDto,
+    type: ApplicationUuidResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -251,7 +250,7 @@ export class MoveOutController {
   async applyInspection(
     @GetUser() user: User,
     @Body() applyInspectionDto: ApplyInspectionDto,
-  ): Promise<ApplyInspectionResDto> {
+  ): Promise<ApplicationUuidResDto> {
     return await this.moveOutService.applyInspection(user, applyInspectionDto);
   }
 
@@ -283,12 +282,13 @@ export class MoveOutController {
   })
   @ApiOkResponse({
     description: 'The inspection application has been successfully updated.',
-    type: UpdateInspectionResDto,
+    type: ApplicationUuidResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
-    description: 'Forbidden - Cannot modify within 1 hour of the start time',
+    description:
+      'Forbidden - Only owners can modify; modification restricted within 1 hour of start.',
   })
   @ApiNotFoundResponse({
     description: 'Not Found',
@@ -302,7 +302,7 @@ export class MoveOutController {
     @GetUser() user: User,
     @Param('applicationUuid', ParseUUIDPipe) uuid: string,
     @Body() updateInspectionDto: UpdateInspectionDto,
-  ): Promise<UpdateInspectionResDto> {
+  ): Promise<ApplicationUuidResDto> {
     return this.moveOutService.updateInspection(
       user,
       uuid,
@@ -319,6 +319,9 @@ export class MoveOutController {
     description: 'The inspection application has been successfully canceled.',
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Only owners can cancel.',
+  })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
