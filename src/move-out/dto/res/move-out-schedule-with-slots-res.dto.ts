@@ -7,15 +7,15 @@ import { SemesterResDto } from './semester-res.dto';
 export class InspectionSlotResDto {
   @ApiProperty({
     description: '검사 슬롯 고유 ID (UUID)',
-    example: '56557838-403f-431f-8da2-669f7b5aadd6',
+    format: 'uuid',
   })
   uuid: string;
 
   @ApiProperty({
-    description: '퇴사 검사 일정 ID',
-    example: 3,
+    description: '퇴사 검사 일정 UUID',
+    format: 'uuid',
   })
-  scheduleId: number;
+  scheduleUuid: string;
 
   @ApiProperty({
     description: '슬롯 시작 시간',

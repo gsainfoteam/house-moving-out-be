@@ -81,12 +81,12 @@ export class MoveOutRepository {
       });
   }
 
-  async findMoveOutScheduleWithSlotsById(
-    id: number,
+  async findMoveOutScheduleWithSlotsByUuid(
+    uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
     return await this.prismaService.moveOutSchedule
       .findUniqueOrThrow({
-        where: { id },
+        where: { uuid },
         include: {
           inspectionSlots: true,
           currentSemester: true,
@@ -96,7 +96,7 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`MoveOutSchedule not found: ${id}`);
+            this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
           }
           this.logger.error(
@@ -167,18 +167,18 @@ export class MoveOutRepository {
   }
 
   async updateMoveOutSchedule(
-    id: number,
+    uuid: string,
     moveOutSchedule: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
     return await this.prismaService.moveOutSchedule
       .update({
-        where: { id },
+        where: { uuid },
         data: moveOutSchedule,
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug(`MoveOutSchedule not found: ${id}`);
+            this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
           }
           this.logger.error(

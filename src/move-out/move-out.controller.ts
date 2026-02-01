@@ -4,7 +4,6 @@ import {
   Post,
   UseGuards,
   Param,
-  ParseIntPipe,
   UseInterceptors,
   ClassSerializerInterceptor,
   UploadedFile,
@@ -123,7 +122,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Patch('schedule/:id')
+  @Patch('schedule/:uuid')
   @UsePipes(
     new ValidationPipe({
       skipMissingProperties: true,
@@ -133,11 +132,11 @@ export class MoveOutController {
     }),
   )
   async updateMoveOutSchedule(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutScheduleResDto> {
     return await this.moveOutService.updateMoveOutSchedule(
-      id,
+      uuid,
       updateMoveOutScheduleDto,
     );
   } */
@@ -158,11 +157,11 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('schedule/:id')
+  @Get('schedule/:uuid')
   async findMoveOutScheduleWithSlots(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<MoveOutScheduleWithSlotsResDto> {
-    return await this.moveOutService.findMoveOutScheduleWithSlots(id);
+    return await this.moveOutService.findMoveOutScheduleWithSlots(uuid);
   }
 
   @ApiOperation({
