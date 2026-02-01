@@ -9,6 +9,7 @@
 
 */
 
+TRUNCATE TABLE "move_out_schedule" CASCADE;
 -- DropForeignKey
 ALTER TABLE "inspection_slot" DROP CONSTRAINT "inspection_slot_schedule_id_fkey";
 
@@ -20,7 +21,6 @@ ALTER TABLE "inspection_slot" DROP COLUMN "schedule_id",
 ADD COLUMN     "schedule_uuid" TEXT NOT NULL;
 
 -- AlterTable
-TRUNCATE TABLE "move_out_schedule" CASCADE;
 ALTER TABLE "move_out_schedule" DROP CONSTRAINT "move_out_schedule_pkey",
 DROP COLUMN "id",
 ADD COLUMN     "uuid" TEXT NOT NULL,
