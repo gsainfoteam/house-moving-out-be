@@ -156,9 +156,9 @@ export class MoveOutService {
     return await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
   }
 
-  async findInspectorsBySlotUuid(uuid: string): Promise<InspectorResDto[]> {
+  async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
     const inspectors =
-      await this.moveOutRepository.findInspectorBySlotUuid(uuid);
+      await this.moveOutRepository.findInspectorByScheduleUuid(uuid);
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 

@@ -136,13 +136,15 @@ export class MoveOutRepository {
       });
   }
 
-  async findInspectorBySlotUuid(uuid: string): Promise<InspectorWithSlots[]> {
+  async findInspectorByScheduleUuid(
+    uuid: string,
+  ): Promise<InspectorWithSlots[]> {
     return await this.prismaService.inspector
       .findMany({
         where: {
           availableSlots: {
             some: {
-              inspectionSlotUuid: uuid,
+              inspectionSlot: { scheduleUuid: uuid },
             },
           },
         },
