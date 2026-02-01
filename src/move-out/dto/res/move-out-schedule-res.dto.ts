@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ScheduleStatus } from 'generated/prisma/client';
 
 export class MoveOutScheduleResDto {
   @ApiProperty({
@@ -36,6 +37,12 @@ export class MoveOutScheduleResDto {
     format: 'uuid',
   })
   nextSemesterUuid: string;
+
+  @ApiProperty({
+    description: '상태',
+    enum: ScheduleStatus,
+  })
+  status: ScheduleStatus;
 
   @ApiProperty({
     description: '생성 날짜',
