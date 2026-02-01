@@ -631,13 +631,11 @@ export class MoveOutRepository {
             throw new NotFoundException('Not Found Error');
           }
           this.logger.error(
-            `findApplicationByUserAndSemestersInTx prisma error: ${error.message}`,
+            `findApplicationByUserAndSemesters prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(
-          `findApplicationByUserAndSemestersInTx error: ${error}`,
-        );
+        this.logger.error(`findApplicationByUserAndSemesters error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -663,11 +661,11 @@ export class MoveOutRepository {
             throw new NotFoundException('Not Found Error');
           }
           this.logger.error(
-            `findApplicationByUuid prisma error: ${error.message}`,
+            `findApplicationByUuidInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findApplicationByUuid error: ${error}`);
+        this.logger.error(`findApplicationByUuidInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -686,11 +684,11 @@ export class MoveOutRepository {
             throw new NotFoundException('Not Found Error');
           }
           this.logger.error(
-            `findActiveScheduleInTx prisma error: ${error.message}`,
+            `findActiveSchedule prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findActiveScheduleInTx error: ${error}`);
+        this.logger.error(`findActiveSchedule error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
