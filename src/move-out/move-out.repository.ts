@@ -109,6 +109,33 @@ export class MoveOutRepository {
       });
   }
 
+  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
+    return await this.prismaService.moveOutSchedule
+      .findFirstOrThrow({
+        where: { status: 'ACTIVE' },
+        include: {
+          inspectionSlots: true,
+          currentSemester: true,
+          nextSemester: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`Active MoveOutSchedule not found`);
+            throw new NotFoundException(`Not Found Error`);
+          }
+          this.logger.error(
+            `findActiveMoveOutScheduleWithSlots prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findActiveMoveOutScheduleWithSlots error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findInspectorBySlotUuid(uuid: string): Promise<InspectorWithSlots[]> {
     return await this.prismaService.inspector
       .findMany({

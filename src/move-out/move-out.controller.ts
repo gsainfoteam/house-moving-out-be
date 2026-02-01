@@ -146,6 +146,26 @@ export class MoveOutController {
   }
 
   @ApiOperation({
+    summary: 'Get Active Move Out Schedule with Slots',
+    description:
+      'Retrieve an active move out schedule including its inspection slots.',
+  })
+  @ApiOkResponse({
+    description:
+      'The move out schedule with slots has been successfully retrieved.',
+    type: MoveOutScheduleWithSlotsResDto,
+  })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('schedule/active')
+  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlotsResDto> {
+    return await this.moveOutService.findActiveMoveOutScheduleWithSlots();
+  }
+
+  @ApiOperation({
     summary: 'Get Inspectors using slot uuid',
     description:
       'Get available inspectors for a move out schedule using slot UUID.',
