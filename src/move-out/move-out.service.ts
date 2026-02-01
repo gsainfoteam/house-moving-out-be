@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
 import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
@@ -27,6 +28,8 @@ import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
+import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 
 @Loggable()
 @Injectable()
@@ -241,6 +244,92 @@ export class MoveOutService {
     );
 
     return result.count;
+  }
+
+  async findInspectionTargetsBySemesters({
+    currentYear,
+    currentSeason,
+    nextYear,
+    nextSeason,
+  }: InspectionTargetsBySemestersQueryDto): Promise<
+    InspectionTargetInfoResDto[]
+  > {
+    const currentSemester: Semester = {
+      year: currentYear,
+      season: currentSeason,
+    };
+    const nextSemester: Semester = {
+      year: nextYear,
+      season: nextSeason,
+    };
+
+    this.validateSemesterOrder(currentSemester, nextSemester);
+
+    const currentSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        currentSemester.year,
+        currentSemester.season,
+      );
+    const nextSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        nextSemester.year,
+        nextSemester.season,
+      );
+
+    const targets =
+      await this.moveOutRepository.findInspectionTargetInfosBySemesters(
+        currentSemesterEntity.uuid,
+        nextSemesterEntity.uuid,
+      );
+
+    if (targets.length === 0) {
+      throw new NotFoundException('Inspection targets not found');
+    }
+
+    return targets.map((target) => new InspectionTargetInfoResDto(target));
+  }
+
+  async deleteInspectionTargetsBySemesters({
+    currentYear,
+    currentSeason,
+    nextYear,
+    nextSeason,
+  }: InspectionTargetsBySemestersQueryDto): Promise<{ count: number }> {
+    const currentSemester: Semester = {
+      year: currentYear,
+      season: currentSeason,
+    };
+    const nextSemester: Semester = {
+      year: nextYear,
+      season: nextSeason,
+    };
+
+    this.validateSemesterOrder(currentSemester, nextSemester);
+
+    const currentSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        currentSemester.year,
+        currentSemester.season,
+      );
+    const nextSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        nextSemester.year,
+        nextSemester.season,
+      );
+
+    const result =
+      await this.moveOutRepository.deleteInspectionTargetInfosBySemesters(
+        currentSemesterEntity.uuid,
+        nextSemesterEntity.uuid,
+      );
+
+    if (result.count === 0) {
+      throw new NotFoundException('Inspection targets not found');
+    }
+
+    return {
+      count: result.count,
+    };
   }
 
   private findInspectionTargetRooms(

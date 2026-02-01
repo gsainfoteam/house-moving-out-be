@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Post,
   UseGuards,
   Param,
@@ -9,6 +10,7 @@ import {
   UploadedFile,
   Get,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MoveOutService } from './move-out.service';
@@ -42,6 +44,9 @@ import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
 import { User } from 'generated/prisma/browser';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
+import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
+import { DeleteInspectionTargetsResDto } from './dto/res/delete-inspection-targets-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -232,6 +237,54 @@ export class MoveOutController {
       message: 'Inspection targets successfully created',
       count: savedCount,
     };
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspection Targets by Semester Combination',
+    description:
+      'Retrieve inspection targets by current/next semester combination.',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets successfully retrieved',
+    type: [InspectionTargetInfoResDto],
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('inspection-targets')
+  async findInspectionTargetsBySemesters(
+    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
+  ): Promise<InspectionTargetInfoResDto[]> {
+    return await this.moveOutService.findInspectionTargetsBySemesters(
+      semestersQuery,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Delete Inspection Targets by Semester Combination',
+    description:
+      'Delete inspection targets by current/next semester combination.',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets successfully deleted',
+    type: DeleteInspectionTargetsResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Delete('inspection-targets')
+  async deleteInspectionTargetsBySemesters(
+    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
+  ): Promise<DeleteInspectionTargetsResDto> {
+    return await this.moveOutService.deleteInspectionTargetsBySemesters(
+      semestersQuery,
+    );
   }
 
   @ApiOperation({
