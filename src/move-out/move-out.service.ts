@@ -288,10 +288,7 @@ export class MoveOutService {
     currentSeason,
     nextYear,
     nextSeason,
-  }: InspectionTargetsBySemestersQueryDto): Promise<{
-    message: string;
-    count: number;
-  }> {
+  }: InspectionTargetsBySemestersQueryDto): Promise<{ count: number }> {
     const currentSemester: Semester = {
       year: currentYear,
       season: currentSeason,
@@ -325,7 +322,6 @@ export class MoveOutService {
     }
 
     return {
-      message: 'Inspection targets successfully deleted',
       count: result.count,
     };
   }
