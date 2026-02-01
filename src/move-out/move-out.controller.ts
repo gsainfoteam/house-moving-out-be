@@ -124,7 +124,7 @@ export class MoveOutController {
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
@@ -157,7 +157,7 @@ export class MoveOutController {
       'The move out schedule with slots has been successfully retrieved.',
     type: MoveOutScheduleWithSlotsResDto,
   })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
@@ -251,7 +251,7 @@ export class MoveOutController {
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
@@ -275,7 +275,7 @@ export class MoveOutController {
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
@@ -305,6 +305,7 @@ export class MoveOutController {
   })
   @ApiNotFoundResponse({
     description: 'Not Found - Inspection target info or slot not found',
+    type: ErrorDto,
   })
   @ApiConflictResponse({
     description:
