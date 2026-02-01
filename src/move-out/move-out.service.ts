@@ -674,10 +674,19 @@ export class MoveOutService {
           tx,
         );
 
+        const inspector =
+          await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
+            user.email,
+            inspectionSlotUuid,
+            isMale ? Gender.MALE : Gender.FEMALE,
+            tx,
+          );
+
         const updatedApplication =
           await this.moveOutRepository.updateInspectionApplicationInTx(
             application.uuid,
             inspectionSlotUuid,
+            inspector.uuid,
             tx,
           );
 

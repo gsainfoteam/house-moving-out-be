@@ -557,6 +557,7 @@ export class MoveOutRepository {
   async updateInspectionApplicationInTx(
     applicationUuid: string,
     newInspectionSlotUuid: string,
+    inspectorUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
@@ -564,6 +565,7 @@ export class MoveOutRepository {
         where: { uuid: applicationUuid },
         data: {
           inspectionSlotUuid: newInspectionSlotUuid,
+          inspectorUuid,
         },
       })
       .catch((error) => {
