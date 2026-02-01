@@ -16,6 +16,7 @@ import {
   InspectionApplication,
   Gender,
   Inspector,
+  ScheduleStatus,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -113,7 +114,7 @@ export class MoveOutRepository {
   async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
     return await this.prismaService.moveOutSchedule
       .findFirstOrThrow({
-        where: { status: 'ACTIVE' },
+        where: { status: ScheduleStatus.ACTIVE },
         include: {
           inspectionSlots: true,
           currentSemester: true,
@@ -752,7 +753,7 @@ export class MoveOutRepository {
   async findActiveSchedule(): Promise<MoveOutSchedule> {
     return await this.prismaService.moveOutSchedule
       .findFirstOrThrow({
-        where: { status: 'ACTIVE' },
+        where: { status: ScheduleStatus.ACTIVE },
         orderBy: { createdAt: 'desc' },
       })
       .catch((error) => {
