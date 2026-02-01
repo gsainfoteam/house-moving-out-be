@@ -28,13 +28,14 @@ import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import ms from 'ms';
 
 @Loggable()
 @Injectable()
 export class MoveOutService {
-  private readonly SLOT_DURATION_MINUTES = 30;
+  private readonly SLOT_DURATION = ms('30m');
   private readonly WEIGHT_FACTOR = 1.5;
-  private readonly UPDATE_DEADLINE_HOURS = 1;
+  private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
@@ -92,7 +93,7 @@ export class MoveOutService {
 
     const generatedSlots = this.generateSlots(
       inspectionTimeRange,
-      this.SLOT_DURATION_MINUTES,
+      this.SLOT_DURATION,
     );
     if (generatedSlots.length === 0) {
       throw new BadRequestException(
@@ -322,10 +323,9 @@ export class MoveOutService {
 
   private generateSlots(
     inspectionTimeRanges: InspectionTimeRangeDto[],
-    slotDurationMinute: number,
+    slotDuration: number,
   ): { startTime: Date; endTime: Date }[] {
     const slots: { startTime: Date; endTime: Date }[] = [];
-    const SLOT_DURATION_MS = slotDurationMinute * 60000;
 
     for (const range of inspectionTimeRanges) {
       const rangeStart = new Date(range.start);
@@ -333,9 +333,9 @@ export class MoveOutService {
 
       let slotStart = rangeStart;
       for (
-        let slotEndMs = rangeStart.getTime() + SLOT_DURATION_MS;
+        let slotEndMs = rangeStart.getTime() + slotDuration;
         slotEndMs <= rangeEndMs;
-        slotEndMs += SLOT_DURATION_MS
+        slotEndMs += slotDuration
       ) {
         const slotEnd = new Date(slotEndMs);
         slots.push({ startTime: slotStart, endTime: slotEnd });
@@ -577,7 +577,6 @@ export class MoveOutService {
     applicationUuid: string,
     { inspectionSlotUuid }: UpdateInspectionDto,
   ): Promise<{ applicationUuid: string }> {
-    const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return this.prismaService.$transaction(
@@ -604,7 +603,7 @@ export class MoveOutService {
         const timeDiff =
           application.inspectionSlot.startTime.getTime() - now.getTime();
 
-        if (timeDiff < UPDATE_DEADLINE_MS) {
+        if (timeDiff < this.APPLICATION_UPDATE_DEADLINE) {
           throw new ForbiddenException(
             'Cannot modify the inspection time within 1 hour of the start time.',
           );
@@ -679,8 +678,6 @@ export class MoveOutService {
   }
 
   async cancelInspection(user: User, applicationUuid: string): Promise<void> {
-    const UPDATE_DEADLINE_MS = this.UPDATE_DEADLINE_HOURS * 60 * 60 * 1000;
-
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const application =
@@ -699,7 +696,7 @@ export class MoveOutService {
         const timeDiff =
           application.inspectionSlot.startTime.getTime() - now.getTime();
 
-        if (timeDiff >= UPDATE_DEADLINE_MS) {
+        if (timeDiff >= this.APPLICATION_UPDATE_DEADLINE) {
           await this.moveOutRepository.decrementInspectionCountInTx(
             application.inspectionTargetInfo.uuid,
             tx,
