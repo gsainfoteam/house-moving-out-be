@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "ScheduleStatus" AS ENUM ('DRAFT', 'ACTIVE', 'COMPLETED');
+CREATE TYPE "ScheduleStatus" AS ENUM ('DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELED');
 
 -- AlterTable
 ALTER TABLE "move_out_schedule" ADD COLUMN     "status" "ScheduleStatus" DEFAULT 'DRAFT';

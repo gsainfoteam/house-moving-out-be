@@ -106,6 +106,7 @@ enum ScheduleStatus {
   DRAFT
   ACTIVE
   COMPLETED
+  CANCELED
 }
 
 model MoveOutSchedule {
