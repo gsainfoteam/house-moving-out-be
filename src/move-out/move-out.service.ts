@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { MoveOutSchedule, Season } from 'generated/prisma/client';
+import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
 import {
   CreateMoveOutScheduleDto,
@@ -29,6 +29,7 @@ import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import ms from 'ms';
+import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 
 @Loggable()
 @Injectable()
@@ -37,6 +38,7 @@ export class MoveOutService {
   private readonly WEIGHT_FACTOR = 1.5;
   private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
+  private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -151,6 +153,10 @@ export class MoveOutService {
     id: number,
   ): Promise<MoveOutScheduleWithSlots> {
     return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
+  }
+
+  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
+    return await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
   }
 
   async findInspectorsBySlotUuid(uuid: string): Promise<InspectorResDto[]> {
@@ -488,13 +494,13 @@ export class MoveOutService {
   async applyInspection(
     user: User,
     { inspectionSlotUuid }: ApplyInspectionDto,
-  ): Promise<{ applicationUuid: string }> {
+  ): Promise<ApplicationUuidResDto> {
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        const schedule =
-          await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
+        const { schedule } =
+          await this.moveOutRepository.findInspectionSlotByUuidInTx(
             inspectionSlotUuid,
             tx,
           );
@@ -523,17 +529,19 @@ export class MoveOutService {
           inspectionTargetInfo.houseName,
         );
 
-        const slot = await this.moveOutRepository.findInspectionSlotByUuidInTx(
-          inspectionSlotUuid,
-          tx,
-        );
+        const updatedSlot =
+          await this.moveOutRepository.incrementSlotReservedCountInTx(
+            inspectionSlotUuid,
+            isMale,
+            tx,
+          );
 
         if (isMale) {
-          if (slot.maleReservedCount >= slot.maleCapacity) {
+          if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
             throw new ConflictException('Male capacity is already full.');
           }
         } else {
-          if (slot.femaleReservedCount >= slot.femaleCapacity) {
+          if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
             throw new ConflictException('Female capacity is already full.');
           }
         }
@@ -556,18 +564,24 @@ export class MoveOutService {
           tx,
         );
 
+        const inspector =
+          await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
+            user.email,
+            inspectionSlotUuid,
+            isMale ? Gender.MALE : Gender.FEMALE,
+            tx,
+          );
+
         const application =
           await this.moveOutRepository.createInspectionApplicationInTx(
             user.uuid,
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
+            inspector.uuid,
             tx,
           );
 
         return { applicationUuid: application.uuid };
-      },
-      {
-        isolationLevel: 'Serializable',
       },
     );
   }

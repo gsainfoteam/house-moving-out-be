@@ -14,6 +14,29 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+
+  @@map("consent_type")
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  FALL
+  WINTER
+
+  @@map("season")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+
+  @@map("gender")
+}
+
 enum Role {
   ADMIN
   USER
@@ -79,20 +102,11 @@ model AuditLog {
   @@map("audit_log")
 }
 
-enum ConsentType {
-  TERMS_OF_SERVICE
-  PRIVACY_POLICY
-
-  @@map("consent_type")
-}
-
-enum Season {
-  SPRING
-  SUMMER
-  FALL
-  WINTER
-
-  @@map("season")
+enum ScheduleStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELED
 }
 
 model MoveOutSchedule {
@@ -106,6 +120,7 @@ model MoveOutSchedule {
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at")
   inspectionSlots      InspectionSlot[]
+  status               ScheduleStatus   @default(DRAFT)
 
   currentSemester Semester @relation("ScheduleCurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
   nextSemester    Semester @relation("ScheduleNextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
@@ -179,10 +194,12 @@ model InspectionApplication {
   isPassed                 Boolean? @map("is_passed")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+  inspectorUuid            String   @map("inspector_uuid")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   inspectionTargetInfo InspectionTargetInfo @relation(fields: [inspectionTargetInfoUuid], references: [uuid], onDelete: Cascade)
   inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
+  inspector            Inspector            @relation(fields: [inspectorUuid], references: [uuid])
 
   @@unique([inspectionTargetInfoUuid])
   @@index([inspectionSlotUuid])
@@ -200,13 +217,6 @@ model InspectorAvailableSlot {
   @@map("inspector_available_slot")
 }
 
-enum Gender {
-  MALE
-  FEMALE
-
-  @@map("gender")
-}
-
 model Inspector {
   uuid          String @id @default(uuid())
   name          String
@@ -215,6 +225,7 @@ model Inspector {
   gender        Gender
 
   availableSlots InspectorAvailableSlot[]
+  applications   InspectionApplication[]
 
   @@map("inspector")
 }

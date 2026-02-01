@@ -68,7 +68,7 @@ async function bootstrap() {
       {
         type: 'oauth2',
         scheme: 'bearer',
-        name: 'idp-token',
+        name: 'infoteam-account-token',
         in: 'header',
         bearerFormat: 'token',
         flows: {

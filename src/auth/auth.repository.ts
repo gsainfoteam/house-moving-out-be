@@ -1,4 +1,4 @@
-import { UserInfo } from '@lib/infoteam-idp/types/userInfo.type';
+import { UserInfo } from '@lib/infoteam-account/types/userInfo.type';
 import { Loggable } from '@lib/logger';
 import { PrismaService } from '@lib/prisma';
 import {
