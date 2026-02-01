@@ -730,7 +730,7 @@ export class MoveOutService {
       );
 
     return {
-      applicationUuid: application.uuid,
+      uuid: application.uuid,
       inspectionSlot: { ...application.inspectionSlot },
       isPassed: application.isPassed ?? undefined,
     };
