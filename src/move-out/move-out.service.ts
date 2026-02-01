@@ -590,7 +590,7 @@ export class MoveOutService {
     user: User,
     applicationUuid: string,
     { inspectionSlotUuid }: UpdateInspectionDto,
-  ): Promise<{ applicationUuid: string }> {
+  ): Promise<ApplicationUuidResDto> {
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return this.prismaService.$transaction(
