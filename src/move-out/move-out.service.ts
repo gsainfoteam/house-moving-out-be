@@ -529,6 +529,10 @@ export class MoveOutService {
           inspectionTargetInfo.houseName,
         );
 
+        await this.moveOutRepository.incrementInspectionCountInTx(
+          inspectionTargetInfo.uuid,
+          tx,
+        );
         const updatedSlot =
           await this.moveOutRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
@@ -553,16 +557,6 @@ export class MoveOutService {
             'Inspection count limit(3times) exceeded.',
           );
         }
-
-        await this.moveOutRepository.incrementSlotReservedCountInTx(
-          inspectionSlotUuid,
-          isMale,
-          tx,
-        );
-        await this.moveOutRepository.incrementInspectionCountInTx(
-          inspectionTargetInfo.uuid,
-          tx,
-        );
 
         const inspector =
           await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
@@ -640,9 +634,16 @@ export class MoveOutService {
           inspectionTargetInfo.houseName,
         );
 
+        await this.moveOutRepository.decrementSlotReservedCountInTx(
+          application.inspectionSlotUuid,
+          isMale,
+          tx,
+        );
+
         const updatedSlot =
-          await this.moveOutRepository.findInspectionSlotByUuidInTx(
+          await this.moveOutRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
+            isMale,
             tx,
           );
 
@@ -653,26 +654,14 @@ export class MoveOutService {
         }
 
         if (isMale) {
-          if (updatedSlot.maleReservedCount >= updatedSlot.maleCapacity) {
+          if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
             throw new ConflictException('Male capacity is already full.');
           }
         } else {
-          if (updatedSlot.femaleReservedCount >= updatedSlot.femaleCapacity) {
+          if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
             throw new ConflictException('Female capacity is already full.');
           }
         }
-
-        await this.moveOutRepository.decrementSlotReservedCountInTx(
-          application.inspectionSlotUuid,
-          isMale,
-          tx,
-        );
-
-        await this.moveOutRepository.incrementSlotReservedCountInTx(
-          inspectionSlotUuid,
-          isMale,
-          tx,
-        );
 
         const inspector =
           await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
