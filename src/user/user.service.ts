@@ -11,10 +11,10 @@ export class UserService {
 
   async getMe(user: User): Promise<UserDto> {
     const targetInfo = await this.moveOutService.findTargetInfoByUserInfo(user);
-    return {
+    return new UserDto({
       ...user,
       gender: targetInfo?.gender,
       roomNumber: targetInfo?.roomNumber,
-    };
+    });
   }
 }
