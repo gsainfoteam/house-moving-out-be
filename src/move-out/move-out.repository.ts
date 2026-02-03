@@ -785,7 +785,7 @@ export class MoveOutRepository {
     tx: PrismaTransaction,
   ): Promise<InspectionApplicationWithDetails> {
     return await tx.inspectionApplication
-      .findFirstOrThrow({
+      .findUniqueOrThrow({
         where: {
           uuid,
         },
@@ -808,6 +808,15 @@ export class MoveOutRepository {
         this.logger.error(`findApplicationByUuidInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
+  }
+
+  async findApplicationByUuidWithXLockInTx(
+    uuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplicationWithDetails> {
+    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid}::uuid FOR UPDATE`;
+
+    return this.findApplicationByUuidInTx(uuid, tx);
   }
 
   async findActiveSchedule(): Promise<MoveOutSchedule> {

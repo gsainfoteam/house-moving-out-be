@@ -585,12 +585,10 @@ export class MoveOutService {
     applicationUuid: string,
     { inspectionSlotUuid }: UpdateInspectionDto,
   ): Promise<ApplicationUuidResDto> {
-    const admissionYear = this.extractAdmissionYear(user.studentNumber);
-
     return this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const application =
-          await this.moveOutRepository.findApplicationByUuidInTx(
+          await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
             applicationUuid,
             tx,
           );
@@ -615,23 +613,8 @@ export class MoveOutService {
           );
         }
 
-        const schedule =
-          await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
-            inspectionSlotUuid,
-            tx,
-          );
-
-        const inspectionTargetInfo =
-          await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
-            admissionYear,
-            user.name,
-            schedule.currentSemesterUuid,
-            schedule.nextSemesterUuid,
-            tx,
-          );
-
         const isMale = this.extractGenderFromHouseName(
-          inspectionTargetInfo.houseName,
+          application.inspectionTargetInfo.houseName,
         );
 
         await this.moveOutRepository.swapSlotReservedCountsInTx(
@@ -690,7 +673,7 @@ export class MoveOutService {
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const application =
-          await this.moveOutRepository.findApplicationByUuidInTx(
+          await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
             applicationUuid,
             tx,
           );
