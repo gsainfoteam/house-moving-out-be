@@ -17,6 +17,7 @@ import { UserModule } from './user/user.module';
     MoveOutModule,
     LoggerModule,
     InspectorModule,
+    HealthModule,
     UserModule,
   ],
   controllers: [],
