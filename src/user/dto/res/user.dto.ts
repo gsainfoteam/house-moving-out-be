@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Role } from 'generated/prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Gender, Role } from 'generated/prisma/client';
 
 export class UserDto {
   @ApiProperty({
@@ -31,6 +31,20 @@ export class UserDto {
     example: '20250000',
   })
   studentNumber: string;
+
+  @ApiPropertyOptional({
+    description: 'student gender',
+    example: Gender.MALE,
+    enum: Gender,
+  })
+  gender?: Gender;
+
+  @ApiPropertyOptional({
+    description: 'room number',
+    example: 'G100',
+    type: String,
+  })
+  roomNumber?: string;
 
   @ApiProperty({
     description: 'role',

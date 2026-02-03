@@ -16,10 +16,13 @@ import { User } from 'generated/prisma/client';
 import { GetUser } from 'src/auth/decorator/get-user.decorator';
 import { UserGuard } from 'src/auth/guard/user.guard';
 import { UserDto } from './dto/res/user.dto';
+import { UserService } from './user.service';
 
 @Controller('user')
 @UseInterceptors(ClassSerializerInterceptor)
 export class UserController {
+  constructor(private readonly userService: UserService) {}
+
   @ApiOperation({
     summary: 'Get Current User',
     description: 'Retrieve the profile of the currently authenticated user.',
@@ -33,7 +36,7 @@ export class UserController {
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Get('me')
-  getMe(@GetUser() user: User): UserDto {
-    return user;
+  async getMe(@GetUser() user: User): Promise<UserDto> {
+    return await this.userService.getMe(user);
   }
 }

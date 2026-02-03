@@ -355,6 +355,35 @@ export class MoveOutService {
     };
   }
 
+  async findTargetInfoByUserInfo(
+    user: User,
+  ): Promise<{ gender: Gender; roomNumber: string } | null> {
+    try {
+      const schedule =
+        await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
+
+      const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+      const targetInfo =
+        await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
+          admissionYear,
+          user.name,
+          schedule.currentSemesterUuid,
+          schedule.nextSemesterUuid,
+        );
+
+      return {
+        gender: this.extractGenderFromHouseName(targetInfo.houseName)
+          ? Gender.MALE
+          : Gender.FEMALE,
+        roomNumber: targetInfo.roomNumber,
+      };
+    } catch (error) {
+      if (error instanceof ForbiddenException) return null;
+      throw error;
+    }
+  }
+
   private findInspectionTargetRooms(
     currentSemesterRooms: Map<string, RoomInfo>,
     nextSemesterRooms: Map<string, RoomInfo>,
