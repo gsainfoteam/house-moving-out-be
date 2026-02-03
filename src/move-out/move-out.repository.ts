@@ -552,7 +552,7 @@ export class MoveOutRepository {
     isMale: boolean,
     tx: PrismaTransaction,
   ): Promise<void> {
-    await tx.$executeRaw`
+    const affected_slots_count = await tx.$executeRaw<number>`
       UPDATE inspection_slot
       SET
         male_reserved_count = CASE
@@ -568,10 +568,6 @@ export class MoveOutRepository {
       WHERE uuid IN (${currentSlotUuid}::uuid, ${updatedSlotUuid}::uuid);
     `.catch((error) => {
       if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          this.logger.debug('InspectionSlot not found');
-          throw new NotFoundException('Inspection slot not found.');
-        }
         this.logger.error(
           `swapSlotReservedCountsInTx prisma error: ${error.message}`,
         );
@@ -580,6 +576,10 @@ export class MoveOutRepository {
       this.logger.error(`swapSlotReservedCountsInTx error: ${error}`);
       throw new InternalServerErrorException('Unknown Error');
     });
+    if (affected_slots_count !== 2) {
+      this.logger.debug('InspectionSlot not found');
+      throw new NotFoundException('Inspection slot not found.');
+    }
   }
 
   async createInspectionApplicationInTx(
