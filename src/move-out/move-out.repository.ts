@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -385,6 +386,40 @@ export class MoveOutRepository {
       });
   }
 
+  async findInspectionTargetInfoByUserInfo(
+    admissionYear: string,
+    studentName: string,
+    currentSemesterUuid: string,
+    nextSemesterUuid: string,
+  ): Promise<InspectionTargetInfo> {
+    return await this.prismaService.inspectionTargetInfo
+      .findUniqueOrThrow({
+        where: {
+          inspection_target_with_specific_semester: {
+            currentSemesterUuid,
+            nextSemesterUuid,
+            admissionYear,
+            studentName,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new ForbiddenException('Inspection target info not found.');
+          }
+          this.logger.error(
+            `findInspectionTargetInfoByUserInfoInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findInspectionTargetInfoByUserInfoInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findInspectionTargetInfoByUserInfoInTx(
     admissionYear: string,
     studentName: string,
@@ -406,7 +441,7 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            throw new NotFoundException('Inspection target info not found.');
+            throw new ForbiddenException('Inspection target info not found.');
           }
           this.logger.error(
             `findInspectionTargetInfoByUserInfoInTx prisma error: ${error.message}`,

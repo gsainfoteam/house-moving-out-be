@@ -104,14 +104,17 @@ export class MoveOutController {
       'The move out schedule with slots has been successfully retrieved.',
     type: MoveOutScheduleWithSlotsResDto,
   })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Get('schedule/active')
-  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlotsResDto> {
-    return await this.moveOutService.findActiveMoveOutScheduleWithSlots();
+  async findActiveMoveOutScheduleWithSlots(
+    @GetUser() user: User,
+  ): Promise<MoveOutScheduleWithSlotsResDto> {
+    return await this.moveOutService.findActiveMoveOutScheduleWithSlots(user);
   }
 
   /* @ApiOperation({
