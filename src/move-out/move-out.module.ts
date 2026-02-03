@@ -9,5 +9,6 @@ import { ExcelParserModule } from '@lib/excel-parser';
   imports: [PrismaModule, ExcelParserModule],
   controllers: [MoveOutController],
   providers: [MoveOutService, MoveOutRepository],
+  exports: [MoveOutService],
 })
 export class MoveOutModule {}

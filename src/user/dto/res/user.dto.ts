@@ -1,12 +1,20 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Role } from 'generated/prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Gender, Role, User } from 'generated/prisma/client';
 
 export class UserDto {
-  @ApiProperty({
-    description: 'UUID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  uuid: string;
+  constructor(
+    user: User,
+    target: { gender: Gender; roomNumber: string } | null,
+  ) {
+    this.name = user.name;
+    this.email = user.email;
+    this.studentNumber = user.studentNumber;
+    this.gender = target?.gender;
+    this.roomNumber = target?.roomNumber;
+    this.role = user.role;
+    this.createdAt = user.createdAt;
+    this.updatedAt = user.updatedAt;
+  }
 
   @ApiProperty({
     description: 'name',
@@ -21,16 +29,24 @@ export class UserDto {
   email: string;
 
   @ApiProperty({
-    description: 'phone number',
-    example: '+82 10 1234 5678',
-  })
-  phoneNumber: string;
-
-  @ApiProperty({
     description: 'student number',
     example: '20250000',
   })
   studentNumber: string;
+
+  @ApiPropertyOptional({
+    description: 'student gender',
+    example: Gender.MALE,
+    enum: Gender,
+  })
+  gender?: Gender;
+
+  @ApiPropertyOptional({
+    description: 'room number',
+    example: 'G100',
+    type: String,
+  })
+  roomNumber?: string;
 
   @ApiProperty({
     description: 'role',
