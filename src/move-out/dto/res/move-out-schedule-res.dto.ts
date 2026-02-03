@@ -1,11 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ScheduleStatus } from 'generated/prisma/client';
 
 export class MoveOutScheduleResDto {
   @ApiProperty({
-    description: '퇴사 검사 일정 고유 ID',
-    example: 1,
+    description: '퇴사 검사 일정 고유 UUID',
+    format: 'uuid',
   })
-  id: number;
+  uuid: string;
 
   @ApiProperty({
     description: '퇴사 검사 일정 제목',
@@ -27,15 +28,21 @@ export class MoveOutScheduleResDto {
 
   @ApiProperty({
     description: '현재 학기 UUID',
-    example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
+    format: 'uuid',
   })
   currentSemesterUuid: string;
 
   @ApiProperty({
     description: '다음 학기 UUID',
-    example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
+    format: 'uuid',
   })
   nextSemesterUuid: string;
+
+  @ApiProperty({
+    description: '상태',
+    enum: ScheduleStatus,
+  })
+  status: ScheduleStatus;
 
   @ApiProperty({
     description: '생성 날짜',

@@ -1,21 +1,20 @@
 import {
   Body,
-  Controller,
-  Post,
-  UseGuards,
-  Param,
-  ParseIntPipe,
-  UseInterceptors,
   ClassSerializerInterceptor,
-  UploadedFile,
-  Get,
+  Controller,
   Delete,
+  Get,
   Patch,
   ParseUUIDPipe,
   HttpCode,
+  Param,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { MoveOutService } from './move-out.service';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -31,11 +30,13 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { User } from 'generated/prisma/browser';
+import { GetUser } from 'src/auth/decorator/get-user.decorator';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { UserGuard } from 'src/auth/guard/user.guard';
-import { GetUser } from 'src/auth/decorator/get-user.decorator';
-import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
-import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
+import { ErrorDto } from 'src/common/dto/error.dto';
+import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import {
   CreateInspectionTargetsDto,
   CreateInspectionTargetsSwaggerDto,
@@ -43,12 +44,15 @@ import {
 import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
 import { Semester } from './types/semester.type';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
-import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
-import { User } from 'generated/prisma/browser';
-import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
+import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
+import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
+import { DeleteInspectionTargetsResDto } from './dto/res/delete-inspection-targets-res.dto';
+import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
+import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
+import { MoveOutService } from './move-out.service';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -105,14 +109,17 @@ export class MoveOutController {
       'The move out schedule with slots has been successfully retrieved.',
     type: MoveOutScheduleWithSlotsResDto,
   })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Get('schedule/active')
-  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlotsResDto> {
-    return await this.moveOutService.findActiveMoveOutScheduleWithSlots();
+  async findActiveMoveOutScheduleWithSlots(
+    @GetUser() user: User,
+  ): Promise<MoveOutScheduleWithSlotsResDto> {
+    return await this.moveOutService.findActiveMoveOutScheduleWithSlots(user);
   }
 
   /* @ApiOperation({
@@ -125,11 +132,11 @@ export class MoveOutController {
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Patch('schedule/:id')
+  @Patch('schedule/:uuid')
   @UsePipes(
     new ValidationPipe({
       skipMissingProperties: true,
@@ -139,11 +146,11 @@ export class MoveOutController {
     }),
   )
   async updateMoveOutSchedule(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutScheduleResDto> {
     return await this.moveOutService.updateMoveOutSchedule(
-      id,
+      uuid,
       updateMoveOutScheduleDto,
     );
   } */
@@ -151,30 +158,30 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Move Out Schedule with Slots',
     description:
-      'Retrieve a specific move out schedule including its inspection slots by ID.',
+      'Retrieve a specific move out schedule including its inspection slots by UUID.',
   })
   @ApiOkResponse({
     description:
       'The move out schedule with slots has been successfully retrieved.',
     type: MoveOutScheduleWithSlotsResDto,
   })
-  @ApiNotFoundResponse({ description: 'Not Found' })
-  @ApiBadRequestResponse({ description: 'Invalid ID format' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('schedule/:id')
+  @Get('schedule/:uuid')
   async findMoveOutScheduleWithSlots(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<MoveOutScheduleWithSlotsResDto> {
-    return await this.moveOutService.findMoveOutScheduleWithSlots(id);
+    return await this.moveOutService.findMoveOutScheduleWithSlots(uuid);
   }
 
   @ApiOperation({
-    summary: 'Get Inspectors using slot uuid',
+    summary: 'Get Inspectors using schedule uuid',
     description:
-      'Get available inspectors for a move out schedule using slot UUID.',
+      'Get available inspectors for a move out schedule using schedule UUID.',
   })
   @ApiOkResponse({
     description: 'The available inspectors has been successfully retrieved.',
@@ -184,11 +191,11 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('schedule/:slotUuid/inspector')
-  async findInspectorsBySlotUuid(
-    @Param('slotUuid', ParseUUIDPipe) uuid: string,
+  @Get('schedule/:uuid/inspector')
+  async findInspectorsByScheduleUuid(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<InspectorResDto[]> {
-    return await this.moveOutService.findInspectorsBySlotUuid(uuid);
+    return await this.moveOutService.findInspectorsByScheduleUuid(uuid);
   }
 
   @ApiOperation({
@@ -242,6 +249,54 @@ export class MoveOutController {
   }
 
   @ApiOperation({
+    summary: 'Get Inspection Targets by Semester Combination',
+    description:
+      'Retrieve inspection targets by current/next semester combination.',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets successfully retrieved',
+    type: [InspectionTargetInfoResDto],
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('inspection-targets')
+  async findInspectionTargetsBySemesters(
+    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
+  ): Promise<InspectionTargetInfoResDto[]> {
+    return await this.moveOutService.findInspectionTargetsBySemesters(
+      semestersQuery,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Delete Inspection Targets by Semester Combination',
+    description:
+      'Delete inspection targets by current/next semester combination.',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets successfully deleted',
+    type: DeleteInspectionTargetsResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Delete('inspection-targets')
+  async deleteInspectionTargetsBySemesters(
+    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
+  ): Promise<DeleteInspectionTargetsResDto> {
+    return await this.moveOutService.deleteInspectionTargetsBySemesters(
+      semestersQuery,
+    );
+  }
+
+  @ApiOperation({
     summary: 'Apply for Inspection',
     description:
       'User applies for inspection. The user must be in the inspection target list and apply within the application period.',
@@ -258,6 +313,7 @@ export class MoveOutController {
   })
   @ApiNotFoundResponse({
     description: 'Not Found - Inspection target info or slot not found',
+    type: ErrorDto,
   })
   @ApiConflictResponse({
     description:

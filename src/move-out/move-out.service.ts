@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
 import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
@@ -30,6 +31,8 @@ import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import ms from 'ms';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
+import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
+import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 
 @Loggable()
 @Injectable()
@@ -130,11 +133,11 @@ export class MoveOutService {
   }
 
   /* async updateMoveOutSchedule(
-    id: number,
+    uuid: string,
     updateMoveOutScheduleDto: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
     const schedule =
-      await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
+      await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuid(uuid);
 
     const updatedMoveOutScheduleDates: MoveOutScheduleDates = {
       ...schedule,
@@ -144,24 +147,49 @@ export class MoveOutService {
     this.validateScheduleAndRanges(updatedMoveOutScheduleDates);
 
     return await this.moveOutRepository.updateMoveOutSchedule(
-      id,
+      uuid,
       updateMoveOutScheduleDto,
     );
   } */
 
   async findMoveOutScheduleWithSlots(
-    id: number,
+    uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
-    return await this.moveOutRepository.findMoveOutScheduleWithSlotsById(id);
+    return await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuid(
+      uuid,
+    );
   }
 
-  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
-    return await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
+  async findActiveMoveOutScheduleWithSlots(
+    user: User,
+  ): Promise<MoveOutScheduleWithSlots> {
+    const schedule =
+      await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
+
+    const now = new Date();
+    if (now < schedule.applicationStartTime) {
+      throw new ForbiddenException('Application period has not started yet.');
+    }
+
+    if (now > schedule.applicationEndTime) {
+      throw new ForbiddenException('Application period has ended.');
+    }
+
+    const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+    await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
+      admissionYear,
+      user.name,
+      schedule.currentSemesterUuid,
+      schedule.nextSemesterUuid,
+    );
+
+    return schedule;
   }
 
-  async findInspectorsBySlotUuid(uuid: string): Promise<InspectorResDto[]> {
+  async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
     const inspectors =
-      await this.moveOutRepository.findInspectorBySlotUuid(uuid);
+      await this.moveOutRepository.findInspectorByScheduleUuid(uuid);
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
@@ -244,6 +272,125 @@ export class MoveOutService {
     );
 
     return result.count;
+  }
+
+  async findInspectionTargetsBySemesters({
+    currentYear,
+    currentSeason,
+    nextYear,
+    nextSeason,
+  }: InspectionTargetsBySemestersQueryDto): Promise<
+    InspectionTargetInfoResDto[]
+  > {
+    const currentSemester: Semester = {
+      year: currentYear,
+      season: currentSeason,
+    };
+    const nextSemester: Semester = {
+      year: nextYear,
+      season: nextSeason,
+    };
+
+    this.validateSemesterOrder(currentSemester, nextSemester);
+
+    const currentSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        currentSemester.year,
+        currentSemester.season,
+      );
+    const nextSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        nextSemester.year,
+        nextSemester.season,
+      );
+
+    const targets =
+      await this.moveOutRepository.findInspectionTargetInfosBySemesters(
+        currentSemesterEntity.uuid,
+        nextSemesterEntity.uuid,
+      );
+
+    if (targets.length === 0) {
+      throw new NotFoundException('Inspection targets not found');
+    }
+
+    return targets.map((target) => new InspectionTargetInfoResDto(target));
+  }
+
+  async deleteInspectionTargetsBySemesters({
+    currentYear,
+    currentSeason,
+    nextYear,
+    nextSeason,
+  }: InspectionTargetsBySemestersQueryDto): Promise<{ count: number }> {
+    const currentSemester: Semester = {
+      year: currentYear,
+      season: currentSeason,
+    };
+    const nextSemester: Semester = {
+      year: nextYear,
+      season: nextSeason,
+    };
+
+    this.validateSemesterOrder(currentSemester, nextSemester);
+
+    const currentSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        currentSemester.year,
+        currentSemester.season,
+      );
+    const nextSemesterEntity =
+      await this.moveOutRepository.findSemesterByYearAndSeason(
+        nextSemester.year,
+        nextSemester.season,
+      );
+
+    const result =
+      await this.moveOutRepository.deleteInspectionTargetInfosBySemesters(
+        currentSemesterEntity.uuid,
+        nextSemesterEntity.uuid,
+      );
+
+    if (result.count === 0) {
+      throw new NotFoundException('Inspection targets not found');
+    }
+
+    return {
+      count: result.count,
+    };
+  }
+
+  async findTargetInfoByUserInfo(
+    user: User,
+  ): Promise<{ gender: Gender; roomNumber: string } | null> {
+    try {
+      const schedule =
+        await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
+
+      const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+      const targetInfo =
+        await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
+          admissionYear,
+          user.name,
+          schedule.currentSemesterUuid,
+          schedule.nextSemesterUuid,
+        );
+
+      return {
+        gender: this.extractGenderFromHouseName(targetInfo.houseName)
+          ? Gender.MALE
+          : Gender.FEMALE,
+        roomNumber: targetInfo.roomNumber,
+      };
+    } catch (error) {
+      if (
+        error instanceof ForbiddenException ||
+        error instanceof NotFoundException
+      )
+        return null;
+      throw error;
+    }
   }
 
   private findInspectionTargetRooms(
@@ -629,7 +776,9 @@ export class MoveOutService {
           tx,
         );
 
-        if (application.inspectionSlot.scheduleId !== updatedSlot.scheduleId) {
+        if (
+          application.inspectionSlot.scheduleUuid !== updatedSlot.scheduleUuid
+        ) {
           throw new BadRequestException(
             'Changes are only possible within the same schedule.',
           );

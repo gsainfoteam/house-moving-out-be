@@ -5,6 +5,7 @@ import { MoveOutModule } from './move-out/move-out.module';
 import { LoggerModule } from '@lib/logger';
 import { InspectorModule } from './inspector/inspector.module';
 import { UserModule } from './user/user.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UserModule } from './user/user.module';
     MoveOutModule,
     LoggerModule,
     InspectorModule,
+    HealthModule,
     UserModule,
   ],
   controllers: [],
