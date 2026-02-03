@@ -406,7 +406,7 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            throw new ForbiddenException('Inspection target info not found.');
+            throw new ForbiddenException('User is not an inspection target.');
           }
           this.logger.error(
             `findInspectionTargetInfoByUserInfo prisma error: ${error.message}`,
@@ -439,7 +439,7 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            throw new ForbiddenException('Inspection target info not found.');
+            throw new ForbiddenException('User is not an inspection target.');
           }
           this.logger.error(
             `findInspectionTargetInfoByUserInfoInTx prisma error: ${error.message}`,
