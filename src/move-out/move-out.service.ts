@@ -155,8 +155,31 @@ export class MoveOutService {
     );
   }
 
-  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
-    return await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
+  async findActiveMoveOutScheduleWithSlots(
+    user: User,
+  ): Promise<MoveOutScheduleWithSlots> {
+    const schedule =
+      await this.moveOutRepository.findActiveMoveOutScheduleWithSlots();
+
+    const now = new Date();
+    if (now < schedule.applicationStartTime) {
+      throw new ForbiddenException('Application period has not started yet.');
+    }
+
+    if (now > schedule.applicationEndTime) {
+      throw new ForbiddenException('Application period has ended.');
+    }
+
+    const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+    await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
+      admissionYear,
+      user.name,
+      schedule.currentSemesterUuid,
+      schedule.nextSemesterUuid,
+    );
+
+    return schedule;
   }
 
   async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
