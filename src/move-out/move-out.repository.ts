@@ -409,13 +409,11 @@ export class MoveOutRepository {
             throw new ForbiddenException('Inspection target info not found.');
           }
           this.logger.error(
-            `findInspectionTargetInfoByUserInfoInTx prisma error: ${error.message}`,
+            `findInspectionTargetInfoByUserInfo prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(
-          `findInspectionTargetInfoByUserInfoInTx error: ${error}`,
-        );
+        this.logger.error(`findInspectionTargetInfoByUserInfo error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
