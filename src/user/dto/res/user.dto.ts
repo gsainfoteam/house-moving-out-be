@@ -1,8 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
 import { Gender, Role } from 'generated/prisma/client';
 
 export class UserDto {
+  constructor(partial: UserDto) {
+    this.name = partial.name;
+    this.email = partial.email;
+    this.studentNumber = partial.studentNumber;
+    this.gender = partial.gender;
+    this.roomNumber = partial.roomNumber;
+    this.role = partial.role;
+    this.createdAt = partial.createdAt;
+    this.updatedAt = partial.updatedAt;
+  }
+
   @ApiProperty({
     description: 'name',
     example: '홍길동',
@@ -53,14 +63,4 @@ export class UserDto {
     example: '2026-01-01T00:00:00.000Z',
   })
   updatedAt: Date;
-
-  @Exclude()
-  uuid: string;
-
-  @Exclude()
-  phoneNumber: string;
-
-  constructor(partial: Partial<UserDto>) {
-    Object.assign(this, partial);
-  }
 }
