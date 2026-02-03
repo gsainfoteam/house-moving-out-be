@@ -587,99 +587,103 @@ export class MoveOutService {
   ): Promise<ApplicationUuidResDto> {
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
-    return this.prismaService.$transaction(async (tx: PrismaTransaction) => {
-      const application =
-        await this.moveOutRepository.findApplicationByUuidInTx(
-          applicationUuid,
-          tx,
+    return this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const application =
+          await this.moveOutRepository.findApplicationByUuidInTx(
+            applicationUuid,
+            tx,
+          );
+
+        if (application.userUuid !== user.uuid) {
+          throw new ForbiddenException(
+            'The application does not belong to this user.',
+          );
+        }
+
+        if (application.inspectionSlotUuid === inspectionSlotUuid) {
+          return { applicationUuid };
+        }
+
+        const now = new Date();
+        const timeDiff =
+          application.inspectionSlot.startTime.getTime() - now.getTime();
+
+        if (timeDiff < this.APPLICATION_UPDATE_DEADLINE) {
+          throw new ForbiddenException(
+            'Cannot modify the inspection time within 1 hour of the start time.',
+          );
+        }
+
+        const schedule =
+          await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
+            inspectionSlotUuid,
+            tx,
+          );
+
+        const inspectionTargetInfo =
+          await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
+            admissionYear,
+            user.name,
+            schedule.currentSemesterUuid,
+            schedule.nextSemesterUuid,
+            tx,
+          );
+
+        const isMale = this.extractGenderFromHouseName(
+          inspectionTargetInfo.houseName,
         );
 
-      if (application.userUuid !== user.uuid) {
-        throw new ForbiddenException(
-          'The application does not belong to this user.',
-        );
-      }
-
-      if (application.inspectionSlotUuid === inspectionSlotUuid) {
-        return { applicationUuid };
-      }
-
-      const now = new Date();
-      const timeDiff =
-        application.inspectionSlot.startTime.getTime() - now.getTime();
-
-      if (timeDiff < this.APPLICATION_UPDATE_DEADLINE) {
-        throw new ForbiddenException(
-          'Cannot modify the inspection time within 1 hour of the start time.',
-        );
-      }
-
-      const schedule =
-        await this.moveOutRepository.findMoveOutScheduleBySlotUuidInTx(
-          inspectionSlotUuid,
-          tx,
-        );
-
-      const inspectionTargetInfo =
-        await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
-          admissionYear,
-          user.name,
-          schedule.currentSemesterUuid,
-          schedule.nextSemesterUuid,
-          tx,
-        );
-
-      const isMale = this.extractGenderFromHouseName(
-        inspectionTargetInfo.houseName,
-      );
-
-      await this.moveOutRepository.decrementSlotReservedCountInTx(
-        application.inspectionSlotUuid,
-        isMale,
-        tx,
-      );
-
-      const updatedSlot =
-        await this.moveOutRepository.incrementSlotReservedCountInTx(
+        await this.moveOutRepository.swapSlotReservedCountsInTx(
+          application.inspectionSlotUuid,
           inspectionSlotUuid,
           isMale,
           tx,
         );
 
-      if (application.inspectionSlot.scheduleId !== updatedSlot.scheduleId) {
-        throw new BadRequestException(
-          'Changes are only possible within the same schedule.',
-        );
-      }
-
-      if (isMale) {
-        if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
-          throw new ConflictException('Male capacity is already full.');
-        }
-      } else {
-        if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
-          throw new ConflictException('Female capacity is already full.');
-        }
-      }
-
-      const inspector =
-        await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
-          user.email,
+        const updatedSlot = await this.moveOutRepository.findSlotByUuidInTx(
           inspectionSlotUuid,
-          isMale ? Gender.MALE : Gender.FEMALE,
           tx,
         );
 
-      const updatedApplication =
-        await this.moveOutRepository.updateInspectionApplicationInTx(
-          application.uuid,
-          inspectionSlotUuid,
-          inspector.uuid,
-          tx,
-        );
+        if (application.inspectionSlot.scheduleId !== updatedSlot.scheduleId) {
+          throw new BadRequestException(
+            'Changes are only possible within the same schedule.',
+          );
+        }
 
-      return { applicationUuid: updatedApplication.uuid };
-    });
+        if (isMale) {
+          if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
+            throw new ConflictException('Male capacity is already full.');
+          }
+        } else {
+          if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
+            throw new ConflictException('Female capacity is already full.');
+          }
+        }
+
+        const inspector =
+          await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
+            user.email,
+            inspectionSlotUuid,
+            isMale ? Gender.MALE : Gender.FEMALE,
+            tx,
+          );
+
+        const updatedApplication =
+          await this.moveOutRepository.updateInspectionApplicationInTx(
+            application.uuid,
+            inspectionSlotUuid,
+            inspector.uuid,
+            tx,
+          );
+
+        return { applicationUuid: updatedApplication.uuid };
+      },
+      {
+        isolationLevel: 'Serializable',
+      },
+    );
   }
 
   async cancelInspection(user: User, applicationUuid: string): Promise<void> {
