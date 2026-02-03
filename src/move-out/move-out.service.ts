@@ -379,7 +379,11 @@ export class MoveOutService {
         roomNumber: targetInfo.roomNumber,
       };
     } catch (error) {
-      if (error instanceof ForbiddenException) return null;
+      if (
+        error instanceof ForbiddenException ||
+        error instanceof NotFoundException
+      )
+        return null;
       throw error;
     }
   }
