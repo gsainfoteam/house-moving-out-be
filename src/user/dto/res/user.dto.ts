@@ -1,16 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Gender, Role } from 'generated/prisma/client';
+import { Gender, Role, User } from 'generated/prisma/client';
 
 export class UserDto {
-  constructor(partial: UserDto) {
-    this.name = partial.name;
-    this.email = partial.email;
-    this.studentNumber = partial.studentNumber;
-    this.gender = partial.gender;
-    this.roomNumber = partial.roomNumber;
-    this.role = partial.role;
-    this.createdAt = partial.createdAt;
-    this.updatedAt = partial.updatedAt;
+  constructor(
+    user: User,
+    target: { gender: Gender; roomNumber: string } | null,
+  ) {
+    this.name = user.name;
+    this.email = user.email;
+    this.studentNumber = user.studentNumber;
+    this.gender = target?.gender;
+    this.roomNumber = target?.roomNumber;
+    this.role = user.role;
+    this.createdAt = user.createdAt;
+    this.updatedAt = user.updatedAt;
   }
 
   @ApiProperty({
