@@ -642,16 +642,16 @@ export class MoveOutRepository {
       UPDATE inspection_slot
       SET
         male_reserved_count = CASE
-          WHEN ${isMale} = TRUE AND uuid = ${currentSlotUuid}::uuid THEN male_reserved_count - 1
-          WHEN ${isMale} = TRUE AND uuid = ${updatedSlotUuid}::uuid THEN male_reserved_count + 1
+          WHEN ${isMale} = TRUE AND uuid = ${currentSlotUuid} THEN male_reserved_count - 1
+          WHEN ${isMale} = TRUE AND uuid = ${updatedSlotUuid} THEN male_reserved_count + 1
           ELSE male_reserved_count
         END,
         female_reserved_count = CASE
-          WHEN ${isMale} = FALSE AND uuid = ${currentSlotUuid}::uuid THEN female_reserved_count - 1
-          WHEN ${isMale} = FALSE AND uuid = ${updatedSlotUuid}::uuid THEN female_reserved_count + 1
+          WHEN ${isMale} = FALSE AND uuid = ${currentSlotUuid} THEN female_reserved_count - 1
+          WHEN ${isMale} = FALSE AND uuid = ${updatedSlotUuid} THEN female_reserved_count + 1
           ELSE female_reserved_count
         END
-      WHERE uuid IN (${currentSlotUuid}::uuid, ${updatedSlotUuid}::uuid);
+      WHERE uuid IN (${currentSlotUuid}, ${updatedSlotUuid});
     `.catch((error) => {
       if (error instanceof PrismaClientKnownRequestError) {
         this.logger.error(
@@ -900,7 +900,7 @@ export class MoveOutRepository {
     uuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplicationWithDetails> {
-    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid}::uuid FOR UPDATE`;
+    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} FOR UPDATE`;
 
     return this.findApplicationByUuidInTx(uuid, tx);
   }
