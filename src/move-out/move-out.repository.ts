@@ -803,34 +803,6 @@ export class MoveOutRepository {
     return inspectors[0];
   }
 
-  async findMoveOutScheduleBySlotUuidInTx(
-    slotUuid: string,
-    tx: PrismaTransaction,
-  ): Promise<MoveOutSchedule> {
-    return await tx.inspectionSlot
-      .findUniqueOrThrow({
-        where: { uuid: slotUuid },
-        include: {
-          schedule: true,
-        },
-      })
-      .then((slot) => slot.schedule)
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
-            throw new NotFoundException('Inspection slot not found.');
-          }
-          this.logger.error(
-            `findMoveOutScheduleBySlotUuidInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findMoveOutScheduleBySlotUuidInTx error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async findApplicationByUserAndSemesters(
     userUuid: string,
     currentSemesterUuid: string,
