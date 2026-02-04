@@ -376,7 +376,7 @@ export class MoveOutController {
   @Patch('application/:applicationUuid')
   async updateInspection(
     @GetUser() user: User,
-    @Param('applicationUuid', ParseUUIDPipe) uuid: string,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() updateInspectionDto: UpdateInspectionDto,
   ): Promise<ApplicationUuidResDto> {
     return this.moveOutService.updateInspection(
@@ -406,7 +406,7 @@ export class MoveOutController {
   @HttpCode(204)
   async cancelInspection(
     @GetUser() user: User,
-    @Param('applicationUuid', ParseUUIDPipe) uuid: string,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
     return this.moveOutService.cancelInspection(user, uuid);
   }
