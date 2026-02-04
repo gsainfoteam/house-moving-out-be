@@ -341,6 +341,7 @@ export class MoveOutController {
   })
   @ApiNotFoundResponse({
     description: 'Not Found',
+    type: ErrorDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
@@ -368,6 +369,7 @@ export class MoveOutController {
   })
   @ApiNotFoundResponse({
     description: 'Not Found',
+    type: ErrorDto,
   })
   @ApiConflictResponse({ description: 'Conflict - New slot is already full' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
@@ -398,7 +400,7 @@ export class MoveOutController {
   @ApiForbiddenResponse({
     description: 'Forbidden - Only owners can cancel.',
   })
-  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
