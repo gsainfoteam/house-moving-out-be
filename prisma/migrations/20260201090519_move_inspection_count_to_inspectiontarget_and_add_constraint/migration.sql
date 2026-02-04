@@ -19,12 +19,14 @@ ALTER TABLE "inspection_application" DROP COLUMN "re_inspection_count";
 ALTER TABLE "inspection_target" ADD COLUMN     "inspection_count" INTEGER NOT NULL DEFAULT 0;
 
 -- AlterTable
-ALTER TABLE "move_out_schedule" DROP COLUMN "status",
-ADD COLUMN     "status" "schedule_status" NOT NULL DEFAULT 'DRAFT';
+ALTER TABLE "move_out_schedule" ALTER COLUMN "status" DROP DEFAULT;
+ALTER TABLE "move_out_schedule" ALTER COLUMN "status" TYPE "schedule_status" USING ("status"::text::"schedule_status");
+ALTER TABLE "move_out_schedule" ALTER COLUMN "status" SET DEFAULT 'DRAFT';
 
 -- AlterTable
-ALTER TABLE "user" DROP COLUMN "role",
-ADD COLUMN     "role" "role" NOT NULL DEFAULT 'USER';
+ALTER TABLE "user" ALTER COLUMN "role" DROP DEFAULT;
+ALTER TABLE "user" ALTER COLUMN "role" TYPE "role" USING ("role"::text::"role");
+ALTER TABLE "user" ALTER COLUMN "role" SET DEFAULT 'USER';
 
 -- DropEnum
 DROP TYPE "Role";
