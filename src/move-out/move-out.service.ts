@@ -26,16 +26,21 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
-import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
+import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
+import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
-import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
+import ms from 'ms';
+import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
+import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 
 @Loggable()
 @Injectable()
 export class MoveOutService {
-  private readonly SLOT_DURATION_MINUTES = 30;
+  private readonly SLOT_DURATION = ms('30m');
   private readonly WEIGHT_FACTOR = 1.5;
+  private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
+  private readonly INSPECTION_COUNT_LIMIT = 3;
   private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
@@ -93,7 +98,7 @@ export class MoveOutService {
 
     const generatedSlots = this.generateSlots(
       inspectionTimeRange,
-      this.SLOT_DURATION_MINUTES,
+      this.SLOT_DURATION,
     );
     if (generatedSlots.length === 0) {
       throw new BadRequestException(
@@ -471,10 +476,9 @@ export class MoveOutService {
 
   private generateSlots(
     inspectionTimeRanges: InspectionTimeRangeDto[],
-    slotDurationMinute: number,
+    slotDuration: number,
   ): { startTime: Date; endTime: Date }[] {
     const slots: { startTime: Date; endTime: Date }[] = [];
-    const SLOT_DURATION_MS = slotDurationMinute * 60000;
 
     for (const range of inspectionTimeRanges) {
       const rangeStart = new Date(range.start);
@@ -482,9 +486,9 @@ export class MoveOutService {
 
       let slotStart = rangeStart;
       for (
-        let slotEndMs = rangeStart.getTime() + SLOT_DURATION_MS;
+        let slotEndMs = rangeStart.getTime() + slotDuration;
         slotEndMs <= rangeEndMs;
-        slotEndMs += SLOT_DURATION_MS
+        slotEndMs += slotDuration
       ) {
         const slotEnd = new Date(slotEndMs);
         slots.push({ startTime: slotStart, endTime: slotEnd });
@@ -637,7 +641,7 @@ export class MoveOutService {
   async applyInspection(
     user: User,
     { inspectionSlotUuid }: ApplyInspectionDto,
-  ): Promise<ApplyInspectionResDto> {
+  ): Promise<ApplicationUuidResDto> {
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
     return await this.prismaService.$transaction(
@@ -668,10 +672,22 @@ export class MoveOutService {
             tx,
           );
 
+        if (
+          inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT
+        ) {
+          throw new ConflictException(
+            'Inspection count limit(3times) exceeded.',
+          );
+        }
+
         const isMale = this.extractGenderFromHouseName(
           inspectionTargetInfo.houseName,
         );
 
+        await this.moveOutRepository.incrementInspectionCountInTx(
+          inspectionTargetInfo.uuid,
+          tx,
+        );
         const updatedSlot =
           await this.moveOutRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
@@ -709,5 +725,151 @@ export class MoveOutService {
         return { applicationUuid: application.uuid };
       },
     );
+  }
+
+  async updateInspection(
+    user: User,
+    applicationUuid: string,
+    { inspectionSlotUuid }: UpdateInspectionDto,
+  ): Promise<ApplicationUuidResDto> {
+    return this.prismaService.$transaction(async (tx: PrismaTransaction) => {
+      const application =
+        await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
+          applicationUuid,
+          tx,
+        );
+
+      if (application.userUuid !== user.uuid) {
+        throw new ForbiddenException(
+          'The application does not belong to this user.',
+        );
+      }
+
+      if (application.inspectionSlotUuid === inspectionSlotUuid) {
+        return { applicationUuid };
+      }
+
+      const now = new Date();
+      const timeDiff =
+        application.inspectionSlot.startTime.getTime() - now.getTime();
+
+      if (timeDiff < this.APPLICATION_UPDATE_DEADLINE) {
+        throw new ForbiddenException(
+          'Cannot modify the inspection time within 1 hour of the start time.',
+        );
+      }
+
+      const isMale = this.extractGenderFromHouseName(
+        application.inspectionTargetInfo.houseName,
+      );
+
+      await this.moveOutRepository.swapSlotReservedCountsInTx(
+        application.inspectionSlotUuid,
+        inspectionSlotUuid,
+        isMale,
+        tx,
+      );
+
+      const updatedSlot = await this.moveOutRepository.findSlotByUuidInTx(
+        inspectionSlotUuid,
+        tx,
+      );
+
+      if (
+        application.inspectionSlot.scheduleUuid !== updatedSlot.scheduleUuid
+      ) {
+        throw new BadRequestException(
+          'Changes are only possible within the same schedule.',
+        );
+      }
+
+      if (isMale) {
+        if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
+          throw new ConflictException('Male capacity is already full.');
+        }
+      } else {
+        if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
+          throw new ConflictException('Female capacity is already full.');
+        }
+      }
+
+      const inspector =
+        await this.moveOutRepository.findAvailableInspectorBySlotUuidInTx(
+          user.email,
+          inspectionSlotUuid,
+          isMale ? Gender.MALE : Gender.FEMALE,
+          tx,
+        );
+
+      const updatedApplication =
+        await this.moveOutRepository.updateInspectionApplicationInTx(
+          application.uuid,
+          inspectionSlotUuid,
+          inspector.uuid,
+          tx,
+        );
+
+      return { applicationUuid: updatedApplication.uuid };
+    });
+  }
+
+  async cancelInspection(user: User, applicationUuid: string): Promise<void> {
+    return await this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const application =
+          await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
+            applicationUuid,
+            tx,
+          );
+
+        if (application.userUuid !== user.uuid) {
+          throw new ForbiddenException(
+            'The application does not belong to this user.',
+          );
+        }
+
+        const now = new Date();
+        const timeDiff =
+          application.inspectionSlot.startTime.getTime() - now.getTime();
+
+        if (timeDiff >= this.APPLICATION_UPDATE_DEADLINE) {
+          await this.moveOutRepository.decrementInspectionCountInTx(
+            application.inspectionTargetInfo.uuid,
+            tx,
+          );
+        }
+
+        const isMale = this.extractGenderFromHouseName(
+          application.inspectionTargetInfo.houseName,
+        );
+
+        await this.moveOutRepository.decrementSlotReservedCountInTx(
+          application.inspectionSlotUuid,
+          isMale,
+          tx,
+        );
+
+        await this.moveOutRepository.deleteInspectionApplicationInTx(
+          application.uuid,
+          tx,
+        );
+      },
+    );
+  }
+
+  async findMyInspection(user: User): Promise<InspectionResDto> {
+    const schedule = await this.moveOutRepository.findActiveSchedule();
+    const application =
+      await this.moveOutRepository.findApplicationByUserAndSemesters(
+        user.uuid,
+        schedule.currentSemesterUuid,
+        schedule.nextSemesterUuid,
+      );
+
+    return {
+      uuid: application.uuid,
+      inspectionSlot: { ...application.inspectionSlot },
+      isPassed: application.isPassed ?? undefined,
+    };
   }
 }

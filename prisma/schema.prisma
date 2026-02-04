@@ -21,6 +21,15 @@ enum ConsentType {
   @@map("consent_type")
 }
 
+enum ScheduleStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELED
+
+  @@map("schedule_status")
+}
+
 enum Season {
   SPRING
   SUMMER
@@ -40,6 +49,8 @@ enum Gender {
 enum Role {
   ADMIN
   USER
+
+  @@map("role")
 }
 
 model User {
@@ -102,13 +113,6 @@ model AuditLog {
   @@map("audit_log")
 }
 
-enum ScheduleStatus {
-  DRAFT
-  ACTIVE
-  COMPLETED
-  CANCELED
-}
-
 model MoveOutSchedule {
   uuid                 String           @id @default(uuid())
   title                String
@@ -151,6 +155,7 @@ model InspectionTargetInfo {
   roomNumber          String   @map("room_number")
   studentName         String   @map("student_name")
   admissionYear       String   @map("admission_year")
+  inspectionCount     Int      @default(0) @map("inspection_count")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -190,7 +195,6 @@ model InspectionApplication {
   inspectionTargetInfoUuid String   @map("inspection_target_info_uuid")
   inspectionSlotUuid       String   @map("inspection_slot_uuid")
   isPassed                 Boolean? @map("is_passed")
-  reInspectionCount        Int      @default(0) @map("re_inspection_count")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
   inspectorUuid            String   @map("inspector_uuid")

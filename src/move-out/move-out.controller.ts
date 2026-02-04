@@ -4,8 +4,10 @@ import {
   Controller,
   Delete,
   Get,
-  Param,
+  Patch,
   ParseUUIDPipe,
+  HttpCode,
+  Param,
   Post,
   Query,
   UploadedFile,
@@ -22,6 +24,7 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -38,16 +41,18 @@ import {
   CreateInspectionTargetsDto,
   CreateInspectionTargetsSwaggerDto,
 } from './dto/req/create-inspection-targets.dto';
+import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
+import { Semester } from './types/semester.type';
+import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
+import { InspectionResDto } from './dto/res/inspection-res.dto';
+import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
+import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
-import { ApplyInspectionResDto } from './dto/res/apply-inspection-res.dto';
-import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
 import { DeleteInspectionTargetsResDto } from './dto/res/delete-inspection-targets-res.dto';
 import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
-import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { MoveOutService } from './move-out.service';
-import { Semester } from './types/semester.type';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -298,7 +303,7 @@ export class MoveOutController {
   })
   @ApiCreatedResponse({
     description: 'Inspection application completed successfully.',
-    type: ApplyInspectionResDto,
+    type: ApplicationUuidResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -321,7 +326,88 @@ export class MoveOutController {
   async applyInspection(
     @GetUser() user: User,
     @Body() applyInspectionDto: ApplyInspectionDto,
-  ): Promise<ApplyInspectionResDto> {
+  ): Promise<ApplicationUuidResDto> {
     return await this.moveOutService.applyInspection(user, applyInspectionDto);
+  }
+
+  @ApiOperation({
+    summary: 'Get My Inspection Application',
+    description:
+      "Retrieve the current user's inspection application for the active move-out schedule.",
+  })
+  @ApiOkResponse({
+    description: 'The inspection application has been successfully retrieved.',
+    type: InspectionResDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('application/me')
+  async findMyInspection(@GetUser() user: User): Promise<InspectionResDto> {
+    return await this.moveOutService.findMyInspection(user);
+  }
+
+  @ApiOperation({
+    summary: 'Update My Inspection Application',
+    description:
+      "Update the current user's inspection application to a new inspection slot.",
+  })
+  @ApiOkResponse({
+    description: 'The inspection application has been successfully updated.',
+    type: ApplicationUuidResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - Only owners can modify; modification restricted within 1 hour of start.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found',
+  })
+  @ApiConflictResponse({ description: 'Conflict - New slot is already full' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Patch('application/:uuid')
+  async updateInspection(
+    @GetUser() user: User,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() updateInspectionDto: UpdateInspectionDto,
+  ): Promise<ApplicationUuidResDto> {
+    return this.moveOutService.updateInspection(
+      user,
+      uuid,
+      updateInspectionDto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Cancel My Inspection Application',
+    description:
+      "Cancel the current user's inspection application. If canceled within 1 hour of the inspection time, it will be recorded as a 'no-show' and consume an application attempt.",
+  })
+  @ApiNoContentResponse({
+    description: 'The inspection application has been successfully canceled.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Only owners can cancel.',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Delete('application/:uuid')
+  @HttpCode(204)
+  async cancelInspection(
+    @GetUser() user: User,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    return this.moveOutService.cancelInspection(user, uuid);
   }
 }
