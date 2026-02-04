@@ -373,7 +373,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Patch('application/:applicationUuid')
+  @Patch('application/:uuid')
   async updateInspection(
     @GetUser() user: User,
     @Param('uuid', ParseUUIDPipe) uuid: string,
@@ -402,7 +402,7 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Delete('application/:applicationUuid')
+  @Delete('application/:uuid')
   @HttpCode(204)
   async cancelInspection(
     @GetUser() user: User,
