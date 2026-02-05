@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UploadExcelDto {
+export class UpdateInspectionTargetsDto {
   @ApiProperty({
     type: 'string',
     format: 'binary',
