@@ -114,16 +114,18 @@ model AuditLog {
 }
 
 model MoveOutSchedule {
-  uuid                 String           @id @default(uuid())
+  uuid                 String         @id @default(uuid())
   title                String
-  applicationStartTime DateTime         @map("application_start_time")
-  applicationEndTime   DateTime         @map("application_end_time")
-  currentSemesterUuid  String           @map("current_semester_uuid")
-  nextSemesterUuid     String           @map("next_semester_uuid")
-  createdAt            DateTime         @default(now()) @map("created_at")
-  updatedAt            DateTime         @default(now()) @updatedAt @map("updated_at")
-  inspectionSlots      InspectionSlot[]
-  status               ScheduleStatus   @default(DRAFT)
+  applicationStartTime DateTime       @map("application_start_time")
+  applicationEndTime   DateTime       @map("application_end_time")
+  currentSemesterUuid  String         @map("current_semester_uuid")
+  nextSemesterUuid     String         @map("next_semester_uuid")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @default(now()) @updatedAt @map("updated_at")
+  status               ScheduleStatus @default(DRAFT)
+
+  inspectionSlots   InspectionSlot[]
+  inspectionTargets InspectionTargetInfo[]
 
   currentSemester Semester @relation("ScheduleCurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
   nextSemester    Semester @relation("ScheduleNextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
@@ -138,35 +140,30 @@ model Semester {
   season    Season
   createdAt DateTime @default(now()) @map("created_at")
 
-  currentSemesterTargetInfo InspectionTargetInfo[] @relation("CurrentSemester")
-  nextSemesterTargetInfo    InspectionTargetInfo[] @relation("NextSemester")
-  currentSemesterSchedules  MoveOutSchedule[]      @relation("ScheduleCurrentSemester")
-  nextSemesterSchedules     MoveOutSchedule[]      @relation("ScheduleNextSemester")
+  currentSemesterSchedules MoveOutSchedule[] @relation("ScheduleCurrentSemester")
+  nextSemesterSchedules    MoveOutSchedule[] @relation("ScheduleNextSemester")
 
   @@unique([year, season])
   @@map("semester")
 }
 
 model InspectionTargetInfo {
-  uuid                String   @id @default(uuid())
-  currentSemesterUuid String   @map("current_semester_uuid")
-  nextSemesterUuid    String   @map("next_semester_uuid")
-  houseName           String   @map("house_name")
-  roomNumber          String   @map("room_number")
-  studentName         String   @map("student_name")
-  admissionYear       String   @map("admission_year")
-  inspectionCount     Int      @default(0) @map("inspection_count")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+  uuid            String   @id @default(uuid())
+  scheduleUuid    String   @map("schedule_uuid")
+  houseName       String   @map("house_name")
+  roomNumber      String   @map("room_number")
+  studentName     String   @map("student_name")
+  admissionYear   String   @map("admission_year")
+  inspectionCount Int      @default(0) @map("inspection_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
-  currentSemester       Semester               @relation("CurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
-  nextSemester          Semester               @relation("NextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
+  schedule              MoveOutSchedule        @relation(fields: [scheduleUuid], references: [uuid], onDelete: Cascade)
   inspectionApplication InspectionApplication?
 
-  @@unique([currentSemesterUuid, nextSemesterUuid, admissionYear, studentName], name: "inspection_target_with_specific_semester")
-  @@index([currentSemesterUuid])
-  @@index([nextSemesterUuid])
-  @@index([currentSemesterUuid, nextSemesterUuid, houseName, roomNumber])
+  @@unique([scheduleUuid, admissionYear, studentName], name: "inspection_target_with_schedule")
+  @@index([scheduleUuid])
+  @@index([scheduleUuid, houseName, roomNumber])
   @@index([admissionYear, studentName])
   @@map("inspection_target")
 }
