@@ -244,7 +244,7 @@ export class MoveOutService {
   async updateInspectionTargetsAndUpdateSlotCapacities(
     file: Express.Multer.File,
     scheduleUuid: string,
-  ): Promise<number> {
+  ): Promise<{ count: number }> {
     await this.excelValidatorService.validateExcelFile(file);
 
     if (!file?.buffer) {
@@ -281,7 +281,7 @@ export class MoveOutService {
     const targetCounts =
       this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
-    const result = await this.prismaService.$transaction(
+    return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const schedule =
           await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
@@ -330,12 +330,7 @@ export class MoveOutService {
 
         return createdCount;
       },
-      {
-        isolationLevel: 'Serializable',
-      },
     );
-
-    return result.count;
   }
 
   async findInspectionTargetsBySemesters({

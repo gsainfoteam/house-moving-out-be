@@ -242,15 +242,10 @@ export class MoveOutController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<UpdateInspectionTargetsResDto> {
-    const updatedCount =
-      await this.moveOutService.updateInspectionTargetsAndUpdateSlotCapacities(
-        file,
-        uuid,
-      );
-
-    return {
-      count: updatedCount,
-    };
+    return await this.moveOutService.updateInspectionTargetsAndUpdateSlotCapacities(
+      file,
+      uuid,
+    );
   }
 
   @ApiOperation({
