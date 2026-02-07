@@ -748,45 +748,14 @@ export class MoveOutRepository {
       });
   }
 
-  async updateInspectionApplicationInTx(
-    applicationUuid: string,
-    newInspectionSlotUuid: string,
-    inspectorUuid: string,
-    tx: PrismaTransaction,
-  ): Promise<InspectionApplication> {
-    return await tx.inspectionApplication
-      .update({
-        where: { uuid: applicationUuid },
-        data: {
-          inspectionSlotUuid: newInspectionSlotUuid,
-          inspectorUuid,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(
-              `InspectionApplication not found for update: ${applicationUuid}`,
-            );
-            throw new NotFoundException('Inspection application not found.');
-          }
-          this.logger.error(
-            `updateInspectionApplicationInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`updateInspectionApplicationInTx error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async deleteInspectionApplicationInTx(
     applicationUuid: string,
     tx: PrismaTransaction,
   ) {
     return await tx.inspectionApplication
-      .delete({
+      .update({
         where: { uuid: applicationUuid },
+        data: { deletedAt: new Date() },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
@@ -824,11 +793,13 @@ export class MoveOutRepository {
           FROM inspection_application AS ia
           WHERE ia.inspector_uuid = i.uuid 
             AND ia.inspection_slot_uuid = ${inspectionSlotUuid}
+            AND ia.deleted_at IS NULL
         ) < ${this.MAX_APPLICATIONS_PER_INSPECTOR}
       ORDER BY (
         SELECT COUNT(*) 
         FROM inspection_application AS ia 
         WHERE ia.inspector_uuid = i.uuid
+            AND ia.deleted_at IS NULL
       ) ASC
       LIMIT 1
       FOR UPDATE
@@ -858,7 +829,10 @@ export class MoveOutRepository {
       .findFirstOrThrow({
         where: {
           userUuid,
-          inspectionTargetInfo: { scheduleUuid },
+          inspectionTargetInfo: {
+            scheduleUuid,
+          },
+          deletedAt: null,
         },
         include: {
           inspectionSlot: true,
@@ -889,6 +863,7 @@ export class MoveOutRepository {
       .findUniqueOrThrow({
         where: {
           uuid,
+          deletedAt: null,
         },
         include: {
           inspectionSlot: true,
@@ -915,7 +890,7 @@ export class MoveOutRepository {
     uuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplicationWithDetails> {
-    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} FOR UPDATE`;
+    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} AND "deleted_at" IS NULL FOR UPDATE`;
 
     return this.findApplicationByUuidInTx(uuid, tx);
   }
