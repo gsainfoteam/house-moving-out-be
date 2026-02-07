@@ -749,6 +749,11 @@ export class MoveOutService {
         return { applicationUuid };
       }
 
+      await this.moveOutRepository.deleteInspectionApplicationInTx(
+        applicationUuid,
+        tx,
+      );
+
       const now = new Date();
       const timeDiff =
         application.inspectionSlot.startTime.getTime() - now.getTime();
@@ -802,8 +807,9 @@ export class MoveOutService {
         );
 
       const updatedApplication =
-        await this.moveOutRepository.updateInspectionApplicationInTx(
-          application.uuid,
+        await this.moveOutRepository.createInspectionApplicationInTx(
+          user.uuid,
+          application.inspectionTargetInfoUuid,
           inspectionSlotUuid,
           inspector.uuid,
           tx,
