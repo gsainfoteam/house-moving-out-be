@@ -27,6 +27,7 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
+import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
 
 @Loggable()
 @Injectable()
@@ -944,6 +945,7 @@ export class MoveOutRepository {
             this.logger.debug(
               `InspectionApplication not found for update result: ${applicationUuid}`,
             );
+            this.logger.debug('InspectionTargetInfo not found');
             throw new NotFoundException('Inspection application not found.');
           }
           this.logger.error(
@@ -952,6 +954,37 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`updateInspectionResultInTx error: ${error}`);
+        throw new NotFoundException('Not Found Error');
+      });
+  }
+  async findAllInspectionTargetInfoWithSlotByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<InspectionTargetInfoWithApplication[]> {
+    return await this.prismaService.inspectionTargetInfo
+      .findMany({
+        where: {
+          scheduleUuid,
+        },
+        include: {
+          inspectionApplication: {
+            where: { deletedAt: null },
+            include: {
+              inspectionSlot: true,
+            },
+          },
+        },
+        orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findAllInspectionTargetInfoWithSlotByScheduleUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findAllInspectionTargetInfoWithSlotByScheduleUuid error: ${error}`,
+        );
         throw new InternalServerErrorException('Unknown Error');
       });
   }
