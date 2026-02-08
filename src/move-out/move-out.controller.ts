@@ -59,6 +59,7 @@ import {
   SubmitInspectionResultDto,
   SubmitInspectionResultFormDto,
 } from './dto/req/submit-inspection-result.dto';
+import { FindAllInspectionTargetInfosResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -278,6 +279,29 @@ export class MoveOutController {
   ): Promise<InspectionTargetInfoResDto[]> {
     return await this.moveOutService.findInspectionTargetsBySemesters(
       semestersQuery,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspection Targets by Schedule Uuid',
+    description: 'Retrieve inspection targets by Inspection Schedule Uuid',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets successfully retrieved',
+    type: [FindAllInspectionTargetInfosResDto],
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('inspection-targets/:schedule-uuid')
+  async findAllInspectionTargetInfos(
+    @Param('schedule-uuid', ParseUUIDPipe) scheduleUuid: string,
+  ): Promise<FindAllInspectionTargetInfosResDto> {
+    return await this.moveOutService.findInspectionTargetInfoByScheduleUuid(
+      scheduleUuid,
     );
   }
 

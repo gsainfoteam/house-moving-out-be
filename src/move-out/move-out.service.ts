@@ -34,6 +34,10 @@ import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targe
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { InspectorService } from 'src/inspector/inspector.service';
+import {
+  DetailedInspectionTargetInfo,
+  FindAllInspectionTargetInfosResDto,
+} from './dto/res/find-all-inspection-target-infos-res.dto';
 
 @Loggable()
 @Injectable()
@@ -810,6 +814,51 @@ export class MoveOutService {
 
     return new Uint8Array(file.buffer);
   }
+  async findInspectionTargetInfoByScheduleUuid(
+    inspectionScheduleUuid: string,
+  ): Promise<FindAllInspectionTargetInfosResDto> {
+    const inspectionTargetInfosWithApplications =
+      await this.moveOutRepository.findAllInspectionTargetInfoWithSlotByScheduleUuid(
+        inspectionScheduleUuid,
+      );
+
+    const inspectionTargetsGroupedByRoom =
+      inspectionTargetInfosWithApplications.reduce<
+        Record<string, DetailedInspectionTargetInfo>
+      >((acc, target) => {
+        if (!acc[target.roomNumber]) {
+          acc[target.roomNumber] = {
+            roomNumber: target.roomNumber,
+            residents: [],
+            inspectionCount: 0,
+            lastInspectionTime: new Date(0),
+          };
+        }
+
+        acc[target.roomNumber].residents.push({
+          admissionYear: target.admissionYear,
+          name: target.studentName,
+        });
+
+        if (target.inspectionApplication.length > 0) {
+          acc[target.roomNumber].inspectionCount = target.inspectionCount;
+          acc[target.roomNumber].lastInspectionTime =
+            target.inspectionApplication[0].inspectionSlot.startTime;
+          acc[target.roomNumber].isPassed =
+            target.inspectionApplication[0].isPassed ?? undefined;
+        }
+
+        return acc;
+      }, {});
+
+    const result: FindAllInspectionTargetInfosResDto = {
+      DetailedInspectionTargetInfos: Object.values(
+        inspectionTargetsGroupedByRoom,
+      ),
+    };
+    return result;
+  }
+
   private findInspectionTargetRooms(
     currentSemesterRooms: Map<string, RoomInfo>,
     nextSemesterRooms: Map<string, RoomInfo>,
