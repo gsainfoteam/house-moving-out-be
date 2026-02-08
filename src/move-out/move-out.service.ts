@@ -8,10 +8,7 @@ import {
 import { MoveOutRepository } from './move-out.repository';
 import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
-import {
-  CreateMoveOutScheduleDto,
-  InspectionTimeRangeDto,
-} from './dto/req/create-move-out-schedule.dto';
+import { InspectionTimeRange } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
 import {
@@ -33,6 +30,7 @@ import ms from 'ms';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
+import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 
 @Loggable()
 @Injectable()
@@ -53,16 +51,19 @@ export class MoveOutService {
     return await this.moveOutRepository.findAllMoveOutSchedules();
   }
 
-  async createMoveOutSchedule({
-    title,
-    applicationStartTime,
-    applicationEndTime,
-    currentYear,
-    currentSeason,
-    nextYear,
-    nextSeason,
-    inspectionTimeRange,
-  }: CreateMoveOutScheduleDto): Promise<MoveOutSchedule> {
+  async createMoveOutScheduleWithTargets(
+    file: Express.Multer.File,
+    {
+      title,
+      applicationStartTime,
+      applicationEndTime,
+      currentYear,
+      currentSeason,
+      nextYear,
+      nextSeason,
+      inspectionTimeRange,
+    }: CreateMoveOutScheduleWithTargetsDto,
+  ): Promise<MoveOutSchedule> {
     this.validateScheduleAndRanges(
       applicationStartTime,
       applicationEndTime,
@@ -80,26 +81,58 @@ export class MoveOutService {
 
     this.validateSemesterOrder(currentSemester, nextSemester);
 
+    await this.excelValidatorService.validateExcelFile(file);
+
+    if (!file?.buffer) {
+      throw new BadRequestException('File buffer is missing');
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await workbook.xlsx.load(file.buffer);
+
+    if (workbook.worksheets.length < 2) {
+      throw new BadRequestException(
+        'Excel file must have at least 2 sheets for comparison',
+      );
+    }
+
+    const currentSemesterSheet = workbook.worksheets[0];
+    const nextSemesterSheet = workbook.worksheets[1];
+
+    if (!currentSemesterSheet || !nextSemesterSheet) {
+      throw new BadRequestException('Excel file has invalid sheets');
+    }
+
+    const currentSemesterRooms =
+      this.excelParserService.parseSheetToRoomInfoMap(currentSemesterSheet);
+    const nextSemesterRooms =
+      this.excelParserService.parseSheetToRoomInfoMap(nextSemesterSheet);
+
+    const inspectionTargets = this.findInspectionTargetRooms(
+      currentSemesterRooms,
+      nextSemesterRooms,
+    );
+
     const currentSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
+      await this.moveOutRepository.findOrCreateSemester(
         currentSemester.year,
         currentSemester.season,
       );
     const nextSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
+      await this.moveOutRepository.findOrCreateSemester(
         nextSemester.year,
         nextSemester.season,
       );
 
-    const targetCounts = await this.calculateTargetCounts(
-      currentSemesterEntity.uuid,
-      nextSemesterEntity.uuid,
-    );
+    const targetCounts =
+      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
     const generatedSlots = this.generateSlots(
       inspectionTimeRange,
       this.SLOT_DURATION,
     );
+
     if (generatedSlots.length === 0) {
       throw new BadRequestException(
         'No slots were generated. Check your inspection time ranges.',
@@ -126,9 +159,25 @@ export class MoveOutService {
       nextSemesterUuid: nextSemesterEntity.uuid,
     };
 
-    return await this.moveOutRepository.createMoveOutSchedule(
-      scheduleData,
-      slotsData,
+    return await this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const schedule = await this.moveOutRepository.createMoveOutScheduleInTx(
+          scheduleData,
+          slotsData,
+          tx,
+        );
+
+        await this.moveOutRepository.createInspectionTargetsInTx(
+          schedule.uuid,
+          inspectionTargets,
+          tx,
+        );
+
+        return schedule;
+      },
+      {
+        isolationLevel: 'Serializable',
+      },
     );
   }
 
@@ -180,8 +229,7 @@ export class MoveOutService {
     await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
       admissionYear,
       user.name,
-      schedule.currentSemesterUuid,
-      schedule.nextSemesterUuid,
+      schedule.uuid,
     );
 
     return schedule;
@@ -193,13 +241,10 @@ export class MoveOutService {
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
-  async compareTwoSheetsAndFindInspectionTargets(
-    file: Express.Multer.File | undefined,
-    currentSemester: Semester,
-    nextSemester: Semester,
-  ): Promise<number> {
-    this.validateSemesterOrder(currentSemester, nextSemester);
-
+  async updateInspectionTargetsAndUpdateSlotCapacities(
+    file: Express.Multer.File,
+    scheduleUuid: string,
+  ): Promise<{ count: number }> {
     await this.excelValidatorService.validateExcelFile(file);
 
     if (!file?.buffer) {
@@ -233,45 +278,59 @@ export class MoveOutService {
       nextSemesterRooms,
     );
 
-    const currentSemesterEntity =
-      await this.moveOutRepository.findOrCreateSemester(
-        currentSemester.year,
-        currentSemester.season,
-      );
-    const nextSemesterEntity =
-      await this.moveOutRepository.findOrCreateSemester(
-        nextSemester.year,
-        nextSemester.season,
-      );
+    const targetCounts =
+      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
-    const result = await this.prismaService.$transaction(
+    return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        const existingTargetInfo =
-          await this.moveOutRepository.findFirstInspectionTargetInfoBySemestersInTx(
-            currentSemesterEntity.uuid,
-            nextSemesterEntity.uuid,
+        const schedule =
+          await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
+            scheduleUuid,
             tx,
           );
 
-        if (existingTargetInfo !== null) {
-          throw new ConflictException(
-            `Inspection target info already exist for current semester (${currentSemester.year} ${currentSemester.season}) and next semester (${nextSemester.year} ${nextSemester.season}). Use update endpoint to modify existing data.`,
+        const now = new Date();
+        if (now >= schedule.applicationStartTime) {
+          throw new ForbiddenException(
+            'Inspection targets cannot be replaced after the application period has started.',
           );
         }
 
-        return await this.moveOutRepository.createInspectionTargetInfosInTx(
-          currentSemesterEntity.uuid,
-          nextSemesterEntity.uuid,
-          inspectionTargets,
+        if (!schedule.inspectionSlots?.length) {
+          throw new BadRequestException(
+            'Schedule has no slots. Cannot update inspection targets.',
+          );
+        }
+
+        const slotCount = schedule.inspectionSlots.length;
+        const { maleCapacity, femaleCapacity } = this.calculateCapacity(
+          slotCount,
+          targetCounts,
+          this.WEIGHT_FACTOR,
+        );
+
+        await this.moveOutRepository.deleteInspectionTargetsByScheduleUuidInTx(
+          scheduleUuid,
           tx,
         );
-      },
-      {
-        isolationLevel: 'Serializable',
+
+        const createdCount =
+          await this.moveOutRepository.createInspectionTargetsInTx(
+            scheduleUuid,
+            inspectionTargets,
+            tx,
+          );
+
+        await this.moveOutRepository.updateSlotCapacitiesByScheduleUuidInTx(
+          scheduleUuid,
+          maleCapacity,
+          femaleCapacity,
+          tx,
+        );
+
+        return createdCount;
       },
     );
-
-    return result.count;
   }
 
   async findInspectionTargetsBySemesters({
@@ -304,10 +363,14 @@ export class MoveOutService {
         nextSemester.season,
       );
 
-    const targets =
-      await this.moveOutRepository.findInspectionTargetInfosBySemesters(
+    const schedule =
+      await this.moveOutRepository.findMoveOutScheduleBySemesterUuids(
         currentSemesterEntity.uuid,
         nextSemesterEntity.uuid,
+      );
+    const targets =
+      await this.moveOutRepository.findInspectionTargetInfosByScheduleUuid(
+        schedule.uuid,
       );
 
     if (targets.length === 0) {
@@ -345,10 +408,14 @@ export class MoveOutService {
         nextSemester.season,
       );
 
-    const result =
-      await this.moveOutRepository.deleteInspectionTargetInfosBySemesters(
+    const schedule =
+      await this.moveOutRepository.findMoveOutScheduleBySemesterUuids(
         currentSemesterEntity.uuid,
         nextSemesterEntity.uuid,
+      );
+    const result =
+      await this.moveOutRepository.deleteInspectionTargetInfosByScheduleUuid(
+        schedule.uuid,
       );
 
     if (result.count === 0) {
@@ -373,8 +440,7 @@ export class MoveOutService {
         await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
           admissionYear,
           user.name,
-          schedule.currentSemesterUuid,
-          schedule.nextSemesterUuid,
+          schedule.uuid,
         );
 
       return {
@@ -444,38 +510,8 @@ export class MoveOutService {
     return inspectionTargets;
   }
 
-  private async calculateTargetCounts(
-    currentSemesterUuid: string,
-    nextSemesterUuid: string,
-  ): Promise<InspectionTargetCount> {
-    const targets =
-      await this.moveOutRepository.findInspectionTargetHouseNamesBySemesters(
-        currentSemesterUuid,
-        nextSemesterUuid,
-      );
-
-    const counts: InspectionTargetCount = { male: 0, female: 0 };
-
-    for (const { houseName } of targets) {
-      const isMale = this.extractGenderFromHouseName(houseName);
-      if (isMale) {
-        counts.male += 1;
-      } else {
-        counts.female += 1;
-      }
-    }
-
-    if (counts.male === 0 && counts.female === 0) {
-      throw new BadRequestException(
-        'Inspection target info not found for the given semesters.',
-      );
-    }
-
-    return counts;
-  }
-
   private generateSlots(
-    inspectionTimeRanges: InspectionTimeRangeDto[],
+    inspectionTimeRanges: InspectionTimeRange[],
     slotDuration: number,
   ): { startTime: Date; endTime: Date }[] {
     const slots: { startTime: Date; endTime: Date }[] = [];
@@ -529,10 +565,33 @@ export class MoveOutService {
     };
   }
 
+  private calculateTargetCountsFromInspectionTargets(
+    inspectionTargets: InspectionTargetStudent[],
+  ): InspectionTargetCount {
+    const counts: InspectionTargetCount = { male: 0, female: 0 };
+
+    for (const { houseName } of inspectionTargets) {
+      const isMale = this.extractGenderFromHouseName(houseName);
+      if (isMale) {
+        counts.male += 1;
+      } else {
+        counts.female += 1;
+      }
+    }
+
+    if (counts.male === 0 && counts.female === 0) {
+      throw new BadRequestException(
+        'Inspection target info not found for the given semesters.',
+      );
+    }
+
+    return counts;
+  }
+
   private validateScheduleAndRanges(
     applicationStartTime: Date,
     applicationEndTime: Date,
-    inspectionTimeRange: InspectionTimeRangeDto[],
+    inspectionTimeRange: InspectionTimeRange[],
   ): void {
     if (!inspectionTimeRange || inspectionTimeRange.length === 0) {
       throw new BadRequestException('Inspection time range must be provided.');
@@ -667,8 +726,7 @@ export class MoveOutService {
           await this.moveOutRepository.findInspectionTargetInfoByUserInfoInTx(
             admissionYear,
             user.name,
-            schedule.currentSemesterUuid,
-            schedule.nextSemesterUuid,
+            schedule.uuid,
             tx,
           );
 
@@ -860,10 +918,9 @@ export class MoveOutService {
   async findMyInspection(user: User): Promise<InspectionResDto> {
     const schedule = await this.moveOutRepository.findActiveSchedule();
     const application =
-      await this.moveOutRepository.findApplicationByUserAndSemesters(
+      await this.moveOutRepository.findApplicationByUserAndSchedule(
         user.uuid,
-        schedule.currentSemesterUuid,
-        schedule.nextSemesterUuid,
+        schedule.uuid,
       );
 
     return {

@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Patch,
+  Put,
   ParseUUIDPipe,
   HttpCode,
   Param,
@@ -37,22 +38,18 @@ import { UserGuard } from 'src/auth/guard/user.guard';
 import { ErrorDto } from 'src/common/dto/error.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
-import {
-  CreateInspectionTargetsDto,
-  CreateInspectionTargetsSwaggerDto,
-} from './dto/req/create-inspection-targets.dto';
-import { CreateInspectionTargetsResDto } from './dto/res/create-inspection-targets-res.dto';
-import { Semester } from './types/semester.type';
+import { UpdateInspectionTargetsDto } from './dto/req/update-inspection-targets.dto';
+import { UpdateInspectionTargetsResDto } from './dto/res/update-inspection-targets-res.dto';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
-import { CreateMoveOutScheduleDto } from './dto/req/create-move-out-schedule.dto';
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { DeleteInspectionTargetsResDto } from './dto/res/delete-inspection-targets-res.dto';
 import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
+import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -77,25 +74,39 @@ export class MoveOutController {
   }
 
   @ApiOperation({
-    summary: 'Create Move Out Schedule',
-    description: 'Create a new move out schedule.',
+    summary: 'Create Move Out Schedule with Targets',
+    description:
+      'Create a new move out schedule, inspection targets and slots in a single transaction.',
   })
   @ApiCreatedResponse({
-    description: 'The move out schedule has been successfully created.',
+    description:
+      'The move out schedule, inspection targets and slots have been successfully created.',
     type: MoveOutScheduleResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiConflictResponse({ description: 'Conflict' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
-  @ApiBody({ type: CreateMoveOutScheduleDto })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateMoveOutScheduleWithTargetsDto })
   @UseGuards(AdminGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
   @Post('schedule')
-  async createMoveOutSchedule(
-    @Body() createMoveOutScheduleDto: CreateMoveOutScheduleDto,
+  async createMoveOutScheduleWithTargets(
+    @UploadedFile() file: Express.Multer.File,
+    @Body()
+    createMoveOutScheduleWithTargetsDto: CreateMoveOutScheduleWithTargetsDto,
   ): Promise<MoveOutScheduleResDto> {
-    return await this.moveOutService.createMoveOutSchedule(
-      createMoveOutScheduleDto,
+    return await this.moveOutService.createMoveOutScheduleWithTargets(
+      file,
+      createMoveOutScheduleWithTargetsDto,
     );
   }
 
@@ -199,20 +210,25 @@ export class MoveOutController {
   }
 
   @ApiOperation({
-    summary: 'Compare Two Sheets and Find Inspection Target Rooms',
+    summary: 'Replace Inspection Targets and Update Slot Capacities',
     description:
-      'Upload Excel file with 2 sheets (current semester and next semester application), compare room assignments, and save students that need inspection. Requires current semester and next semester information.',
+      'Upload Excel (2 sheets: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started.',
   })
-  @ApiCreatedResponse({
-    description: 'Inspection targets successfully created',
-    type: CreateInspectionTargetsResDto,
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - Application period has already started; target replacement not allowed',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets replaced and slot capacities updated',
+    type: UpdateInspectionTargetsResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: CreateInspectionTargetsSwaggerDto })
+  @ApiBody({ type: UpdateInspectionTargetsDto })
   @UseGuards(AdminGuard)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -221,31 +237,15 @@ export class MoveOutController {
       },
     }),
   )
-  @Post('inspection-targets')
-  async compareSheets(
+  @Put('schedule/:uuid/inspection-targets')
+  async updateInspectionTargets(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
     @UploadedFile() file: Express.Multer.File,
-    @Body() createInspectionTargetsDto: CreateInspectionTargetsDto,
-  ): Promise<CreateInspectionTargetsResDto> {
-    const currentSemester: Semester = {
-      year: createInspectionTargetsDto.currentYear,
-      season: createInspectionTargetsDto.currentSeason,
-    };
-    const nextSemester: Semester = {
-      year: createInspectionTargetsDto.nextYear,
-      season: createInspectionTargetsDto.nextSeason,
-    };
-
-    const savedCount =
-      await this.moveOutService.compareTwoSheetsAndFindInspectionTargets(
-        file,
-        currentSemester,
-        nextSemester,
-      );
-
-    return {
-      message: 'Inspection targets successfully created',
-      count: savedCount,
-    };
+  ): Promise<UpdateInspectionTargetsResDto> {
+    return await this.moveOutService.updateInspectionTargetsAndUpdateSlotCapacities(
+      file,
+      uuid,
+    );
   }
 
   @ApiOperation({
