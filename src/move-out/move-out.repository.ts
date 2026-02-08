@@ -754,7 +754,7 @@ export class MoveOutRepository {
   ) {
     return await tx.inspectionApplication
       .update({
-        where: { uuid: applicationUuid },
+        where: { uuid: applicationUuid, deletedAt: null },
         data: { deletedAt: new Date() },
       })
       .catch((error) => {
