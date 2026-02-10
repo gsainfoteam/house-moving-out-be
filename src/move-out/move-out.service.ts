@@ -985,6 +985,12 @@ export class MoveOutService {
           );
         }
 
+        if (application.isPassed === true) {
+          throw new ConflictException(
+            'Inspection result has already been marked as passed and cannot be modified.',
+          );
+        }
+
         await this.moveOutRepository.updateInspectionResultInTx(
           applicationUuid,
           { passed, failed },
