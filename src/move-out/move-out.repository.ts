@@ -793,13 +793,13 @@ export class MoveOutRepository {
           FROM inspection_application AS ia
           WHERE ia.inspector_uuid = i.uuid 
             AND ia.inspection_slot_uuid = ${inspectionSlotUuid}
-            AND ia.deleted_at IS NULL
+            AND ia.is_passed IS NULL
         ) < ${this.MAX_APPLICATIONS_PER_INSPECTOR}
       ORDER BY (
         SELECT COUNT(*) 
         FROM inspection_application AS ia 
         WHERE ia.inspector_uuid = i.uuid
-            AND ia.deleted_at IS NULL
+            AND ia.is_passed IS NULL
       ) ASC
       LIMIT 1
       FOR UPDATE
@@ -864,7 +864,7 @@ export class MoveOutRepository {
     tx: PrismaTransaction,
   ): Promise<InspectionApplicationWithDetails> {
     return await tx.inspectionApplication
-      .findFirstOrThrow({
+      .findUniqueOrThrow({
         where: {
           uuid,
           deletedAt: null,
@@ -873,9 +873,6 @@ export class MoveOutRepository {
         include: {
           inspectionSlot: true,
           inspectionTargetInfo: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
         },
       })
       .catch((error) => {
@@ -898,7 +895,7 @@ export class MoveOutRepository {
     uuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplicationWithDetails> {
-    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} AND "deleted_at" IS NULL FOR UPDATE`;
+    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} AND "is_passed" IS NULL FOR UPDATE`;
 
     return this.findApplicationByUuidInTx(uuid, tx);
   }
