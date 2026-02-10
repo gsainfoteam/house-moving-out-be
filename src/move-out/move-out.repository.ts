@@ -957,7 +957,8 @@ export class MoveOutRepository {
         throw new NotFoundException('Not Found Error');
       });
   }
-  async findAllInspectionTargetInfoWithSlotByScheduleUuid(
+
+  async findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
     scheduleUuid: string,
   ): Promise<InspectionTargetInfoWithApplication[]> {
     return await this.prismaService.inspectionTargetInfo

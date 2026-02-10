@@ -814,11 +814,12 @@ export class MoveOutService {
 
     return new Uint8Array(file.buffer);
   }
-  async findInspectionTargetInfoByScheduleUuid(
+
+  async findInspectionTargetInfoGroupedByRoomByScheduleUuid(
     inspectionScheduleUuid: string,
   ): Promise<FindAllInspectionTargetsResDto> {
     const inspectionTargetInfosWithApplications =
-      await this.moveOutRepository.findAllInspectionTargetInfoWithSlotByScheduleUuid(
+      await this.moveOutRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
         inspectionScheduleUuid,
       );
 
