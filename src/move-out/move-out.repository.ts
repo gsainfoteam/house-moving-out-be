@@ -941,4 +941,40 @@ export class MoveOutRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+
+  async updateInspectionResultInTx(
+    applicationUuid: string,
+    itemResults: Prisma.InputJsonValue,
+    isPassed: boolean,
+    inspectorSignatureImage: Uint8Array<ArrayBuffer>,
+    targetSignatureImage: Uint8Array<ArrayBuffer>,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplication> {
+    return await tx.inspectionApplication
+      .update({
+        where: { uuid: applicationUuid },
+        data: {
+          itemResults,
+          isPassed,
+          inspectorSignatureImage,
+          targetSignatureImage,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found for update result: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `updateInspectionResultInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectionResultInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }

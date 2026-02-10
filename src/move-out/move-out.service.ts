@@ -26,11 +26,14 @@ import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
+import { fileTypeFromBuffer } from 'file-type';
 import ms from 'ms';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
+import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
+import { InspectorRepository } from 'src/inspector/inspector.repository';
 
 @Loggable()
 @Injectable()
@@ -40,11 +43,13 @@ export class MoveOutService {
   private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
   private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
+  private readonly MAX_SIGNATURE_SIZE = 3 * 1024 * 1024;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
+    private readonly inspectorRepository: InspectorRepository,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -928,5 +933,87 @@ export class MoveOutService {
       inspectionSlot: { ...application.inspectionSlot },
       isPassed: application.isPassed ?? undefined,
     };
+  }
+
+  async submitInspectionResult(
+    { email, name, studentNumber }: User,
+    applicationUuid: string,
+    { passed, failed }: SubmitInspectionResultDto,
+    inspectorSignature: Express.Multer.File | undefined,
+    targetSignature: Express.Multer.File | undefined,
+  ): Promise<void> {
+    const overlap = passed.filter((slug) => failed.includes(slug));
+
+    if (overlap.length > 0) {
+      throw new BadRequestException(
+        'Passed and failed items must not overlap.',
+      );
+    }
+
+    const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+      email,
+      name,
+      studentNumber,
+    );
+
+    const inspectorSignatureImage = await this.validateSignatureFile(
+      inspectorSignature,
+      'inspector',
+    );
+    const targetSignatureImage = await this.validateSignatureFile(
+      targetSignature,
+      'target',
+    );
+
+    return await this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const application =
+          await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
+            applicationUuid,
+            tx,
+          );
+
+        if (application.inspectorUuid !== inspector.uuid) {
+          throw new ForbiddenException(
+            'The inspector is not assigned to this application.',
+          );
+        }
+
+        await this.moveOutRepository.updateInspectionResultInTx(
+          applicationUuid,
+          { passed, failed },
+          failed.length === 0,
+          inspectorSignatureImage,
+          targetSignatureImage,
+          tx,
+        );
+      },
+    );
+  }
+
+  private async validateSignatureFile(
+    file: Express.Multer.File | undefined,
+    role: 'inspector' | 'target',
+  ): Promise<Uint8Array<ArrayBuffer>> {
+    if (!file?.buffer || file.size === 0) {
+      throw new BadRequestException('Both signatures are required.');
+    }
+
+    if (file.size > this.MAX_SIGNATURE_SIZE) {
+      throw new BadRequestException(
+        `Signature image size must be less than ${this.MAX_SIGNATURE_SIZE / 1024 / 1024}MB.`,
+      );
+    }
+
+    const fileType = await fileTypeFromBuffer(file.buffer);
+    const allowedMimeTypes = ['image/png', 'image/jpeg'];
+
+    if (!fileType || !allowedMimeTypes.includes(fileType.mime)) {
+      throw new BadRequestException(
+        `Invalid ${role} signature image type. Only PNG and JPEG are allowed.`,
+      );
+    }
+
+    return new Uint8Array(file.buffer);
   }
 }

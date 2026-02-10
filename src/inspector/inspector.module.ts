@@ -8,5 +8,6 @@ import { PrismaModule } from '@lib/prisma';
   imports: [PrismaModule],
   controllers: [InspectorController],
   providers: [InspectorService, InspectorRepository],
+  exports: [InspectorRepository],
 })
 export class InspectorModule {}
