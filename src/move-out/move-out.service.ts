@@ -35,8 +35,8 @@ import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-s
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { InspectorService } from 'src/inspector/inspector.service';
 import {
-  DetailedInspectionTargetInfo,
-  FindAllInspectionTargetInfosResDto,
+  FindAllInspectionTargetsResDto,
+  InspectionTargetsGroupedByRoom,
 } from './dto/res/find-all-inspection-target-infos-res.dto';
 
 @Loggable()
@@ -816,7 +816,7 @@ export class MoveOutService {
   }
   async findInspectionTargetInfoByScheduleUuid(
     inspectionScheduleUuid: string,
-  ): Promise<FindAllInspectionTargetInfosResDto> {
+  ): Promise<FindAllInspectionTargetsResDto> {
     const inspectionTargetInfosWithApplications =
       await this.moveOutRepository.findAllInspectionTargetInfoWithSlotByScheduleUuid(
         inspectionScheduleUuid,
@@ -824,7 +824,7 @@ export class MoveOutService {
 
     const inspectionTargetsGroupedByRoom =
       inspectionTargetInfosWithApplications.reduce<
-        Record<string, DetailedInspectionTargetInfo>
+        Record<string, InspectionTargetsGroupedByRoom>
       >((acc, target) => {
         if (!acc[target.roomNumber]) {
           acc[target.roomNumber] = {
@@ -851,8 +851,8 @@ export class MoveOutService {
         return acc;
       }, {});
 
-    const result: FindAllInspectionTargetInfosResDto = {
-      DetailedInspectionTargetInfos: Object.values(
+    const result: FindAllInspectionTargetsResDto = {
+      inspectionTargetsGroupedByRooms: Object.values(
         inspectionTargetsGroupedByRoom,
       ),
     };

@@ -8,7 +8,7 @@ class Resident {
   Duo,
 } */
 
-export class DetailedInspectionTargetInfo {
+export class InspectionTargetsGroupedByRoom {
   roomNumber: string;
   residents: Resident[];
   // inspectionType: InspectionType;
@@ -17,6 +17,6 @@ export class DetailedInspectionTargetInfo {
   isPassed?: boolean;
 }
 
-export class FindAllInspectionTargetInfosResDto {
-  DetailedInspectionTargetInfos: DetailedInspectionTargetInfo[];
+export class FindAllInspectionTargetsResDto {
+  inspectionTargetsGroupedByRooms: InspectionTargetsGroupedByRoom[];
 }
