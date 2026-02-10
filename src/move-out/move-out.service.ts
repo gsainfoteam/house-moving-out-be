@@ -715,6 +715,17 @@ export class MoveOutService {
             inspectionSlotUuid,
             tx,
           );
+        const target =
+          await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
+            admissionYear,
+            user.name,
+            schedule.uuid,
+          );
+        if (target.inspectionCount >= this.INSPECTION_COUNT_LIMIT) {
+          throw new ConflictException(
+            'Inspection count limit(3times) exceeded.',
+          );
+        }
 
         const now = new Date();
         if (now < schedule.applicationStartTime) {
