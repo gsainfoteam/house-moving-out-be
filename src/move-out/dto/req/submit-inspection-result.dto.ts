@@ -8,12 +8,23 @@ export class SubmitInspectionResultDto {
     example: ['door', 'air-conditioner'],
     type: [String],
   })
-  @Transform(({ value }: { value: string[] | string }) => {
+  @Transform(({ value }: { value?: string[] | string | null }) => {
+    if (value === undefined || value === null || value === '') {
+      return [];
+    }
+
     if (Array.isArray(value)) {
       return value;
     }
 
-    return value.split(',').map((v) => v.trim());
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0);
+    }
+
+    return [];
   })
   @IsOptional()
   @IsArray()
@@ -25,12 +36,23 @@ export class SubmitInspectionResultDto {
     example: ['window'],
     type: [String],
   })
-  @Transform(({ value }: { value: string[] | string }) => {
+  @Transform(({ value }: { value?: string[] | string | null }) => {
+    if (value === undefined || value === null || value === '') {
+      return [];
+    }
+
     if (Array.isArray(value)) {
       return value;
     }
 
-    return value.split(',').map((v) => v.trim());
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0);
+    }
+
+    return [];
   })
   @IsOptional()
   @IsArray()
