@@ -838,6 +838,9 @@ export class MoveOutRepository {
           inspectionSlot: true,
           inspectionTargetInfo: true,
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
@@ -860,7 +863,7 @@ export class MoveOutRepository {
     tx: PrismaTransaction,
   ): Promise<InspectionApplicationWithDetails> {
     return await tx.inspectionApplication
-      .findUniqueOrThrow({
+      .findFirstOrThrow({
         where: {
           uuid,
           deletedAt: null,
@@ -868,6 +871,9 @@ export class MoveOutRepository {
         include: {
           inspectionSlot: true,
           inspectionTargetInfo: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
         },
       })
       .catch((error) => {
