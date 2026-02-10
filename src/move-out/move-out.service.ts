@@ -942,6 +942,12 @@ export class MoveOutService {
     inspectorSignature: Express.Multer.File | undefined,
     targetSignature: Express.Multer.File | undefined,
   ): Promise<void> {
+    if (passed.length === 0 && failed.length === 0) {
+      throw new BadRequestException(
+        'At least one inspection item result (passed or failed) is required.',
+      );
+    }
+
     const overlap = passed.filter((slug) => failed.includes(slug));
 
     if (overlap.length > 0) {
@@ -996,7 +1002,9 @@ export class MoveOutService {
     role: 'inspector' | 'target',
   ): Promise<Uint8Array<ArrayBuffer>> {
     if (!file?.buffer || file.size === 0) {
-      throw new BadRequestException('Both signatures are required.');
+      const subject =
+        role === 'inspector' ? 'Inspector signature' : 'Target signature';
+      throw new BadRequestException(`${subject} is required.`);
     }
 
     if (file.size > this.MAX_SIGNATURE_SIZE) {
