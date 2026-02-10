@@ -431,6 +431,10 @@ export class MoveOutController {
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiConflictResponse({
+    description:
+      'Conflict - Inspection result has already been marked as passed.',
+  })
   @ApiForbiddenResponse({
     description:
       'Forbidden - User is not an inspector or not assigned to this application.',
