@@ -15,6 +15,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -424,7 +425,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Submit inspection result',
     description:
-      'Inspector submits or updates inspection result for the given application.',
+      'Inspector submits inspection result for the given application.',
   })
   @ApiNoContentResponse({
     description: 'The inspection result has been successfully submitted.',
@@ -454,6 +455,17 @@ export class MoveOutController {
       {
         limits: {
           fileSize: 3 * 1024 * 1024,
+        },
+        fileFilter: (req, file, cb) => {
+          const allowedMimeTypes = ['image/png', 'image/jpeg'];
+          if (!allowedMimeTypes.includes(file.mimetype)) {
+            cb(
+              new BadRequestException('Signature image must be PNG or JPEG.'),
+              false,
+            );
+            return;
+          }
+          cb(null, true);
         },
       },
     ),
