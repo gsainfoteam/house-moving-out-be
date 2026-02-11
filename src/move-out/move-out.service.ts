@@ -33,7 +33,7 @@ import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
-import { InspectorRepository } from 'src/inspector/inspector.repository';
+import { InspectorService } from 'src/inspector/inspector.service';
 
 @Loggable()
 @Injectable()
@@ -49,7 +49,7 @@ export class MoveOutService {
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
-    private readonly inspectorRepository: InspectorRepository,
+    private readonly inspectorService: InspectorService,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -956,7 +956,7 @@ export class MoveOutService {
       );
     }
 
-    const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+    const inspector = await this.inspectorService.findInspectorByUserInfo(
       email,
       name,
       studentNumber,
