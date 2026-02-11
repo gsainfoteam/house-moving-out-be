@@ -38,6 +38,10 @@ import {
   FindAllInspectionTargetsResDto,
   InspectionTargetsGroupedByRoom,
 } from './dto/res/find-all-inspection-target-infos-res.dto';
+import {
+  DetailedApplication,
+  findAllInspectionApplicationsResDto,
+} from './dto/res/find-all-inspection-applications-res.dto';
 
 @Loggable()
 @Injectable()
@@ -816,11 +820,11 @@ export class MoveOutService {
   }
 
   async findInspectionTargetInfoGroupedByRoomByScheduleUuid(
-    inspectionScheduleUuid: string,
+    ScheduleUuid: string,
   ): Promise<FindAllInspectionTargetsResDto> {
     const inspectionTargetInfosWithApplications =
       await this.moveOutRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
-        inspectionScheduleUuid,
+        ScheduleUuid,
       );
 
     const inspectionTargetsGroupedByRoom =
@@ -858,6 +862,39 @@ export class MoveOutService {
       ),
     };
     return result;
+  }
+
+  async findAllInspectionApplicationByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<findAllInspectionApplicationsResDto> {
+    const inspectionTargetInfosWithApplications =
+      await this.moveOutRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
+        scheduleUuid,
+      );
+
+    const detailedApplications: DetailedApplication[] = [];
+
+    for (const targetInfo of inspectionTargetInfosWithApplications) {
+      if (targetInfo.inspectionApplication.length > 0) {
+        const application = targetInfo.inspectionApplication[0];
+        const inspectionTime = application.inspectionSlot.startTime;
+        const inspector = await this.moveOutRepository.findInspectorByUuid(
+          targetInfo.inspectionApplication[0].inspectorUuid,
+        );
+        detailedApplications.push({
+          uuid: application.uuid,
+          roomNumber: targetInfo.roomNumber,
+          studentName: targetInfo.studentName,
+          applicationTime: application.createdAt,
+          inspectorName: inspector.name,
+          inspectionTime: inspectionTime,
+
+          isPassed: application.isPassed ?? undefined,
+        });
+      }
+    }
+
+    return { detailedApplications };
   }
 
   private findInspectionTargetRooms(

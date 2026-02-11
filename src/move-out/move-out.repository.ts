@@ -238,6 +238,29 @@ export class MoveOutRepository {
       });
   }
 
+  async findInspectorByUuid(inspectorUuid: string) {
+    return await this.prismaService.inspector
+      .findUniqueOrThrow({
+        where: {
+          uuid: inspectorUuid,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`Inspector not found: ${inspectorUuid}`);
+            throw new NotFoundException('Not FOund Error');
+          }
+          this.logger.error(
+            `findInspectorByUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findInspectorByUuid error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async updateMoveOutSchedule(
     uuid: string,
     moveOutSchedule: UpdateMoveOutScheduleDto,
@@ -969,6 +992,7 @@ export class MoveOutRepository {
         include: {
           inspectionApplication: {
             where: { deletedAt: null },
+            orderBy: { createdAt: 'desc' },
             include: {
               inspectionSlot: true,
             },
