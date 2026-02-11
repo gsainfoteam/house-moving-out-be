@@ -985,9 +985,9 @@ export class MoveOutService {
           );
         }
 
-        if (application.isPassed === true) {
+        if (application.isPassed !== null) {
           throw new ConflictException(
-            'Inspection result has already been marked as passed and cannot be modified.',
+            'Inspection result has already been submitted and cannot be modified.',
           );
         }
 
