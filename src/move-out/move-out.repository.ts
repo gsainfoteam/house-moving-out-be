@@ -28,6 +28,7 @@ import { InspectionApplicationWithDetails } from './types/inspection-application
 import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
+import { InspectionTargetInfoWithDetail } from './types/inspection-target-info-with-details.type';
 
 @Loggable()
 @Injectable()
@@ -234,29 +235,6 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findInspectorByScheduleUuid error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async findInspectorByUuid(inspectorUuid: string) {
-    return await this.prismaService.inspector
-      .findUniqueOrThrow({
-        where: {
-          uuid: inspectorUuid,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`Inspector not found: ${inspectorUuid}`);
-            throw new NotFoundException('Not FOund Error');
-          }
-          this.logger.error(
-            `findInspectorByUuid prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findInspectorByUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -1009,6 +987,45 @@ export class MoveOutRepository {
         }
         this.logger.error(
           `findAllInspectionTargetInfoWithSlotByScheduleUuid error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findAllInspectionTargetInfoWithDetailsByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<InspectionTargetInfoWithDetail[]> {
+    return await this.prismaService.inspectionTargetInfo
+      .findMany({
+        where: {
+          scheduleUuid,
+        },
+        include: {
+          inspectionApplication: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+            include: {
+              inspectionSlot: true,
+              inspector: true,
+              user: true,
+            },
+          },
+        },
+        orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('InspectionTargetInfo not found');
+            throw new NotFoundException('Not Found Error');
+          }
+          this.logger.error(
+            `findAllInspectionTargetInfoWithDetailsByScheduleUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findAllInspectionTargetInfoWithDetailsByScheduleUuid error: ${error}`,
         );
         throw new InternalServerErrorException('Unknown Error');
       });

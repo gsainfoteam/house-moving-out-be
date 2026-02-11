@@ -867,28 +867,25 @@ export class MoveOutService {
   async findAllInspectionApplicationByScheduleUuid(
     scheduleUuid: string,
   ): Promise<findAllInspectionApplicationsResDto> {
-    const inspectionTargetInfosWithApplications =
-      await this.moveOutRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
+    const inspectionTargetInfosWithDetails =
+      await this.moveOutRepository.findAllInspectionTargetInfoWithDetailsByScheduleUuid(
         scheduleUuid,
       );
 
     const detailedApplications: DetailedApplication[] = [];
 
-    for (const targetInfo of inspectionTargetInfosWithApplications) {
+    for (const targetInfo of inspectionTargetInfosWithDetails) {
       if (targetInfo.inspectionApplication.length > 0) {
         const application = targetInfo.inspectionApplication[0];
-        const inspectionTime = application.inspectionSlot.startTime;
-        const inspector = await this.moveOutRepository.findInspectorByUuid(
-          targetInfo.inspectionApplication[0].inspectorUuid,
-        );
+
         detailedApplications.push({
           uuid: application.uuid,
           roomNumber: targetInfo.roomNumber,
           studentName: targetInfo.studentName,
+          phoneNumber: application.user.phoneNumber,
           applicationTime: application.createdAt,
-          inspectorName: inspector.name,
-          inspectionTime: inspectionTime,
-
+          inspectionTime: application.inspectionSlot.startTime,
+          inspectorName: application.inspector.name,
           isPassed: application.isPassed ?? undefined,
         });
       }
