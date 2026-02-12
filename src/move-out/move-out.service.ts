@@ -802,6 +802,12 @@ export class MoveOutService {
           tx,
         );
 
+      if (application.isPassed !== null) {
+        throw new BadRequestException(
+          'Cannot update an application that has already executed.',
+        );
+      }
+
       if (application.userUuid !== user.uuid) {
         throw new ForbiddenException(
           'The application does not belong to this user.',
@@ -811,6 +817,11 @@ export class MoveOutService {
       if (application.inspectionSlotUuid === inspectionSlotUuid) {
         return { applicationUuid };
       }
+
+      await this.moveOutRepository.deleteInspectionApplicationInTx(
+        applicationUuid,
+        tx,
+      );
 
       const now = new Date();
       const timeDiff =
@@ -865,8 +876,9 @@ export class MoveOutService {
         );
 
       const updatedApplication =
-        await this.moveOutRepository.updateInspectionApplicationInTx(
-          application.uuid,
+        await this.moveOutRepository.createInspectionApplicationInTx(
+          user.uuid,
+          application.inspectionTargetInfoUuid,
           inspectionSlotUuid,
           inspector.uuid,
           tx,
@@ -884,6 +896,12 @@ export class MoveOutService {
             applicationUuid,
             tx,
           );
+
+        if (application.isPassed !== null) {
+          throw new BadRequestException(
+            'Cannot cancel an application that has already executed.',
+          );
+        }
 
         if (application.userUuid !== user.uuid) {
           throw new ForbiddenException(
