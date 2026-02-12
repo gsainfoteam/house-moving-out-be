@@ -802,6 +802,10 @@ export class MoveOutService {
           tx,
         );
 
+      if (application.isPassed) {
+        throw new ConflictException('Application is already exist.');
+      }
+
       if (application.userUuid !== user.uuid) {
         throw new ForbiddenException(
           'The application does not belong to this user.',
@@ -890,6 +894,10 @@ export class MoveOutService {
             applicationUuid,
             tx,
           );
+
+        if (application.isPassed) {
+          throw new ConflictException('Application is already exist.');
+        }
 
         if (application.userUuid !== user.uuid) {
           throw new ForbiddenException(

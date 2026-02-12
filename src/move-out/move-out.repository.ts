@@ -833,7 +833,6 @@ export class MoveOutRepository {
             scheduleUuid,
           },
           deletedAt: null,
-          isPassed: null,
         },
         include: {
           inspectionSlot: true,
@@ -868,7 +867,6 @@ export class MoveOutRepository {
         where: {
           uuid,
           deletedAt: null,
-          isPassed: null,
         },
         include: {
           inspectionSlot: true,
