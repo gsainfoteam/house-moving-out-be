@@ -802,9 +802,9 @@ export class MoveOutService {
           tx,
         );
 
-      if (application.isPassed) {
+      if (application.isPassed !== null) {
         throw new BadRequestException(
-          'Cannot update an application that has already passed.',
+          'Cannot update an application that has already executed.',
         );
       }
 
@@ -897,9 +897,9 @@ export class MoveOutService {
             tx,
           );
 
-        if (application.isPassed) {
+        if (application.isPassed !== null) {
           throw new BadRequestException(
-            'Cannot cancel an application that has already passed.',
+            'Cannot cancel an application that has already excuted.',
           );
         }
 
