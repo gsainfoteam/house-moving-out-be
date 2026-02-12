@@ -1,12 +1,13 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@lib/prisma';
-import { Prisma } from 'generated/prisma/client';
+import { Inspector, Prisma } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { InspectorWithSlots } from './types/inspector-with-slots.type';
 import { PrismaTransaction } from 'src/common/types';
@@ -144,6 +145,35 @@ export class InspectorRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`deleteInspectorAvailableSlotsInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findInspectorByUserInfo(
+    email: string,
+    name: string,
+    studentNumber: string,
+  ): Promise<Inspector> {
+    return await this.prismaService.inspector
+      .findUniqueOrThrow({
+        where: {
+          email,
+          name,
+          studentNumber,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('Inspector not found');
+            throw new ForbiddenException('User is not an inspector.');
+          }
+          this.logger.error(
+            `findInspectorByUserInfo prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findInspectorByUserInfo error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

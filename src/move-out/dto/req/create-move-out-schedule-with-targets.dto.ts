@@ -114,32 +114,65 @@ export class CreateMoveOutScheduleWithTargetsDto {
       end: new Date(raw.end),
     });
 
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value) as
-          | RawInspectionTimeRange
-          | RawInspectionTimeRange[]
-          | null;
-        if (!parsed) {
+    const parseOne = (raw: unknown): RawInspectionTimeRange | null => {
+      if (!raw) {
+        return null;
+      }
+
+      if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw) as unknown;
+          return parseOne(parsed);
+        } catch {
+          return null;
+        }
+      }
+
+      if (typeof raw === 'object') {
+        const obj = raw as { start?: unknown; end?: unknown };
+        if (typeof obj.start === 'string' && typeof obj.end === 'string') {
+          return { start: obj.start, end: obj.end };
+        }
+      }
+
+      return null;
+    };
+
+    const toRanges = (input: unknown): InspectionTimeRange[] => {
+      if (typeof input === 'string') {
+        try {
+          const parsed = JSON.parse(input) as
+            | RawInspectionTimeRange
+            | RawInspectionTimeRange[]
+            | null;
+          if (!parsed) {
+            return [];
+          }
+          const arr = Array.isArray(parsed) ? parsed : [parsed];
+          return arr
+            .map((raw) => parseOne(raw))
+            .filter((raw): raw is RawInspectionTimeRange => raw !== null)
+            .map((raw) => toDateRange(raw));
+        } catch {
           return [];
         }
-        const arr = Array.isArray(parsed) ? parsed : [parsed];
-        return arr.map((raw) => toDateRange(raw));
-      } catch {
+      }
+
+      if (Array.isArray(input)) {
+        return input
+          .map((raw) => parseOne(raw))
+          .filter((raw): raw is RawInspectionTimeRange => raw !== null)
+          .map((raw) => toDateRange(raw));
+      }
+
+      const single = parseOne(input);
+      if (!single) {
         return [];
       }
-    }
+      return [toDateRange(single)];
+    };
 
-    if (Array.isArray(value)) {
-      return (value as RawInspectionTimeRange[]).map((raw) => toDateRange(raw));
-    }
-
-    if (value && typeof value === 'object') {
-      const raw = value as RawInspectionTimeRange;
-      return [toDateRange(raw)];
-    }
-
-    return [];
+    return toRanges(value);
   })
   @Type(() => InspectionTimeRange)
   @IsArray()

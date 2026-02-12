@@ -6,6 +6,7 @@ import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 import { Loggable } from '@lib/logger';
+import { Inspector } from 'generated/prisma/client';
 
 @Loggable()
 @Injectable()
@@ -39,6 +40,18 @@ export class InspectorService {
   async getInspector(uuid: string): Promise<InspectorResDto> {
     const inspector = await this.inspectorRepository.findInspector(uuid);
     return new InspectorResDto(inspector);
+  }
+
+  async findInspectorByUserInfo(
+    email: string,
+    name: string,
+    studentNumber: string,
+  ): Promise<Inspector> {
+    return await this.inspectorRepository.findInspectorByUserInfo(
+      email,
+      name,
+      studentNumber,
+    );
   }
 
   async updateInspector(
