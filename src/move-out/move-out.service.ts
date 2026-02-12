@@ -803,7 +803,9 @@ export class MoveOutService {
         );
 
       if (application.isPassed) {
-        throw new ConflictException('Application is already exist.');
+        throw new BadRequestException(
+          'Cannot update an application that has already passed.',
+        );
       }
 
       if (application.userUuid !== user.uuid) {
@@ -896,7 +898,9 @@ export class MoveOutService {
           );
 
         if (application.isPassed) {
-          throw new ConflictException('Application is already exist.');
+          throw new BadRequestException(
+            'Cannot cancel an application that has already passed.',
+          );
         }
 
         if (application.userUuid !== user.uuid) {
