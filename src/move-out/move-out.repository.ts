@@ -979,10 +979,6 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug('Inspection Target Info not found');
-            throw new NotFoundException('Not Found Error');
-          }
           this.logger.error(
             `findAllInspectionTargetInfoWithSlotByScheduleUuid prisma error: ${error.message}`,
           );
@@ -1018,10 +1014,6 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug('Inspection Target Info not found');
-            throw new NotFoundException('Not Found Error');
-          }
           this.logger.error(
             `findAllInspectionTargetInfoWithDetailsByScheduleUuid prisma error: ${error.message}`,
           );
