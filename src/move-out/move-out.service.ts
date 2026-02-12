@@ -899,7 +899,7 @@ export class MoveOutService {
 
         if (application.isPassed !== null) {
           throw new BadRequestException(
-            'Cannot cancel an application that has already excuted.',
+            'Cannot cancel an application that has already executed.',
           );
         }
 
