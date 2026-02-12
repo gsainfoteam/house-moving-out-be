@@ -9,6 +9,6 @@ export class DetailedApplication {
   inspectorName: string;
   isPassed?: boolean;
 }
-export class findAllInspectionApplicationsResDto {
+export class FindAllInspectionApplicationsResDto {
   detailedApplications: DetailedApplication[];
 }

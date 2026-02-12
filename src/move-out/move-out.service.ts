@@ -40,7 +40,7 @@ import {
 } from './dto/res/find-all-inspection-target-infos-res.dto';
 import {
   DetailedApplication,
-  findAllInspectionApplicationsResDto,
+  FindAllInspectionApplicationsResDto,
 } from './dto/res/find-all-inspection-applications-res.dto';
 
 @Loggable()
@@ -866,7 +866,7 @@ export class MoveOutService {
 
   async findAllInspectionApplicationByScheduleUuid(
     scheduleUuid: string,
-  ): Promise<findAllInspectionApplicationsResDto> {
+  ): Promise<FindAllInspectionApplicationsResDto> {
     const inspectionTargetInfosWithDetails =
       await this.moveOutRepository.findAllInspectionTargetInfoWithDetailsByScheduleUuid(
         scheduleUuid,
