@@ -820,11 +820,11 @@ export class MoveOutService {
   }
 
   async findInspectionTargetInfoGroupedByRoomByScheduleUuid(
-    ScheduleUuid: string,
+    scheduleUuid: string,
   ): Promise<FindAllInspectionTargetsResDto> {
     const inspectionTargetInfosWithApplications =
       await this.moveOutRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
-        ScheduleUuid,
+        scheduleUuid,
       );
 
     const inspectionTargetsGroupedByRoom =
