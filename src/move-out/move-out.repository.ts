@@ -946,7 +946,6 @@ export class MoveOutRepository {
             this.logger.debug(
               `InspectionApplication not found for update result: ${applicationUuid}`,
             );
-            this.logger.debug('InspectionTargetInfo not found');
             throw new NotFoundException('Inspection application not found.');
           }
           this.logger.error(
@@ -955,7 +954,7 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`updateInspectionResultInTx error: ${error}`);
-        throw new NotFoundException('Not Found Error');
+        throw new InternalServerErrorException('Unknown Error');
       });
   }
 
@@ -980,6 +979,10 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug('Inspection Target Info not found');
+            throw new NotFoundException('Not Found Error');
+          }
           this.logger.error(
             `findAllInspectionTargetInfoWithSlotByScheduleUuid prisma error: ${error.message}`,
           );
@@ -1016,7 +1019,7 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            this.logger.debug('InspectionTargetInfo not found');
+            this.logger.debug('Inspection Target Info not found');
             throw new NotFoundException('Not Found Error');
           }
           this.logger.error(
