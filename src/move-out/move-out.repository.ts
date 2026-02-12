@@ -980,12 +980,12 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `findAllInspectionTargetInfoWithSlotByScheduleUuid prisma error: ${error.message}`,
+            `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(
-          `findAllInspectionTargetInfoWithSlotByScheduleUuid error: ${error}`,
+          `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid error: ${error}`,
         );
         throw new InternalServerErrorException('Unknown Error');
       });
