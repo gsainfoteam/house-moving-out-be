@@ -197,7 +197,7 @@ model InspectionApplication {
   targetSignatureImage     Bytes?   @map("target_signature_image")
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
-  deletedAt                DateTime @map("deleted_at")
+  deletedAt                DateTime? @map("deleted_at")
   inspectorUuid            String   @map("inspector_uuid")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
