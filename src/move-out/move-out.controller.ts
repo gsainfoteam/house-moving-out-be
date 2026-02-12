@@ -289,7 +289,7 @@ export class MoveOutController {
   })
   @ApiOkResponse({
     description: 'Inspection targets successfully retrieved',
-    type: [FindAllInspectionTargetsResDto],
+    type: FindAllInspectionTargetsResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
