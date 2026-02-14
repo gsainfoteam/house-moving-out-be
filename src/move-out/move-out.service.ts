@@ -34,6 +34,14 @@ import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targe
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { InspectorService } from 'src/inspector/inspector.service';
+import {
+  FindAllInspectionTargetsResDto,
+  InspectionTargetsGroupedByRoom,
+} from './dto/res/find-all-inspection-target-infos-res.dto';
+import {
+  DetailedApplication,
+  FindAllInspectionApplicationsResDto,
+} from './dto/res/find-all-inspection-applications-res.dto';
 
 @Loggable()
 @Injectable()
@@ -464,244 +472,6 @@ export class MoveOutService {
     }
   }
 
-  private findInspectionTargetRooms(
-    currentSemesterRooms: Map<string, RoomInfo>,
-    nextSemesterRooms: Map<string, RoomInfo>,
-  ): InspectionTargetStudent[] {
-    const inspectionTargets: InspectionTargetStudent[] = [];
-
-    for (const [
-      roomKey,
-      currentSemesterRoom,
-    ] of currentSemesterRooms.entries()) {
-      const nextSemesterRoom = nextSemesterRooms.get(roomKey);
-
-      for (const currentSemesterStudent of currentSemesterRoom.students) {
-        if (
-          !currentSemesterStudent.name ||
-          !currentSemesterStudent.admissionYear
-        ) {
-          continue;
-        }
-
-        if (!nextSemesterRoom || nextSemesterRoom.students.length === 0) {
-          inspectionTargets.push({
-            houseName: currentSemesterRoom.houseName,
-            roomNumber: currentSemesterRoom.roomNumber,
-            studentName: currentSemesterStudent.name,
-            admissionYear: currentSemesterStudent.admissionYear,
-          });
-          continue;
-        }
-
-        const studentStillInRoom = nextSemesterRoom.students.some(
-          (nextSemesterStudent) =>
-            currentSemesterStudent.name === nextSemesterStudent.name &&
-            currentSemesterStudent.admissionYear ===
-              nextSemesterStudent.admissionYear,
-        );
-
-        if (!studentStillInRoom) {
-          inspectionTargets.push({
-            houseName: currentSemesterRoom.houseName,
-            roomNumber: currentSemesterRoom.roomNumber,
-            studentName: currentSemesterStudent.name,
-            admissionYear: currentSemesterStudent.admissionYear,
-          });
-        }
-      }
-    }
-
-    return inspectionTargets;
-  }
-
-  private generateSlots(
-    inspectionTimeRanges: InspectionTimeRange[],
-    slotDuration: number,
-  ): { startTime: Date; endTime: Date }[] {
-    const slots: { startTime: Date; endTime: Date }[] = [];
-
-    for (const range of inspectionTimeRanges) {
-      const rangeStart = new Date(range.start);
-      const rangeEndMs = new Date(range.end).getTime();
-
-      let slotStart = rangeStart;
-      for (
-        let slotEndMs = rangeStart.getTime() + slotDuration;
-        slotEndMs <= rangeEndMs;
-        slotEndMs += slotDuration
-      ) {
-        const slotEnd = new Date(slotEndMs);
-        slots.push({ startTime: slotStart, endTime: slotEnd });
-        slotStart = slotEnd;
-      }
-    }
-    return slots;
-  }
-
-  private calculateCapacity(
-    totalSlots: number,
-    targetCounts: InspectionTargetCount,
-    weightFactor: number,
-  ): {
-    maleCapacity: number;
-    femaleCapacity: number;
-  } {
-    const totalTargetCount = targetCounts.male + targetCounts.female;
-    const weightedTotalCount = totalTargetCount * weightFactor;
-    const totalCapacity = Math.ceil(weightedTotalCount / totalSlots);
-
-    if (totalTargetCount === 0) {
-      return {
-        maleCapacity: 0,
-        femaleCapacity: 0,
-      };
-    }
-
-    const maleRatio = targetCounts.male / totalTargetCount;
-    const femaleRatio = targetCounts.female / totalTargetCount;
-
-    const maleCapacity = Math.ceil(totalCapacity * maleRatio);
-    const femaleCapacity = Math.ceil(totalCapacity * femaleRatio);
-
-    return {
-      maleCapacity,
-      femaleCapacity,
-    };
-  }
-
-  private calculateTargetCountsFromInspectionTargets(
-    inspectionTargets: InspectionTargetStudent[],
-  ): InspectionTargetCount {
-    const counts: InspectionTargetCount = { male: 0, female: 0 };
-
-    for (const { houseName } of inspectionTargets) {
-      const isMale = this.extractGenderFromHouseName(houseName);
-      if (isMale) {
-        counts.male += 1;
-      } else {
-        counts.female += 1;
-      }
-    }
-
-    if (counts.male === 0 && counts.female === 0) {
-      throw new BadRequestException(
-        'Inspection target info not found for the given semesters.',
-      );
-    }
-
-    return counts;
-  }
-
-  private validateScheduleAndRanges(
-    applicationStartTime: Date,
-    applicationEndTime: Date,
-    inspectionTimeRange: InspectionTimeRange[],
-  ): void {
-    if (!inspectionTimeRange || inspectionTimeRange.length === 0) {
-      throw new BadRequestException('Inspection time range must be provided.');
-    }
-
-    inspectionTimeRange.sort((a, b) => a.start.getTime() - b.start.getTime());
-
-    for (let i = 0; i < inspectionTimeRange.length; i++) {
-      const currentStartTime = inspectionTimeRange[i].start.getTime();
-      const currentEndTime = inspectionTimeRange[i].end.getTime();
-
-      if (currentStartTime >= currentEndTime) {
-        throw new BadRequestException(
-          `Inspection range #${i + 1}: start time must be before end time.`,
-        );
-      }
-
-      if (i > 0) {
-        const prevEnd = inspectionTimeRange[i - 1].end.getTime();
-        if (currentStartTime < prevEnd) {
-          throw new BadRequestException(
-            'Inspection time ranges must not overlap.',
-          );
-        }
-      }
-    }
-
-    const inspectionStartTime = inspectionTimeRange[0].start;
-    const inspectionEndTime =
-      inspectionTimeRange[inspectionTimeRange.length - 1].end;
-
-    if (applicationStartTime > applicationEndTime) {
-      throw new BadRequestException(
-        'Application start date cannot be after application end date',
-      );
-    }
-    if (inspectionStartTime > inspectionEndTime) {
-      throw new BadRequestException(
-        'Inspection start date cannot be after inspection end date',
-      );
-    }
-    if (applicationStartTime > inspectionStartTime) {
-      throw new BadRequestException(
-        'Application start date cannot be after inspection start date',
-      );
-    }
-    if (applicationEndTime > inspectionEndTime) {
-      throw new BadRequestException(
-        'Application end date cannot be after inspection end date',
-      );
-    }
-  }
-
-  private validateSemesterOrder(
-    currentSemester: Semester,
-    nextSemester: Semester,
-  ): void {
-    const { year: currentYear, season: currentSeason } = currentSemester;
-    const { year: nextYear, season: nextSeason } = nextSemester;
-
-    if (currentYear > nextYear) {
-      throw new BadRequestException(
-        `Current semester (${currentYear} ${currentSeason}) must be before next semester (${nextYear} ${nextSeason})`,
-      );
-    }
-
-    if (currentYear === nextYear) {
-      const seasonOrder: Record<Season, number> = {
-        [Season.SPRING]: 0,
-        [Season.SUMMER]: 1,
-        [Season.FALL]: 2,
-        [Season.WINTER]: 3,
-      };
-
-      if (seasonOrder[currentSeason] >= seasonOrder[nextSeason]) {
-        throw new BadRequestException(
-          `Current semester (${currentYear} ${currentSeason}) must be before next semester (${nextYear} ${nextSeason})`,
-        );
-      }
-    }
-  }
-
-  private extractAdmissionYear(studentNumber: string): string {
-    if (!studentNumber || studentNumber.length < 4) {
-      throw new BadRequestException('Invalid student number format');
-    }
-    return studentNumber.substring(2, 4);
-  }
-
-  private extractGenderFromHouseName(houseName: string): boolean {
-    const lastParenMatch = houseName.match(/\(([^()]*)\)\s*$/);
-    const genderToken = lastParenMatch?.[1]?.trim();
-
-    if (genderToken === '남') {
-      return true;
-    }
-    if (genderToken === '여') {
-      return false;
-    }
-
-    throw new BadRequestException(
-      `Invalid InspectionTargetInfo.houseName format. Expected last token "(남)" or "(여)". Regenerate inspection targets and retry. Invalid houseName: ${houseName}`,
-    );
-  }
-
   async applyInspection(
     user: User,
     { inspectionSlotUuid }: ApplyInspectionDto,
@@ -1047,5 +817,318 @@ export class MoveOutService {
     }
 
     return new Uint8Array(file.buffer);
+  }
+
+  async findInspectionTargetInfoGroupedByRoomByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<FindAllInspectionTargetsResDto> {
+    const inspectionTargetInfosWithApplications =
+      await this.moveOutRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
+        scheduleUuid,
+      );
+
+    const inspectionTargetsGroupedByRoom =
+      inspectionTargetInfosWithApplications.reduce<
+        Record<string, InspectionTargetsGroupedByRoom>
+      >((acc, target) => {
+        if (!acc[target.roomNumber]) {
+          acc[target.roomNumber] = {
+            roomNumber: target.roomNumber,
+            residents: [],
+            inspectionCount: 0,
+            lastInspectionTime: new Date(0),
+          };
+        }
+
+        acc[target.roomNumber].residents.push({
+          admissionYear: target.admissionYear,
+          name: target.studentName,
+        });
+
+        if (target.inspectionApplication.length > 0) {
+          acc[target.roomNumber].inspectionCount = target.inspectionCount;
+          acc[target.roomNumber].lastInspectionTime =
+            target.inspectionApplication[0].inspectionSlot.startTime;
+          acc[target.roomNumber].isPassed =
+            target.inspectionApplication[0].isPassed ?? undefined;
+        }
+
+        return acc;
+      }, {});
+
+    const result: FindAllInspectionTargetsResDto = {
+      inspectionTargetsGroupedByRooms: Object.values(
+        inspectionTargetsGroupedByRoom,
+      ),
+    };
+    return result;
+  }
+
+  async findAllInspectionApplicationByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<FindAllInspectionApplicationsResDto> {
+    const inspectionTargetInfosWithDetails =
+      await this.moveOutRepository.findAllInspectionTargetInfoWithDetailsByScheduleUuid(
+        scheduleUuid,
+      );
+
+    const detailedApplications: DetailedApplication[] = [];
+
+    for (const targetInfo of inspectionTargetInfosWithDetails) {
+      if (targetInfo.inspectionApplication.length > 0) {
+        const application = targetInfo.inspectionApplication[0];
+
+        detailedApplications.push({
+          uuid: application.uuid,
+          roomNumber: targetInfo.roomNumber,
+          studentName: targetInfo.studentName,
+          phoneNumber: application.user.phoneNumber,
+          applicationTime: application.createdAt,
+          inspectionTime: application.inspectionSlot.startTime,
+          inspectorName: application.inspector.name,
+          isPassed: application.isPassed ?? undefined,
+        });
+      }
+    }
+
+    return { detailedApplications };
+  }
+
+  private findInspectionTargetRooms(
+    currentSemesterRooms: Map<string, RoomInfo>,
+    nextSemesterRooms: Map<string, RoomInfo>,
+  ): InspectionTargetStudent[] {
+    const inspectionTargets: InspectionTargetStudent[] = [];
+
+    for (const [
+      roomKey,
+      currentSemesterRoom,
+    ] of currentSemesterRooms.entries()) {
+      const nextSemesterRoom = nextSemesterRooms.get(roomKey);
+
+      for (const currentSemesterStudent of currentSemesterRoom.students) {
+        if (
+          !currentSemesterStudent.name ||
+          !currentSemesterStudent.admissionYear
+        ) {
+          continue;
+        }
+
+        if (!nextSemesterRoom || nextSemesterRoom.students.length === 0) {
+          inspectionTargets.push({
+            houseName: currentSemesterRoom.houseName,
+            roomNumber: currentSemesterRoom.roomNumber,
+            studentName: currentSemesterStudent.name,
+            admissionYear: currentSemesterStudent.admissionYear,
+          });
+          continue;
+        }
+
+        const studentStillInRoom = nextSemesterRoom.students.some(
+          (nextSemesterStudent) =>
+            currentSemesterStudent.name === nextSemesterStudent.name &&
+            currentSemesterStudent.admissionYear ===
+              nextSemesterStudent.admissionYear,
+        );
+
+        if (!studentStillInRoom) {
+          inspectionTargets.push({
+            houseName: currentSemesterRoom.houseName,
+            roomNumber: currentSemesterRoom.roomNumber,
+            studentName: currentSemesterStudent.name,
+            admissionYear: currentSemesterStudent.admissionYear,
+          });
+        }
+      }
+    }
+
+    return inspectionTargets;
+  }
+
+  private generateSlots(
+    inspectionTimeRanges: InspectionTimeRange[],
+    slotDuration: number,
+  ): { startTime: Date; endTime: Date }[] {
+    const slots: { startTime: Date; endTime: Date }[] = [];
+
+    for (const range of inspectionTimeRanges) {
+      const rangeStart = new Date(range.start);
+      const rangeEndMs = new Date(range.end).getTime();
+
+      let slotStart = rangeStart;
+      for (
+        let slotEndMs = rangeStart.getTime() + slotDuration;
+        slotEndMs <= rangeEndMs;
+        slotEndMs += slotDuration
+      ) {
+        const slotEnd = new Date(slotEndMs);
+        slots.push({ startTime: slotStart, endTime: slotEnd });
+        slotStart = slotEnd;
+      }
+    }
+    return slots;
+  }
+
+  private calculateCapacity(
+    totalSlots: number,
+    targetCounts: InspectionTargetCount,
+    weightFactor: number,
+  ): {
+    maleCapacity: number;
+    femaleCapacity: number;
+  } {
+    const totalTargetCount = targetCounts.male + targetCounts.female;
+    const weightedTotalCount = totalTargetCount * weightFactor;
+    const totalCapacity = Math.ceil(weightedTotalCount / totalSlots);
+
+    if (totalTargetCount === 0) {
+      return {
+        maleCapacity: 0,
+        femaleCapacity: 0,
+      };
+    }
+
+    const maleRatio = targetCounts.male / totalTargetCount;
+    const femaleRatio = targetCounts.female / totalTargetCount;
+
+    const maleCapacity = Math.ceil(totalCapacity * maleRatio);
+    const femaleCapacity = Math.ceil(totalCapacity * femaleRatio);
+
+    return {
+      maleCapacity,
+      femaleCapacity,
+    };
+  }
+
+  private calculateTargetCountsFromInspectionTargets(
+    inspectionTargets: InspectionTargetStudent[],
+  ): InspectionTargetCount {
+    const counts: InspectionTargetCount = { male: 0, female: 0 };
+
+    for (const { houseName } of inspectionTargets) {
+      const isMale = this.extractGenderFromHouseName(houseName);
+      if (isMale) {
+        counts.male += 1;
+      } else {
+        counts.female += 1;
+      }
+    }
+
+    if (counts.male === 0 && counts.female === 0) {
+      throw new BadRequestException(
+        'Inspection target info not found for the given semesters.',
+      );
+    }
+
+    return counts;
+  }
+
+  private validateScheduleAndRanges(
+    applicationStartTime: Date,
+    applicationEndTime: Date,
+    inspectionTimeRange: InspectionTimeRange[],
+  ): void {
+    if (!inspectionTimeRange || inspectionTimeRange.length === 0) {
+      throw new BadRequestException('Inspection time range must be provided.');
+    }
+
+    inspectionTimeRange.sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    for (let i = 0; i < inspectionTimeRange.length; i++) {
+      const currentStartTime = inspectionTimeRange[i].start.getTime();
+      const currentEndTime = inspectionTimeRange[i].end.getTime();
+
+      if (currentStartTime >= currentEndTime) {
+        throw new BadRequestException(
+          `Inspection range #${i + 1}: start time must be before end time.`,
+        );
+      }
+
+      if (i > 0) {
+        const prevEnd = inspectionTimeRange[i - 1].end.getTime();
+        if (currentStartTime < prevEnd) {
+          throw new BadRequestException(
+            'Inspection time ranges must not overlap.',
+          );
+        }
+      }
+    }
+
+    const inspectionStartTime = inspectionTimeRange[0].start;
+    const inspectionEndTime =
+      inspectionTimeRange[inspectionTimeRange.length - 1].end;
+
+    if (applicationStartTime > applicationEndTime) {
+      throw new BadRequestException(
+        'Application start date cannot be after application end date',
+      );
+    }
+    if (inspectionStartTime > inspectionEndTime) {
+      throw new BadRequestException(
+        'Inspection start date cannot be after inspection end date',
+      );
+    }
+    if (applicationStartTime > inspectionStartTime) {
+      throw new BadRequestException(
+        'Application start date cannot be after inspection start date',
+      );
+    }
+    if (applicationEndTime > inspectionEndTime) {
+      throw new BadRequestException(
+        'Application end date cannot be after inspection end date',
+      );
+    }
+  }
+
+  private validateSemesterOrder(
+    currentSemester: Semester,
+    nextSemester: Semester,
+  ): void {
+    const { year: currentYear, season: currentSeason } = currentSemester;
+    const { year: nextYear, season: nextSeason } = nextSemester;
+
+    if (currentYear > nextYear) {
+      throw new BadRequestException(
+        `Current semester (${currentYear} ${currentSeason}) must be before next semester (${nextYear} ${nextSeason})`,
+      );
+    }
+
+    if (currentYear === nextYear) {
+      const seasonOrder: Record<Season, number> = {
+        [Season.SPRING]: 0,
+        [Season.SUMMER]: 1,
+        [Season.FALL]: 2,
+        [Season.WINTER]: 3,
+      };
+
+      if (seasonOrder[currentSeason] >= seasonOrder[nextSeason]) {
+        throw new BadRequestException(
+          `Current semester (${currentYear} ${currentSeason}) must be before next semester (${nextYear} ${nextSeason})`,
+        );
+      }
+    }
+  }
+
+  private extractAdmissionYear(studentNumber: string): string {
+    if (!studentNumber || studentNumber.length < 4) {
+      throw new BadRequestException('Invalid student number format');
+    }
+    return studentNumber.substring(2, 4);
+  }
+
+  private extractGenderFromHouseName(houseName: string): boolean {
+    const lastParenMatch = houseName.match(/\(([^()]*)\)\s*$/);
+    const genderToken = lastParenMatch?.[1]?.trim();
+
+    if (genderToken === '남') {
+      return true;
+    }
+    if (genderToken === '여') {
+      return false;
+    }
+
+    throw new BadRequestException(
+      `Invalid InspectionTargetInfo.houseName format. Expected last token "(남)" or "(여)". Regenerate inspection targets and retry. Invalid houseName: ${houseName}`,
+    );
   }
 }
