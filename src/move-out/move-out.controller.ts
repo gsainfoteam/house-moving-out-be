@@ -297,9 +297,9 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('inspection-targets/:schedule-uuid')
+  @Get('schedule/:uuid/inspection-targets')
   async findAllInspectionTargetInfos(
-    @Param('schedule-uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
   ): Promise<FindAllInspectionTargetsResDto> {
     return await this.moveOutService.findInspectionTargetInfoGroupedByRoomByScheduleUuid(
       scheduleUuid,
@@ -321,9 +321,9 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get('applications/:schedule-uuid')
+  @Get('schedule/:uuid/applications')
   async findAllInspectionApplications(
-    @Param('schedule-uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
   ): Promise<FindAllInspectionApplicationsResDto> {
     return await this.moveOutService.findAllInspectionApplicationByScheduleUuid(
       scheduleUuid,
