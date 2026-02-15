@@ -30,7 +30,9 @@
       "@lib/logger": ["libs/logger/src"],
       "@lib/logger/*": ["libs/logger/src/*"],
       "@lib/excel-parser": ["libs/excel-parser/src"],
-      "@lib/excel-parser/*": ["libs/excel-parser/src/*"]
+      "@lib/excel-parser/*": ["libs/excel-parser/src/*"],
+      "@lib/file": ["libs/file/src"],
+      "@lib/file/*": ["libs/file/src/*"]
     }
   }
 }
