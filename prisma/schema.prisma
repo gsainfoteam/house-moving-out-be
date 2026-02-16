@@ -187,24 +187,25 @@ model InspectionSlot {
 }
 
 model InspectionApplication {
-  uuid                     String   @id @default(uuid())
-  userUuid                 String   @map("user_uuid")
-  inspectionTargetInfoUuid String   @map("inspection_target_info_uuid")
-  inspectionSlotUuid       String   @map("inspection_slot_uuid")
-  isPassed                 Boolean? @map("is_passed")
-  itemResults              Json?    @map("item_results")
-  inspectorSignatureImage  Bytes?   @map("inspector_signature_image")
-  targetSignatureImage     Bytes?   @map("target_signature_image")
-  createdAt                DateTime @default(now()) @map("created_at")
-  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+  uuid                     String    @id @default(uuid())
+  userUuid                 String    @map("user_uuid")
+  inspectionTargetInfoUuid String    @map("inspection_target_info_uuid")
+  inspectionSlotUuid       String    @map("inspection_slot_uuid")
+  isPassed                 Boolean?  @map("is_passed")
+  itemResults              Json?     @map("item_results")
+  inspectorSignatureImage  Bytes?    @map("inspector_signature_image")
+  targetSignatureImage     Bytes?    @map("target_signature_image")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt                DateTime? @map("deleted_at")
-  inspectorUuid            String   @map("inspector_uuid")
+  inspectorUuid            String    @map("inspector_uuid")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   inspectionTargetInfo InspectionTargetInfo @relation(fields: [inspectionTargetInfoUuid], references: [uuid], onDelete: Cascade)
   inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
   inspector            Inspector            @relation(fields: [inspectorUuid], references: [uuid])
 
+  // isPass === null, deleteAt === null인 row에 대해 InspectionTargetInfoUuid에 Unique 조건을 걸어두어, 한 target에 대해 활성화된 Application이 하나가 되도록 함
   @@index([inspectionSlotUuid])
   @@map("inspection_application")
 }

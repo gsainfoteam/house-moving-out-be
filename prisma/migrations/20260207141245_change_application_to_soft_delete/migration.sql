@@ -10,4 +10,5 @@ DROP INDEX "inspection_application_inspection_target_info_uuid_key";
 -- AlterTable
 ALTER TABLE "inspection_application" ADD COLUMN     "deleted_at" TIMESTAMP(3);
 
+-- 활성화된 Application에 대한 Unique 제약
 CREATE UNIQUE INDEX "unique_active_application" ON "inspection_application"("inspection_target_info_uuid") WHERE "is_passed" IS NULL AND "deleted_at" IS NULL;

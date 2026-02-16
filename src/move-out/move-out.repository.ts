@@ -27,6 +27,8 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
+import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
+import { InspectionTargetInfoWithDetail } from './types/inspection-target-info-with-details.type';
 
 @Loggable()
 @Injectable()
@@ -952,6 +954,74 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`updateInspectionResultInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<InspectionTargetInfoWithApplication[]> {
+    return await this.prismaService.inspectionTargetInfo
+      .findMany({
+        where: {
+          scheduleUuid,
+        },
+        include: {
+          inspectionApplication: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+            include: {
+              inspectionSlot: true,
+            },
+          },
+        },
+        orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findAllInspectionTargetInfoWithDetailsByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<InspectionTargetInfoWithDetail[]> {
+    return await this.prismaService.inspectionTargetInfo
+      .findMany({
+        where: {
+          scheduleUuid,
+        },
+        include: {
+          inspectionApplication: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+            include: {
+              inspectionSlot: true,
+              inspector: true,
+              user: true,
+            },
+          },
+        },
+        orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findAllInspectionTargetInfoWithDetailsByScheduleUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findAllInspectionTargetInfoWithDetailsByScheduleUuid error: ${error}`,
+        );
         throw new InternalServerErrorException('Unknown Error');
       });
   }

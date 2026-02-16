@@ -59,6 +59,8 @@ import {
   SubmitInspectionResultDto,
   SubmitInspectionResultFormDto,
 } from './dto/req/submit-inspection-result.dto';
+import { FindAllInspectionTargetsResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
+import { FindAllInspectionApplicationsResDto } from './dto/res/find-all-inspection-applications-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -278,6 +280,53 @@ export class MoveOutController {
   ): Promise<InspectionTargetInfoResDto[]> {
     return await this.moveOutService.findInspectionTargetsBySemesters(
       semestersQuery,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspection Targets by Schedule Uuid',
+    description: 'Retrieve inspection targets by Inspection Schedule Uuid',
+  })
+  @ApiOkResponse({
+    description: 'Inspection targets successfully retrieved',
+    type: FindAllInspectionTargetsResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('schedule/:uuid/inspection-targets')
+  async findAllInspectionTargetInfos(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+  ): Promise<FindAllInspectionTargetsResDto> {
+    return await this.moveOutService.findInspectionTargetInfoGroupedByRoomByScheduleUuid(
+      scheduleUuid,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Get All Inspection Applications by Schedule Uuid',
+    description:
+      'Retrieve all inspection applications by Inspection Schedule Uuid',
+  })
+  @ApiOkResponse({
+    description: 'Inspection applications successfully retrieved',
+    type: FindAllInspectionApplicationsResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('schedule/:uuid/applications')
+  async findAllInspectionApplications(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+  ): Promise<FindAllInspectionApplicationsResDto> {
+    return await this.moveOutService.findAllInspectionApplicationByScheduleUuid(
+      scheduleUuid,
     );
   }
 
