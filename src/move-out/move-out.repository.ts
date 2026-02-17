@@ -8,16 +8,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@lib/prisma';
 import {
-  InspectionTargetInfo,
   MoveOutSchedule,
   Semester,
   Season,
   Prisma,
-  InspectionSlot,
-  InspectionApplication,
   Gender,
-  Inspector,
   ScheduleStatus,
+  InspectionSlot,
+  InspectionTargetInfo,
+  InspectionApplication,
+  Inspector,
 } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
@@ -28,7 +28,7 @@ import { InspectionApplicationWithDetails } from './types/inspection-application
 import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
-import { InspectionTargetInfoWithDetail } from './types/inspection-target-info-with-details.type';
+import { LatestApplicationWithDetails } from './types/latest-application-with-details.type';
 
 @Loggable()
 @Injectable()
@@ -421,14 +421,23 @@ export class MoveOutRepository {
       .createMany({
         data: inspectionTargetInfos.map((target) => ({
           scheduleUuid,
-          ...target,
+          houseName: target.houseName,
+          roomNumber: target.roomNumber,
+          student1Name: target.students[0]?.studentName,
+          student1AdmissionYear: target.students[0]?.admissionYear,
+          student2Name: target.students[1]?.studentName,
+          student2AdmissionYear: target.students[1]?.admissionYear,
+          student3Name: target.students[2]?.studentName,
+          student3AdmissionYear: target.students[2]?.admissionYear,
+          applyCleaningService: target.applyCleaningService ?? false,
+          inspectionType: target.inspectionType,
         })),
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException(
-              'Duplicate inspection target exists in the given schedule.',
+              'Duplicate inspection target room exists in the given schedule.',
             );
           }
           this.logger.error(
@@ -447,13 +456,23 @@ export class MoveOutRepository {
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
     return await this.prismaService.inspectionTargetInfo
-      .findUniqueOrThrow({
+      .findFirstOrThrow({
         where: {
-          inspection_target_with_schedule: {
-            scheduleUuid,
-            admissionYear,
-            studentName,
-          },
+          scheduleUuid,
+          OR: [
+            {
+              student1AdmissionYear: admissionYear,
+              student1Name: studentName,
+            },
+            {
+              student2AdmissionYear: admissionYear,
+              student2Name: studentName,
+            },
+            {
+              student3AdmissionYear: admissionYear,
+              student3Name: studentName,
+            },
+          ],
         },
       })
       .catch((error) => {
@@ -478,13 +497,23 @@ export class MoveOutRepository {
     tx: PrismaTransaction,
   ): Promise<InspectionTargetInfo> {
     return await tx.inspectionTargetInfo
-      .findUniqueOrThrow({
+      .findFirstOrThrow({
         where: {
-          inspection_target_with_schedule: {
-            scheduleUuid,
-            admissionYear,
-            studentName,
-          },
+          scheduleUuid,
+          OR: [
+            {
+              student1AdmissionYear: admissionYear,
+              student1Name: studentName,
+            },
+            {
+              student2AdmissionYear: admissionYear,
+              student2Name: studentName,
+            },
+            {
+              student3AdmissionYear: admissionYear,
+              student3Name: studentName,
+            },
+          ],
         },
       })
       .catch((error) => {
@@ -970,6 +999,7 @@ export class MoveOutRepository {
           inspectionApplication: {
             where: { deletedAt: null },
             orderBy: { createdAt: 'desc' },
+            take: 2,
             include: {
               inspectionSlot: true,
             },
@@ -991,36 +1021,33 @@ export class MoveOutRepository {
       });
   }
 
-  async findAllInspectionTargetInfoWithDetailsByScheduleUuid(
+  async findLatestApplicationsWithDetailsByScheduleUuid(
     scheduleUuid: string,
-  ): Promise<InspectionTargetInfoWithDetail[]> {
-    return await this.prismaService.inspectionTargetInfo
+  ): Promise<LatestApplicationWithDetails[]> {
+    return await this.prismaService.inspectionApplication
       .findMany({
         where: {
-          scheduleUuid,
+          deletedAt: null,
+          inspectionTargetInfo: { scheduleUuid },
         },
+        orderBy: [{ inspectionTargetInfoUuid: 'asc' }, { createdAt: 'desc' }],
+        distinct: ['inspectionTargetInfoUuid'],
         include: {
-          inspectionApplication: {
-            where: { deletedAt: null },
-            orderBy: { createdAt: 'desc' },
-            include: {
-              inspectionSlot: true,
-              inspector: true,
-              user: true,
-            },
-          },
+          inspectionSlot: true,
+          inspector: true,
+          user: true,
+          inspectionTargetInfo: true,
         },
-        orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           this.logger.error(
-            `findAllInspectionTargetInfoWithDetailsByScheduleUuid prisma error: ${error.message}`,
+            `findLatestApplicationsWithDetailsByScheduleUuid prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(
-          `findAllInspectionTargetInfoWithDetailsByScheduleUuid error: ${error}`,
+          `findLatestApplicationsWithDetailsByScheduleUuid error: ${error}`,
         );
         throw new InternalServerErrorException('Unknown Error');
       });

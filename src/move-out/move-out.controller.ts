@@ -301,7 +301,7 @@ export class MoveOutController {
   async findAllInspectionTargetInfos(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
   ): Promise<FindAllInspectionTargetsResDto> {
-    return await this.moveOutService.findInspectionTargetInfoGroupedByRoomByScheduleUuid(
+    return await this.moveOutService.findAllInspectionTargetInfoByScheduleUuid(
       scheduleUuid,
     );
   }

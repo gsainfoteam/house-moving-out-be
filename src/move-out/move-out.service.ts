@@ -34,14 +34,12 @@ import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targe
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { InspectorService } from 'src/inspector/inspector.service';
-import {
-  FindAllInspectionTargetsResDto,
-  InspectionTargetsGroupedByRoom,
-} from './dto/res/find-all-inspection-target-infos-res.dto';
+import { FindAllInspectionTargetsResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import {
   DetailedApplication,
   FindAllInspectionApplicationsResDto,
 } from './dto/res/find-all-inspection-applications-res.dto';
+import { InspectionType } from './types/inspection-type.enum';
 
 @Loggable()
 @Injectable()
@@ -819,7 +817,7 @@ export class MoveOutService {
     return new Uint8Array(file.buffer);
   }
 
-  async findInspectionTargetInfoGroupedByRoomByScheduleUuid(
+  async findAllInspectionTargetInfoByScheduleUuid(
     scheduleUuid: string,
   ): Promise<FindAllInspectionTargetsResDto> {
     const inspectionTargetInfosWithApplications =
@@ -827,39 +825,71 @@ export class MoveOutService {
         scheduleUuid,
       );
 
-    const inspectionTargetsGroupedByRoom =
-      inspectionTargetInfosWithApplications.reduce<
-        Record<string, InspectionTargetsGroupedByRoom>
-      >((acc, target) => {
-        if (!acc[target.roomNumber]) {
-          acc[target.roomNumber] = {
-            roomNumber: target.roomNumber,
-            residents: [],
-            inspectionCount: 0,
-            lastInspectionTime: new Date(0),
-          };
-        }
-
-        acc[target.roomNumber].residents.push({
-          admissionYear: target.admissionYear,
-          name: target.studentName,
-        });
-
-        if (target.inspectionApplication.length > 0) {
-          acc[target.roomNumber].inspectionCount = target.inspectionCount;
-          acc[target.roomNumber].lastInspectionTime =
-            target.inspectionApplication[0].inspectionSlot.startTime;
-          acc[target.roomNumber].isPassed =
-            target.inspectionApplication[0].isPassed ?? undefined;
-        }
-
-        return acc;
-      }, {});
-
     const result: FindAllInspectionTargetsResDto = {
-      inspectionTargetsGroupedByRooms: Object.values(
-        inspectionTargetsGroupedByRoom,
-      ),
+      inspectionTargetsGroupedByRooms:
+        inspectionTargetInfosWithApplications.map((target) => {
+          const residents = [
+            {
+              admissionYear: String(target.student1AdmissionYear),
+              name: String(target.student1Name),
+            },
+            target.student2Name && target.student2AdmissionYear
+              ? {
+                  admissionYear: String(target.student2AdmissionYear),
+                  name: String(target.student2Name),
+                }
+              : null,
+            target.student3Name && target.student3AdmissionYear
+              ? {
+                  admissionYear: String(target.student3AdmissionYear),
+                  name: String(target.student3Name),
+                }
+              : null,
+          ].filter(
+            (v): v is { admissionYear: string; name: string } => v !== null,
+          );
+
+          const [latestApplication, previousApplication] =
+            target.inspectionApplication;
+
+          let lastInspectionTime: Date | null = null;
+
+          if (latestApplication && latestApplication.isPassed !== null) {
+            lastInspectionTime = latestApplication.updatedAt;
+          } else if (
+            previousApplication &&
+            previousApplication.isPassed !== null
+          ) {
+            lastInspectionTime = previousApplication.updatedAt;
+          }
+
+          let inspectionType: InspectionType;
+          switch (target.inspectionType) {
+            case 'FULL':
+              inspectionType = InspectionType.FULL;
+              break;
+            case 'SOLO':
+              inspectionType = InspectionType.SOLO;
+              break;
+            case 'DUO':
+              inspectionType = InspectionType.DUO;
+              break;
+            case 'EMPTY':
+              inspectionType = InspectionType.EMPTY;
+              break;
+            default:
+              inspectionType = InspectionType.FULL;
+          }
+
+          return {
+            roomNumber: target.roomNumber,
+            residents,
+            inspectionType,
+            inspectionCount: target.inspectionCount,
+            lastInspectionTime,
+            isPassed: latestApplication?.isPassed ?? null,
+          };
+        }),
     };
     return result;
   }
@@ -867,28 +897,55 @@ export class MoveOutService {
   async findAllInspectionApplicationByScheduleUuid(
     scheduleUuid: string,
   ): Promise<FindAllInspectionApplicationsResDto> {
-    const inspectionTargetInfosWithDetails =
-      await this.moveOutRepository.findAllInspectionTargetInfoWithDetailsByScheduleUuid(
+    const latestApplications =
+      await this.moveOutRepository.findLatestApplicationsWithDetailsByScheduleUuid(
         scheduleUuid,
       );
 
     const detailedApplications: DetailedApplication[] = [];
 
-    for (const targetInfo of inspectionTargetInfosWithDetails) {
-      if (targetInfo.inspectionApplication.length > 0) {
-        const application = targetInfo.inspectionApplication[0];
+    for (const latestApplication of latestApplications) {
+      const targetInfo = latestApplication.inspectionTargetInfo;
+      const residents = [
+        {
+          admissionYear: String(targetInfo.student1AdmissionYear),
+          name: String(targetInfo.student1Name),
+        },
+        targetInfo.student2Name && targetInfo.student2AdmissionYear
+          ? {
+              admissionYear: String(targetInfo.student2AdmissionYear),
+              name: String(targetInfo.student2Name),
+            }
+          : null,
+        targetInfo.student3Name && targetInfo.student3AdmissionYear
+          ? {
+              admissionYear: String(targetInfo.student3AdmissionYear),
+              name: String(targetInfo.student3Name),
+            }
+          : null,
+      ].filter((v): v is { admissionYear: string; name: string } => v !== null);
 
-        detailedApplications.push({
-          uuid: application.uuid,
-          roomNumber: targetInfo.roomNumber,
-          studentName: targetInfo.studentName,
-          phoneNumber: application.user.phoneNumber,
-          applicationTime: application.createdAt,
-          inspectionTime: application.inspectionSlot.startTime,
-          inspectorName: application.inspector.name,
-          isPassed: application.isPassed ?? undefined,
-        });
+      let inspectionType: InspectionType;
+
+      if (residents.length >= 3) {
+        inspectionType = InspectionType.FULL;
+      } else if (residents.length === 2) {
+        inspectionType = InspectionType.DUO;
+      } else {
+        inspectionType = InspectionType.SOLO;
       }
+
+      detailedApplications.push({
+        uuid: latestApplication.uuid,
+        roomNumber: targetInfo.roomNumber,
+        residents,
+        inspectionType,
+        phoneNumber: latestApplication.user.phoneNumber,
+        applicationTime: latestApplication.createdAt,
+        inspectionTime: latestApplication.inspectionSlot.startTime,
+        inspectorName: latestApplication.inspector.name,
+        isPassed: latestApplication.isPassed ?? null,
+      });
     }
 
     return { detailedApplications };
@@ -906,40 +963,53 @@ export class MoveOutService {
     ] of currentSemesterRooms.entries()) {
       const nextSemesterRoom = nextSemesterRooms.get(roomKey);
 
-      for (const currentSemesterStudent of currentSemesterRoom.students) {
-        if (
-          !currentSemesterStudent.name ||
-          !currentSemesterStudent.admissionYear
-        ) {
-          continue;
-        }
+      const originalStudents = currentSemesterRoom.students.filter(
+        (s): s is { name: string; admissionYear: string } =>
+          !!s && !!s.name && !!s.admissionYear,
+      );
 
-        if (!nextSemesterRoom || nextSemesterRoom.students.length === 0) {
-          inspectionTargets.push({
-            houseName: currentSemesterRoom.houseName,
-            roomNumber: currentSemesterRoom.roomNumber,
-            studentName: currentSemesterStudent.name,
-            admissionYear: currentSemesterStudent.admissionYear,
-          });
-          continue;
-        }
+      const leavingStudents = originalStudents
+        .filter((current) => {
+          if (!nextSemesterRoom || nextSemesterRoom.students.length === 0) {
+            return true;
+          }
+          return !nextSemesterRoom.students.some(
+            (next) =>
+              current.name === next.name &&
+              current.admissionYear === next.admissionYear,
+          );
+        })
+        .map((s) => ({
+          studentName: s.name,
+          admissionYear: s.admissionYear,
+        }));
 
-        const studentStillInRoom = nextSemesterRoom.students.some(
-          (nextSemesterStudent) =>
-            currentSemesterStudent.name === nextSemesterStudent.name &&
-            currentSemesterStudent.admissionYear ===
-              nextSemesterStudent.admissionYear,
-        );
+      const originalCount = originalStudents.length;
+      const leavingCount = leavingStudents.length;
 
-        if (!studentStillInRoom) {
-          inspectionTargets.push({
-            houseName: currentSemesterRoom.houseName,
-            roomNumber: currentSemesterRoom.roomNumber,
-            studentName: currentSemesterStudent.name,
-            admissionYear: currentSemesterStudent.admissionYear,
-          });
-        }
+      let inspectionType: InspectionType;
+      if (originalCount === 0) {
+        inspectionType = InspectionType.EMPTY;
+      } else if (originalCount === leavingCount) {
+        inspectionType = InspectionType.FULL;
+      } else if (originalCount >= 1 && leavingCount === 1) {
+        inspectionType = InspectionType.SOLO;
+      } else if (originalCount === 3 && leavingCount === 2) {
+        inspectionType = InspectionType.DUO;
+      } else {
+        inspectionType = InspectionType.FULL;
       }
+
+      if (originalCount > 0 && leavingCount === 0) {
+        continue;
+      }
+
+      inspectionTargets.push({
+        houseName: currentSemesterRoom.houseName,
+        roomNumber: currentSemesterRoom.roomNumber,
+        students: leavingStudents.slice(0, 3),
+        inspectionType,
+      });
     }
 
     return inspectionTargets;

@@ -6,8 +6,25 @@ export class InspectionTargetInfoResDto {
     this.uuid = target.uuid;
     this.houseName = target.houseName;
     this.roomNumber = target.roomNumber;
-    this.studentName = target.studentName;
-    this.admissionYear = target.admissionYear;
+    this.students = [
+      {
+        name: target.student1Name,
+        admissionYear: target.student1AdmissionYear,
+      },
+      target.student2Name && target.student2AdmissionYear
+        ? {
+            name: target.student2Name,
+            admissionYear: target.student2AdmissionYear,
+          }
+        : null,
+      target.student3Name && target.student3AdmissionYear
+        ? {
+            name: target.student3Name,
+            admissionYear: target.student3AdmissionYear,
+          }
+        : null,
+    ].filter((v): v is { name: string; admissionYear: string } => v !== null);
+    this.applyCleaningService = target.applyCleaningService;
     this.createdAt = target.createdAt;
     this.updatedAt = target.updatedAt;
   }
@@ -31,16 +48,19 @@ export class InspectionTargetInfoResDto {
   roomNumber: string;
 
   @ApiProperty({
-    description: 'student name',
-    example: '홍길동',
+    description: 'students in the room',
+    example: [
+      { name: '홍길동', admissionYear: '25' },
+      { name: '김철수', admissionYear: '24' },
+    ],
   })
-  studentName: string;
+  students: { name: string; admissionYear: string }[];
 
   @ApiProperty({
-    description: 'admission year',
-    example: '25',
+    description: 'apply cleaning service',
+    example: false,
   })
-  admissionYear: string;
+  applyCleaningService: boolean;
 
   @ApiProperty({
     description: 'created time',
