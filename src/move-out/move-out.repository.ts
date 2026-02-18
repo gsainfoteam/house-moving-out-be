@@ -978,14 +978,10 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findInspectionApplicationsByScheduleUuid prisma error: ${error.message}`,
-          );
+          this.logger.error(`findApplications prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(
-          `findInspectionApplicationsByScheduleUuid error: ${error}`,
-        );
+        this.logger.error(`findApplications error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -995,6 +991,7 @@ export class MoveOutRepository {
       .findUniqueOrThrow({
         where: {
           uuid,
+          deletedAt: null,
         },
         include: {
           user: true,
@@ -1025,14 +1022,10 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findInspectionApplicationsByScheduleUuid prisma error: ${error.message}`,
-          );
+          this.logger.error(`countApplications prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(
-          `findInspectionApplicationsByScheduleUuid error: ${error}`,
-        );
+        this.logger.error(`countApplications error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

@@ -44,7 +44,10 @@ class InspectorInfoResDto {
   @ApiProperty({ description: 'Inspector Name', example: 'Jane Doe' })
   name: string;
 
-  @ApiProperty({ description: 'User Email', example: 'user@gm.gist.ac.kr' })
+  @ApiProperty({
+    description: 'Inspector Email',
+    example: 'user@gm.gist.ac.kr',
+  })
   email: string;
 
   @ApiProperty({ description: 'Student Number', example: '20250000' })
@@ -97,7 +100,7 @@ export class ApplicationResDto {
   @Type(() => ItemResultsResDto)
   itemResults?: ItemResultsResDto | JsonValue;
 
-  @ApiPropertyOptional({ description: 'Inspection document key', type: String })
+  @ApiPropertyOptional({ description: 'Inspection document URL', type: String })
   document?: string | null;
 
   @ApiProperty({ description: 'Application created at' })

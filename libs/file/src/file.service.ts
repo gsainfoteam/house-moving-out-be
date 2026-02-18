@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import ms from 'ms';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Loggable()
@@ -29,7 +28,7 @@ export class FileService {
       Key: key,
       ContentLength: length,
     });
-    const expiresIn = ms('1m');
+    const expiresIn = 5 * 60; // 5 minutes
     return getSignedUrl(this.s3Client, command, { expiresIn });
   }
 }

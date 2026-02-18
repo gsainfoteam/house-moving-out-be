@@ -442,6 +442,7 @@ export class MoveOutController {
     description: 'The inspection application has been successfully retrieved.',
     type: ApplicationResDto,
   })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({
     description: 'Not Found',
