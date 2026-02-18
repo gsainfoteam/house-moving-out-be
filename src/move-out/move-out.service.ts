@@ -980,38 +980,40 @@ export class MoveOutService {
       studentNumber,
     );
 
-    await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
-      const application =
-        await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
+    return await this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const application =
+          await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
+            applicationUuid,
+            tx,
+          );
+
+        if (application.inspectorUuid !== inspector.uuid) {
+          throw new ForbiddenException(
+            'The inspector is not assigned to this application.',
+          );
+        }
+
+        if (application.isPassed !== null) {
+          throw new ConflictException(
+            'Inspection result has already been submitted and cannot be modified.',
+          );
+        }
+
+        const key = `application/${applicationUuid}/profile_${crypto.randomBytes(16).toString('base64url')}.pdf`;
+        const presignedUrl = await this.fileService.createPresignedUrl(
+          key,
+          contentLength,
+        );
+        await this.moveOutRepository.updateInspectionResultInTx(
           applicationUuid,
+          { passed, failed },
+          failed.length === 0,
+          key,
           tx,
         );
-
-      if (application.inspectorUuid !== inspector.uuid) {
-        throw new ForbiddenException(
-          'The inspector is not assigned to this application.',
-        );
-      }
-
-      if (application.isPassed !== null) {
-        throw new ConflictException(
-          'Inspection result has already been submitted and cannot be modified.',
-        );
-      }
-
-      await this.moveOutRepository.updateInspectionResultInTx(
-        applicationUuid,
-        { passed, failed },
-        failed.length === 0,
-        tx,
-      );
-    });
-
-    const key = `application/${applicationUuid}/profile_${crypto.randomBytes(16).toString('base64url')}.webp`;
-    const presignedUrl = await this.fileService.createPresignedUrl(
-      key,
-      contentLength,
+        return { presignedUrl };
+      },
     );
-    return { presignedUrl };
   }
 }

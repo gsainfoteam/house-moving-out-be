@@ -7,4 +7,5 @@
 */
 -- AlterTable
 ALTER TABLE "inspection_application" DROP COLUMN "inspector_signature_image",
-DROP COLUMN "target_signature_image";
+DROP COLUMN "target_signature_image",
+ADD COLUMN     "document" TEXT;

@@ -29,7 +29,7 @@ export class SubmitInspectionResultDto {
   failed: string[] = [];
 
   @ApiProperty({
-    description: 'Content length of the inspection result',
+    description: 'Content length of the inspection result (pdf file)',
     example: 1024,
   })
   @IsNumber()

@@ -924,6 +924,7 @@ export class MoveOutRepository {
     applicationUuid: string,
     itemResults: Prisma.InputJsonValue,
     isPassed: boolean,
+    document: string,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
@@ -932,6 +933,7 @@ export class MoveOutRepository {
         data: {
           itemResults,
           isPassed,
+          document,
         },
       })
       .catch((error) => {
