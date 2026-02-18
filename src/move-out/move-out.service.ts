@@ -960,7 +960,8 @@ export class MoveOutService {
   }
 
   async findApplication(uuid: string): Promise<ApplicationResDto> {
-    const application = await this.moveOutRepository.findApplication(uuid);
+    const application =
+      await this.moveOutRepository.findApplicationByUuid(uuid);
 
     return new ApplicationResDto({
       ...application,

@@ -988,7 +988,7 @@ export class MoveOutRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
-  async findApplication(uuid: string): Promise<ApplicationInfo> {
+  async findApplicationByUuid(uuid: string): Promise<ApplicationInfo> {
     return await this.prismaService.inspectionApplication
       .findUniqueOrThrow({
         where: {
