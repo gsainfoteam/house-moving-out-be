@@ -28,7 +28,6 @@ import { InspectionApplicationWithDetails } from './types/inspection-application
 import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { ApplicationInfo } from './types/application-info.type';
-import { InspectionTargetInfoWithDetail } from './types/inspection-target-info-with-details.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
 @Loggable()
 @Injectable()
