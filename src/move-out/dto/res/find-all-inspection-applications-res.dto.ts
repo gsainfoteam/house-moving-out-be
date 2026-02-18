@@ -55,7 +55,7 @@ export class DetailedApplication {
 
   @ApiProperty({
     description: 'Inspection type',
-    example: 'SOLO',
+    example: InspectionType.SOLO,
     enum: InspectionType,
   })
   inspectionType: InspectionType;

@@ -10,7 +10,7 @@ export class MyInspectionTypeResDto {
   }
 
   @ApiProperty({
-    description: '퇴사검사 유형',
+    description: 'Inspection type',
     enum: RoomInspectionType,
     example: RoomInspectionType.FULL,
   })
