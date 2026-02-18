@@ -56,6 +56,7 @@ import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
+import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 import {
   SubmitInspectionResultDto,
   SubmitInspectionResultFormDto,
@@ -353,6 +354,34 @@ export class MoveOutController {
     return await this.moveOutService.deleteInspectionTargetsBySemesters(
       semestersQuery,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Bulk update cleaning service for inspection targets',
+    description:
+      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Not allowed when the schedule status is ACTIVE.',
+  })
+  @ApiOkResponse({
+    description: 'Cleaning service flags successfully updated',
+  })
+  @ApiBadRequestResponse({
+    description: 'One or more inspection target UUIDs are invalid',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Cleaning service flags cannot be modified for an ACTIVE schedule',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch('schedule/:uuid/inspection-targets/cleaning-service')
+  async bulkUpdateCleaningService(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Body() dto: BulkUpdateCleaningServiceDto,
+  ): Promise<void> {
+    await this.moveOutService.bulkUpdateCleaningService(scheduleUuid, dto);
   }
 
   @ApiOperation({

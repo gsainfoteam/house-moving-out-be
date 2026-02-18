@@ -6,7 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { MoveOutRepository } from './move-out.repository';
-import { Gender, MoveOutSchedule, Season } from 'generated/prisma/client';
+import {
+  Gender,
+  MoveOutSchedule,
+  ScheduleStatus,
+  Season,
+} from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
 import { InspectionTimeRange } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { Loggable } from '@lib/logger';
@@ -41,6 +46,7 @@ import {
 } from './dto/res/find-all-inspection-applications-res.dto';
 import { InspectionType } from './types/inspection-type.enum';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
+import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 
 @Loggable()
 @Injectable()
@@ -437,6 +443,40 @@ export class MoveOutService {
     return {
       count: result.count,
     };
+  }
+
+  async bulkUpdateCleaningService(
+    scheduleUuid: string,
+    { targetUuids, applyCleaningService }: BulkUpdateCleaningServiceDto,
+  ): Promise<void> {
+    const schedule =
+      await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuid(
+        scheduleUuid,
+      );
+
+    if (schedule.status === ScheduleStatus.ACTIVE) {
+      throw new ForbiddenException(
+        'Cannot modify cleaning service application for targets in an ACTIVE schedule.',
+      );
+    }
+
+    const count =
+      await this.moveOutRepository.countInspectionTargetsByScheduleAndUuids(
+        scheduleUuid,
+        targetUuids,
+      );
+
+    if (count !== targetUuids.length) {
+      throw new BadRequestException(
+        'Request contains invalid inspection target UUID(s).',
+      );
+    }
+
+    await this.moveOutRepository.updateApplyCleaningServiceByScheduleAndUuids(
+      scheduleUuid,
+      targetUuids,
+      applyCleaningService,
+    );
   }
 
   async findTargetInfoByUserInfo(

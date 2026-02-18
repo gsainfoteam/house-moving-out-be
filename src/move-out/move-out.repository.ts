@@ -365,6 +365,31 @@ export class MoveOutRepository {
       });
   }
 
+  async countInspectionTargetsByScheduleAndUuids(
+    scheduleUuid: string,
+    targetUuids: string[],
+  ): Promise<number> {
+    return await this.prismaService.inspectionTargetInfo
+      .count({
+        where: {
+          scheduleUuid,
+          uuid: { in: targetUuids },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `countInspectionTargetsByScheduleAndUuids prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `countInspectionTargetsByScheduleAndUuids error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async deleteInspectionTargetsByScheduleUuidInTx(
     scheduleUuid: string,
     tx: PrismaTransaction,
@@ -446,6 +471,33 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`createInspectionTargetsInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async updateApplyCleaningServiceByScheduleAndUuids(
+    scheduleUuid: string,
+    targetUuids: string[],
+    applyCleaningService: boolean,
+  ): Promise<{ count: number }> {
+    return await this.prismaService.inspectionTargetInfo
+      .updateMany({
+        where: {
+          scheduleUuid,
+          uuid: { in: targetUuids },
+        },
+        data: { applyCleaningService },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `updateApplyCleaningServiceByScheduleAndUuids prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `updateApplyCleaningServiceByScheduleAndUuids error: ${error}`,
+        );
         throw new InternalServerErrorException('Unknown Error');
       });
   }
