@@ -804,11 +804,12 @@ export class MoveOutService {
     { offset, limit }: ApplicationListQueryDto,
     scheduleUuid: string,
   ): Promise<ApplicationListResDto> {
-    const applications = await this.moveOutRepository.findApplications(
-      offset ?? 0,
-      limit ?? 20,
-      scheduleUuid,
-    );
+    const applications =
+      await this.moveOutRepository.findApplicationsByScheduleUuid(
+        offset ?? 0,
+        limit ?? 20,
+        scheduleUuid,
+      );
     return new ApplicationListResDto(
       applications.map((app) => ({
         ...app,

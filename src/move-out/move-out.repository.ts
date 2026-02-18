@@ -955,7 +955,7 @@ export class MoveOutRepository {
       });
   }
 
-  async findApplications(
+  async findApplicationsByScheduleUuid(
     offset: number,
     limit: number,
     scheduleUuid?: string,
@@ -981,10 +981,12 @@ export class MoveOutRepository {
       })
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(`findApplications prisma error: ${error.message}`);
+          this.logger.error(
+            `findApplicationsByScheduleUuid prisma error: ${error.message}`,
+          );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findApplications error: ${error}`);
+        this.logger.error(`findApplicationsByScheduleUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -1008,10 +1010,12 @@ export class MoveOutRepository {
             this.logger.debug(`InspectionApplication not found: ${uuid}`);
             throw new NotFoundException('Inspection application not found.');
           }
-          this.logger.error(`findApplication prisma error: ${error.message}`);
+          this.logger.error(
+            `findApplicationByUuid prisma error: ${error.message}`,
+          );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findApplication error: ${error}`);
+        this.logger.error(`findApplicationByUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
