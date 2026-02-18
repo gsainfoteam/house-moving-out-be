@@ -988,6 +988,31 @@ export class MoveOutRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+  async findApplication(uuid: string): Promise<ApplicationInfo> {
+    return await this.prismaService.inspectionApplication
+      .findUniqueOrThrow({
+        where: {
+          uuid,
+        },
+        include: {
+          user: true,
+          inspectionSlot: true,
+          inspector: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionApplication not found: ${uuid}`);
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(`findApplication prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findApplication error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 
   async countApplications(): Promise<number> {
     return await this.prismaService.inspectionApplication

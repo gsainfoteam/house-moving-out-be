@@ -37,7 +37,10 @@ import { FileService } from '@lib/file';
 import * as crypto from 'crypto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
-import { ApplicationListResDto } from './dto/res/application-list-res.dto';
+import {
+  ApplicationListResDto,
+  ApplicationResDto,
+} from './dto/res/application-list-res.dto';
 
 @Loggable()
 @Injectable()
@@ -954,6 +957,18 @@ export class MoveOutService {
       inspectionSlot: { ...application.inspectionSlot },
       isPassed: application.isPassed ?? undefined,
     };
+  }
+
+  async findApplication(uuid: string): Promise<ApplicationResDto> {
+    const application = await this.moveOutRepository.findApplication(uuid);
+
+    return new ApplicationResDto({
+      ...application,
+      document:
+        application.document === null
+          ? null
+          : this.fileService.getUrl(application.document),
+    });
   }
 
   async submitInspectionResult(

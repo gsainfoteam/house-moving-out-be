@@ -53,7 +53,10 @@ import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-s
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
-import { ApplicationListResDto } from './dto/res/application-list-res.dto';
+import {
+  ApplicationListResDto,
+  ApplicationResDto,
+} from './dto/res/application-list-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -379,6 +382,30 @@ export class MoveOutController {
   @Get('application/me')
   async findMyInspection(@GetUser() user: User): Promise<InspectionResDto> {
     return await this.moveOutService.findMyInspection(user);
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspection Application',
+    description:
+      'Retrieve inspection application for the active move-out schedule.',
+  })
+  @ApiOkResponse({
+    description: 'The inspection application has been successfully retrieved.',
+    type: ApplicationResDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({
+    description: 'Not Found',
+    type: ErrorDto,
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('application/:uuid')
+  async findApplication(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<ApplicationResDto> {
+    return await this.moveOutService.findApplication(uuid);
   }
 
   @ApiOperation({
