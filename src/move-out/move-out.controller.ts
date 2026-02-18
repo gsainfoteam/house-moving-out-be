@@ -55,6 +55,7 @@ import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
+import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import {
   SubmitInspectionResultDto,
   SubmitInspectionResultFormDto,
@@ -386,6 +387,36 @@ export class MoveOutController {
     @Body() applyInspectionDto: ApplyInspectionDto,
   ): Promise<ApplicationUuidResDto> {
     return await this.moveOutService.applyInspection(user, applyInspectionDto);
+  }
+
+  @ApiOperation({
+    summary: 'Get My Inspection Type by Slot',
+    description:
+      'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot.',
+  })
+  @ApiOkResponse({
+    description: 'The inspection type has been successfully retrieved.',
+    type: MyInspectionTypeResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - User is not an inspection target for this schedule',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('slot/:uuid/inspection-type')
+  async findMyInspectionTypeBySlot(
+    @GetUser() user: User,
+    @Param('uuid', ParseUUIDPipe) inspectionSlotUuid: string,
+  ): Promise<MyInspectionTypeResDto> {
+    return this.moveOutService.findMyInspectionTypeBySlot(
+      user,
+      inspectionSlotUuid,
+    );
   }
 
   @ApiOperation({

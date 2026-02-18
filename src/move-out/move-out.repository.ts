@@ -612,6 +612,32 @@ export class MoveOutRepository {
       });
   }
 
+  async findInspectionSlotWithScheduleByUuid(
+    slotUuid: string,
+  ): Promise<InspectionSlot & { schedule: MoveOutSchedule }> {
+    return await this.prismaService.inspectionSlot
+      .findUniqueOrThrow({
+        where: { uuid: slotUuid },
+        include: { schedule: true },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
+            throw new NotFoundException('Inspection slot not found.');
+          }
+          this.logger.error(
+            `findInspectionSlotWithScheduleByUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findInspectionSlotWithScheduleByUuid error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findSlotByUuidInTx(
     slotUuid: string,
     tx: PrismaTransaction,

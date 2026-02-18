@@ -40,6 +40,7 @@ import {
   FindAllInspectionApplicationsResDto,
 } from './dto/res/find-all-inspection-applications-res.dto';
 import { InspectionType } from './types/inspection-type.enum';
+import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 
 @Loggable()
 @Injectable()
@@ -468,6 +469,27 @@ export class MoveOutService {
         return null;
       throw error;
     }
+  }
+
+  async findMyInspectionTypeBySlot(
+    user: User,
+    inspectionSlotUuid: string,
+  ): Promise<MyInspectionTypeResDto> {
+    const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+    const { schedule } =
+      await this.moveOutRepository.findInspectionSlotWithScheduleByUuid(
+        inspectionSlotUuid,
+      );
+
+    const targetInfo =
+      await this.moveOutRepository.findInspectionTargetInfoByUserInfo(
+        admissionYear,
+        user.name,
+        schedule.uuid,
+      );
+
+    return new MyInspectionTypeResDto(targetInfo);
   }
 
   async applyInspection(
