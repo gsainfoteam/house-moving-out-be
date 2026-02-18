@@ -354,8 +354,7 @@ export class MoveOutController {
 
   @ApiOperation({
     summary: 'Get Inspection Application List',
-    description:
-      'Retrieve a paginated list of inspection applications for a specific move-out schedule.',
+    description: 'Retrieve a paginated list of inspection applications.',
   })
   @ApiOkResponse({
     description:
