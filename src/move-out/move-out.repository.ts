@@ -924,8 +924,6 @@ export class MoveOutRepository {
     applicationUuid: string,
     itemResults: Prisma.InputJsonValue,
     isPassed: boolean,
-    inspectorSignatureImage: Uint8Array<ArrayBuffer>,
-    targetSignatureImage: Uint8Array<ArrayBuffer>,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
@@ -934,8 +932,6 @@ export class MoveOutRepository {
         data: {
           itemResults,
           isPassed,
-          inspectorSignatureImage,
-          targetSignatureImage,
         },
       })
       .catch((error) => {

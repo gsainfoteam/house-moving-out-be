@@ -5,9 +5,10 @@ import { MoveOutRepository } from './move-out.repository';
 import { PrismaModule } from '@lib/prisma';
 import { ExcelParserModule } from '@lib/excel-parser';
 import { InspectorModule } from 'src/inspector/inspector.module';
+import { FileModule } from '@lib/file';
 
 @Module({
-  imports: [PrismaModule, ExcelParserModule, InspectorModule],
+  imports: [PrismaModule, ExcelParserModule, InspectorModule, FileModule],
   controllers: [MoveOutController],
   providers: [MoveOutService, MoveOutRepository],
   exports: [MoveOutService],

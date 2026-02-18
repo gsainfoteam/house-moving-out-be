@@ -12,15 +12,10 @@ import {
   Post,
   Query,
   UploadedFile,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -55,10 +50,8 @@ import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
-import {
-  SubmitInspectionResultDto,
-  SubmitInspectionResultFormDto,
-} from './dto/req/submit-inspection-result.dto';
+import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
+import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -427,8 +420,9 @@ export class MoveOutController {
     description:
       'Inspector submits inspection result for the given application.',
   })
-  @ApiNoContentResponse({
+  @ApiOkResponse({
     description: 'The inspection result has been successfully submitted.',
+    type: RegisterResultResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -444,53 +438,16 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: SubmitInspectionResultFormDto })
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'inspectorSignature', maxCount: 1 },
-        { name: 'targetSignature', maxCount: 1 },
-      ],
-      {
-        limits: {
-          fileSize: 3 * 1024 * 1024,
-        },
-        fileFilter: (req, file, cb) => {
-          const allowedMimeTypes = ['image/png', 'image/jpeg'];
-          if (!allowedMimeTypes.includes(file.mimetype)) {
-            cb(
-              new BadRequestException('Signature image must be PNG or JPEG.'),
-              false,
-            );
-            return;
-          }
-          cb(null, true);
-        },
-      },
-    ),
-  )
   @Patch('application/:uuid/result')
-  @HttpCode(204)
   async submitInspectionResult(
     @GetUser() user: User,
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() submitInspectionResultDto: SubmitInspectionResultDto,
-    @UploadedFiles()
-    {
-      inspectorSignature,
-      targetSignature,
-    }: {
-      inspectorSignature: Express.Multer.File[];
-      targetSignature: Express.Multer.File[];
-    },
-  ): Promise<void> {
+  ): Promise<RegisterResultResDto> {
     return this.moveOutService.submitInspectionResult(
       user,
       uuid,
       submitInspectionResultDto,
-      inspectorSignature?.[0],
-      targetSignature?.[0],
     );
   }
 }

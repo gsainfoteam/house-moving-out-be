@@ -26,7 +26,6 @@ import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
-import { fileTypeFromBuffer } from 'file-type';
 import ms from 'ms';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
@@ -34,6 +33,9 @@ import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targe
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { InspectorService } from 'src/inspector/inspector.service';
+import { FileService } from '@lib/file';
+import * as crypto from 'crypto';
+import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 
 @Loggable()
 @Injectable()
@@ -42,7 +44,6 @@ export class MoveOutService {
   private readonly WEIGHT_FACTOR = 1.5;
   private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
-  private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   private readonly MAX_SIGNATURE_SIZE = 3 * 1024 * 1024;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
@@ -50,6 +51,7 @@ export class MoveOutService {
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
     private readonly inspectorService: InspectorService,
+    private readonly fileService: FileService,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -956,10 +958,8 @@ export class MoveOutService {
   async submitInspectionResult(
     { email, name, studentNumber }: User,
     applicationUuid: string,
-    { passed, failed }: SubmitInspectionResultDto,
-    inspectorSignature: Express.Multer.File | undefined,
-    targetSignature: Express.Multer.File | undefined,
-  ): Promise<void> {
+    { passed, failed, contentLength }: SubmitInspectionResultDto,
+  ): Promise<RegisterResultResDto> {
     if (passed.length === 0 && failed.length === 0) {
       throw new BadRequestException(
         'At least one inspection item result (passed or failed) is required.',
@@ -980,72 +980,38 @@ export class MoveOutService {
       studentNumber,
     );
 
-    const inspectorSignatureImage = await this.validateSignatureFile(
-      inspectorSignature,
-      'inspector',
-    );
-    const targetSignatureImage = await this.validateSignatureFile(
-      targetSignature,
-      'target',
-    );
-
-    return await this.prismaService.$transaction(
-      async (tx: PrismaTransaction) => {
-        const application =
-          await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
-            applicationUuid,
-            tx,
-          );
-
-        if (application.inspectorUuid !== inspector.uuid) {
-          throw new ForbiddenException(
-            'The inspector is not assigned to this application.',
-          );
-        }
-
-        if (application.isPassed !== null) {
-          throw new ConflictException(
-            'Inspection result has already been submitted and cannot be modified.',
-          );
-        }
-
-        await this.moveOutRepository.updateInspectionResultInTx(
+    await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
+      const application =
+        await this.moveOutRepository.findApplicationByUuidWithXLockInTx(
           applicationUuid,
-          { passed, failed },
-          failed.length === 0,
-          inspectorSignatureImage,
-          targetSignatureImage,
           tx,
         );
-      },
+
+      if (application.inspectorUuid !== inspector.uuid) {
+        throw new ForbiddenException(
+          'The inspector is not assigned to this application.',
+        );
+      }
+
+      if (application.isPassed !== null) {
+        throw new ConflictException(
+          'Inspection result has already been submitted and cannot be modified.',
+        );
+      }
+
+      await this.moveOutRepository.updateInspectionResultInTx(
+        applicationUuid,
+        { passed, failed },
+        failed.length === 0,
+        tx,
+      );
+    });
+
+    const key = `application/${applicationUuid}/profile_${crypto.randomBytes(16).toString('base64url')}.webp`;
+    const presignedUrl = await this.fileService.createPresignedUrl(
+      key,
+      contentLength,
     );
-  }
-
-  private async validateSignatureFile(
-    file: Express.Multer.File | undefined,
-    role: 'inspector' | 'target',
-  ): Promise<Uint8Array<ArrayBuffer>> {
-    if (!file?.buffer || file.size === 0) {
-      const subject =
-        role === 'inspector' ? 'Inspector signature' : 'Target signature';
-      throw new BadRequestException(`${subject} is required.`);
-    }
-
-    if (file.size > this.MAX_SIGNATURE_SIZE) {
-      throw new BadRequestException(
-        `Signature image size must be less than ${this.MAX_SIGNATURE_SIZE / 1024 / 1024}MB.`,
-      );
-    }
-
-    const fileType = await fileTypeFromBuffer(file.buffer);
-    const allowedMimeTypes = ['image/png', 'image/jpeg'];
-
-    if (!fileType || !allowedMimeTypes.includes(fileType.mime)) {
-      throw new BadRequestException(
-        `Invalid ${role} signature image type. Only PNG and JPEG are allowed.`,
-      );
-    }
-
-    return new Uint8Array(file.buffer);
+    return { presignedUrl };
   }
 }
