@@ -959,10 +959,14 @@ export class MoveOutRepository {
   async findApplications(
     offset: number,
     limit: number,
+    scheduleUuid?: string,
   ): Promise<ApplicationInfo[]> {
     return await this.prismaService.inspectionApplication
       .findMany({
         where: {
+          inspectionSlot: {
+            scheduleUuid,
+          },
           deletedAt: null,
         },
         include: {
@@ -1013,10 +1017,13 @@ export class MoveOutRepository {
       });
   }
 
-  async countApplications(): Promise<number> {
+  async countApplications(scheduleUuid: string): Promise<number> {
     return await this.prismaService.inspectionApplication
       .count({
         where: {
+          inspectionSlot: {
+            scheduleUuid,
+          },
           deletedAt: null,
         },
       })

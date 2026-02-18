@@ -45,10 +45,6 @@ import {
   FindAllInspectionTargetsResDto,
   InspectionTargetsGroupedByRoom,
 } from './dto/res/find-all-inspection-target-infos-res.dto';
-import {
-  DetailedApplication,
-  FindAllInspectionApplicationsResDto,
-} from './dto/res/find-all-inspection-applications-res.dto';
 
 @Loggable()
 @Injectable()
@@ -804,13 +800,14 @@ export class MoveOutService {
     );
   }
 
-  async findApplicationList({
-    offset,
-    limit,
-  }: ApplicationListQueryDto): Promise<ApplicationListResDto> {
+  async findApplicationList(
+    { offset, limit }: ApplicationListQueryDto,
+    scheduleUuid: string,
+  ): Promise<ApplicationListResDto> {
     const applications = await this.moveOutRepository.findApplications(
       offset ?? 0,
       limit ?? 20,
+      scheduleUuid,
     );
     return new ApplicationListResDto(
       applications.map((app) => ({
@@ -818,7 +815,7 @@ export class MoveOutService {
         document:
           app.document === null ? null : this.fileService.getUrl(app.document),
       })),
-      await this.moveOutRepository.countApplications(),
+      await this.moveOutRepository.countApplications(scheduleUuid),
     );
   }
 
@@ -865,36 +862,6 @@ export class MoveOutService {
       ),
     };
     return result;
-  }
-
-  async findAllInspectionApplicationByScheduleUuid(
-    scheduleUuid: string,
-  ): Promise<FindAllInspectionApplicationsResDto> {
-    const inspectionTargetInfosWithDetails =
-      await this.moveOutRepository.findAllInspectionTargetInfoWithDetailsByScheduleUuid(
-        scheduleUuid,
-      );
-
-    const detailedApplications: DetailedApplication[] = [];
-
-    for (const targetInfo of inspectionTargetInfosWithDetails) {
-      if (targetInfo.inspectionApplication.length > 0) {
-        const application = targetInfo.inspectionApplication[0];
-
-        detailedApplications.push({
-          uuid: application.uuid,
-          roomNumber: targetInfo.roomNumber,
-          studentName: targetInfo.studentName,
-          phoneNumber: application.user.phoneNumber,
-          applicationTime: application.createdAt,
-          inspectionTime: application.inspectionSlot.startTime,
-          inspectorName: application.inspector.name,
-          isPassed: application.isPassed ?? undefined,
-        });
-      }
-    }
-
-    return { detailedApplications };
   }
 
   private findInspectionTargetRooms(

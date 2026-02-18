@@ -58,7 +58,6 @@ import {
   ApplicationResDto,
 } from './dto/res/application-list-res.dto';
 import { FindAllInspectionTargetsResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
-import { FindAllInspectionApplicationsResDto } from './dto/res/find-all-inspection-applications-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -311,7 +310,7 @@ export class MoveOutController {
   })
   @ApiOkResponse({
     description: 'Inspection applications successfully retrieved',
-    type: FindAllInspectionApplicationsResDto,
+    type: ApplicationListResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -322,10 +321,9 @@ export class MoveOutController {
   @Get('schedule/:uuid/applications')
   async findAllInspectionApplications(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
-  ): Promise<FindAllInspectionApplicationsResDto> {
-    return await this.moveOutService.findAllInspectionApplicationByScheduleUuid(
-      scheduleUuid,
-    );
+    @Query() query: ApplicationListQueryDto,
+  ): Promise<ApplicationListResDto> {
+    return await this.moveOutService.findApplicationList(query, scheduleUuid);
   }
 
   @ApiOperation({
@@ -350,30 +348,6 @@ export class MoveOutController {
     return await this.moveOutService.deleteInspectionTargetsBySemesters(
       semestersQuery,
     );
-  }
-
-  @ApiOperation({
-    summary: 'Get Inspection Application List',
-    description: 'Retrieve a paginated list of inspection applications.',
-  })
-  @ApiOkResponse({
-    description:
-      'The inspection application list has been successfully retrieved.',
-    type: ApplicationListResDto,
-  })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiInternalServerErrorResponse({
-    description: 'Internal Server Error',
-    type: ErrorDto,
-  })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Get('application')
-  async findApplicationList(
-    @Query() query: ApplicationListQueryDto,
-  ): Promise<ApplicationListResDto> {
-    return await this.moveOutService.findApplicationList(query);
   }
 
   @ApiOperation({
