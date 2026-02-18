@@ -46,7 +46,6 @@ export class MoveOutService {
   private readonly WEIGHT_FACTOR = 1.5;
   private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
-  private readonly MAX_SIGNATURE_SIZE = 3 * 1024 * 1024;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
@@ -1023,8 +1022,16 @@ export class MoveOutService {
     offset,
     limit,
   }: ApplicationListQueryDto): Promise<ApplicationListResDto> {
+    const applications = await this.moveOutRepository.findApplications(
+      offset ?? 0,
+      limit ?? 20,
+    );
     return new ApplicationListResDto(
-      await this.moveOutRepository.findApplications(offset ?? 0, limit ?? 20),
+      applications.map((app) => ({
+        ...app,
+        document:
+          app.document === null ? null : this.fileService.getUrl(app.document),
+      })),
       await this.moveOutRepository.countApplications(),
     );
   }
