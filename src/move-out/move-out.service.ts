@@ -36,6 +36,8 @@ import { InspectorService } from 'src/inspector/inspector.service';
 import { FileService } from '@lib/file';
 import * as crypto from 'crypto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
+import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
+import { ApplicationListResDto } from './dto/res/application-list-res.dto';
 
 @Loggable()
 @Injectable()
@@ -1014,6 +1016,16 @@ export class MoveOutService {
         );
         return { presignedUrl };
       },
+    );
+  }
+
+  async findApplicationList({
+    offset,
+    limit,
+  }: ApplicationListQueryDto): Promise<ApplicationListResDto> {
+    return new ApplicationListResDto(
+      await this.moveOutRepository.findApplications(offset ?? 0, limit ?? 20),
+      await this.moveOutRepository.countApplications(),
     );
   }
 }

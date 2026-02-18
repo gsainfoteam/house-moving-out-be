@@ -52,6 +52,8 @@ import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
+import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
+import { ApplicationListResDto } from './dto/res/application-list-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -296,6 +298,31 @@ export class MoveOutController {
     return await this.moveOutService.deleteInspectionTargetsBySemesters(
       semestersQuery,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Get Inspection Application List',
+    description:
+      'Retrieve a paginated list of inspection applications for a specific move-out schedule.',
+  })
+  @ApiOkResponse({
+    description:
+      'The inspection application list has been successfully retrieved.',
+    type: ApplicationListResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal Server Error',
+    type: ErrorDto,
+  })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('application')
+  async findApplicationList(
+    @Query() query: ApplicationListQueryDto,
+  ): Promise<ApplicationListResDto> {
+    return await this.moveOutService.findApplicationList(query);
   }
 
   @ApiOperation({
