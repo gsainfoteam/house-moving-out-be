@@ -361,7 +361,7 @@ export class MoveOutController {
     description:
       'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Not allowed when the schedule status is ACTIVE.',
   })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Cleaning service flags successfully updated',
   })
   @ApiBadRequestResponse({
@@ -377,6 +377,7 @@ export class MoveOutController {
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Patch('schedule/:uuid/inspection-targets/cleaning-service')
+  @HttpCode(204)
   async bulkUpdateCleaningService(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
     @Body() dto: BulkUpdateCleaningServiceDto,
