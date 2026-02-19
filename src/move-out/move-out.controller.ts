@@ -431,11 +431,11 @@ export class MoveOutController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
-    description: 'Forbidden - Request rejected',
+    description:
+      'Forbidden - User is not an inspection target for this schedule',
   })
   @ApiNotFoundResponse({
-    description:
-      'Not Found - Slot not found or user is not an inspection target for this schedule',
+    description: 'Not Found - Inspection slot not found',
     type: ErrorDto,
   })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })

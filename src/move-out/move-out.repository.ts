@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -529,7 +530,8 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            throw new NotFoundException('User is not an inspection target.');
+            // 비즈니스 요구사항에 따라, 검사 대상이 아닌 경우 404(NotFound)가 아닌 403(Forbidden)으로 응답
+            throw new ForbiddenException('User is not an inspection target.');
           }
           this.logger.error(
             `findInspectionTargetInfoByUserInfo prisma error: ${error.message}`,
@@ -570,7 +572,8 @@ export class MoveOutRepository {
       .catch((error) => {
         if (error instanceof PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
-            throw new NotFoundException('User is not an inspection target.');
+            // 비즈니스 요구사항에 따라, 검사 대상이 아닌 경우 404(NotFound)가 아닌 403(Forbidden)으로 응답
+            throw new ForbiddenException('User is not an inspection target.');
           }
           this.logger.error(
             `findInspectionTargetInfoByUserInfoInTx prisma error: ${error.message}`,
