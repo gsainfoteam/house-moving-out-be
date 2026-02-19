@@ -58,6 +58,7 @@ export class InspectionTargetsGroupedByRoomResDto {
     description: 'Last inspection time',
     example: '2026-01-22T03:00:00.000Z',
     nullable: true,
+    type: Date,
   })
   lastInspectionTime: Date | null;
 
@@ -65,6 +66,7 @@ export class InspectionTargetsGroupedByRoomResDto {
     description: 'Whether the inspection is passed',
     example: true,
     nullable: true,
+    type: Boolean,
   })
   isPassed: boolean | null;
 }
