@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsUUID } from 'class-validator';
+import { IsArray, IsBoolean, IsUUID, ArrayUnique } from 'class-validator';
 
 export class BulkUpdateCleaningServiceDto {
   @ApiProperty({
@@ -12,6 +12,7 @@ export class BulkUpdateCleaningServiceDto {
   })
   @IsArray()
   @IsUUID('4', { each: true })
+  @ArrayUnique()
   targetUuids: string[];
 
   @ApiProperty({

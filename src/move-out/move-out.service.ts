@@ -449,6 +449,8 @@ export class MoveOutService {
     scheduleUuid: string,
     { targetUuids, applyCleaningService }: BulkUpdateCleaningServiceDto,
   ): Promise<void> {
+    const uniqueTargetUuids = [...new Set(targetUuids)];
+
     const schedule =
       await this.moveOutRepository.findMoveOutScheduleWithSlotsByUuid(
         scheduleUuid,
@@ -463,10 +465,10 @@ export class MoveOutService {
     const count =
       await this.moveOutRepository.countInspectionTargetsByScheduleAndUuids(
         scheduleUuid,
-        targetUuids,
+        uniqueTargetUuids,
       );
 
-    if (count !== targetUuids.length) {
+    if (count !== uniqueTargetUuids.length) {
       throw new BadRequestException(
         'Request contains invalid inspection target UUID(s).',
       );
@@ -474,7 +476,7 @@ export class MoveOutService {
 
     await this.moveOutRepository.updateApplyCleaningServiceByScheduleAndUuids(
       scheduleUuid,
-      targetUuids,
+      uniqueTargetUuids,
       applyCleaningService,
     );
   }
