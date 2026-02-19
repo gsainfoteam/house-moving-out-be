@@ -2,7 +2,7 @@
 CREATE TYPE "article_type" AS ENUM ('NOTICE', 'FAQ');
 
 -- CreateTable
-CREATE TABLE "Article" (
+CREATE TABLE "article" (
     "uuid" TEXT NOT NULL,
     "type" "article_type" NOT NULL,
     "title_ko" TEXT NOT NULL,
