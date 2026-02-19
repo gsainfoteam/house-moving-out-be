@@ -454,9 +454,9 @@ export class MoveOutService {
         scheduleUuid,
       );
 
-    if (schedule.status === ScheduleStatus.ACTIVE) {
+    if (schedule.status !== ScheduleStatus.DRAFT) {
       throw new ForbiddenException(
-        'Cannot modify cleaning service application for targets in an ACTIVE schedule.',
+        'Cleaning service application can be modified only when the schedule status is DRAFT.',
       );
     }
 

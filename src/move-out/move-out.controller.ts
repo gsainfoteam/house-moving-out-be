@@ -359,7 +359,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Bulk update cleaning service for inspection targets',
     description:
-      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Not allowed when the schedule status is ACTIVE.',
+      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT.',
   })
   @ApiNoContentResponse({
     description: 'Cleaning service flags successfully updated',
@@ -369,7 +369,7 @@ export class MoveOutController {
   })
   @ApiForbiddenResponse({
     description:
-      'Cleaning service flags cannot be modified for an ACTIVE schedule',
+      'Cleaning service flags can be modified only when the schedule status is DRAFT',
   })
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
