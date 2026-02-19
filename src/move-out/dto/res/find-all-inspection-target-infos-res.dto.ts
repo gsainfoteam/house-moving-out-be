@@ -15,7 +15,7 @@ class Resident {
   name: string;
 }
 
-export class InspectionTargetsGroupedByRoom {
+export class InspectionTargetsGroupedByRoomResDto {
   @ApiProperty({
     description: 'Room number',
     example: 'XXX101',
@@ -54,12 +54,4 @@ export class InspectionTargetsGroupedByRoom {
     nullable: true,
   })
   isPassed: boolean | null;
-}
-
-export class FindAllInspectionTargetsResDto {
-  @ApiProperty({
-    description: 'List of inspection targets grouped by room',
-    type: [InspectionTargetsGroupedByRoom],
-  })
-  inspectionTargetsGroupedByRooms: InspectionTargetsGroupedByRoom[];
 }

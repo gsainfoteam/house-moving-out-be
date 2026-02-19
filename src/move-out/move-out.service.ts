@@ -40,7 +40,7 @@ import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targe
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { InspectorService } from 'src/inspector/inspector.service';
-import { FindAllInspectionTargetsResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
+import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import {
   DetailedApplication,
   FindAllInspectionApplicationsResDto,
@@ -881,63 +881,60 @@ export class MoveOutService {
 
   async findAllInspectionTargetInfoByScheduleUuid(
     scheduleUuid: string,
-  ): Promise<FindAllInspectionTargetsResDto> {
+  ): Promise<InspectionTargetsGroupedByRoomResDto[]> {
     const inspectionTargetInfosWithApplications =
       await this.moveOutRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
         scheduleUuid,
       );
+    return inspectionTargetInfosWithApplications.map(
+      (target): InspectionTargetsGroupedByRoomResDto => {
+        const residents = [
+          target.student1Name && target.student1AdmissionYear
+            ? {
+                admissionYear: target.student1AdmissionYear,
+                name: target.student1Name,
+              }
+            : null,
+          target.student2Name && target.student2AdmissionYear
+            ? {
+                admissionYear: target.student2AdmissionYear,
+                name: target.student2Name,
+              }
+            : null,
+          target.student3Name && target.student3AdmissionYear
+            ? {
+                admissionYear: target.student3AdmissionYear,
+                name: target.student3Name,
+              }
+            : null,
+        ].filter(
+          (v): v is { admissionYear: string; name: string } => v !== null,
+        );
 
-    const result: FindAllInspectionTargetsResDto = {
-      inspectionTargetsGroupedByRooms:
-        inspectionTargetInfosWithApplications.map((target) => {
-          const residents = [
-            target.student1Name && target.student1AdmissionYear
-              ? {
-                  admissionYear: target.student1AdmissionYear,
-                  name: target.student1Name,
-                }
-              : null,
-            target.student2Name && target.student2AdmissionYear
-              ? {
-                  admissionYear: target.student2AdmissionYear,
-                  name: target.student2Name,
-                }
-              : null,
-            target.student3Name && target.student3AdmissionYear
-              ? {
-                  admissionYear: target.student3AdmissionYear,
-                  name: target.student3Name,
-                }
-              : null,
-          ].filter(
-            (v): v is { admissionYear: string; name: string } => v !== null,
-          );
+        const [latestApplication, previousApplication] =
+          target.inspectionApplication;
 
-          const [latestApplication, previousApplication] =
-            target.inspectionApplication;
+        let lastInspectionTime: Date | null = null;
 
-          let lastInspectionTime: Date | null = null;
+        if (latestApplication && latestApplication.isPassed !== null) {
+          lastInspectionTime = latestApplication.updatedAt;
+        } else if (
+          previousApplication &&
+          previousApplication.isPassed !== null
+        ) {
+          lastInspectionTime = previousApplication.updatedAt;
+        }
 
-          if (latestApplication && latestApplication.isPassed !== null) {
-            lastInspectionTime = latestApplication.updatedAt;
-          } else if (
-            previousApplication &&
-            previousApplication.isPassed !== null
-          ) {
-            lastInspectionTime = previousApplication.updatedAt;
-          }
-
-          return {
-            roomNumber: target.roomNumber,
-            residents,
-            inspectionType: target.inspectionType,
-            inspectionCount: target.inspectionCount,
-            lastInspectionTime,
-            isPassed: latestApplication?.isPassed ?? null,
-          };
-        }),
-    };
-    return result;
+        return {
+          roomNumber: target.roomNumber,
+          residents,
+          inspectionType: target.inspectionType,
+          inspectionCount: target.inspectionCount,
+          lastInspectionTime,
+          isPassed: latestApplication?.isPassed ?? null,
+        };
+      },
+    );
   }
 
   async findAllInspectionApplicationByScheduleUuid(
