@@ -1,16 +1,32 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { InspectionTargetInfo } from 'generated/prisma/client';
 
+class Student {
+  @ApiProperty({
+    description: 'Student name',
+    example: '홍길동',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Admission year',
+    example: '25',
+  })
+  admissionYear: string;
+}
+
 export class InspectionTargetInfoResDto {
   constructor(target: InspectionTargetInfo) {
     this.uuid = target.uuid;
     this.houseName = target.houseName;
     this.roomNumber = target.roomNumber;
     this.students = [
-      {
-        name: target.student1Name,
-        admissionYear: target.student1AdmissionYear,
-      },
+      target.student1Name && target.student1AdmissionYear
+        ? {
+            name: target.student1Name,
+            admissionYear: target.student1AdmissionYear,
+          }
+        : null,
       target.student2Name && target.student2AdmissionYear
         ? {
             name: target.student2Name,
@@ -23,7 +39,7 @@ export class InspectionTargetInfoResDto {
             admissionYear: target.student3AdmissionYear,
           }
         : null,
-    ].filter((v): v is { name: string; admissionYear: string } => v !== null);
+    ].filter((v): v is Student => v !== null);
     this.applyCleaningService = target.applyCleaningService;
     this.createdAt = target.createdAt;
     this.updatedAt = target.updatedAt;
@@ -49,12 +65,9 @@ export class InspectionTargetInfoResDto {
 
   @ApiProperty({
     description: 'students in the room',
-    example: [
-      { name: '홍길동', admissionYear: '25' },
-      { name: '김철수', admissionYear: '24' },
-    ],
+    type: [Student],
   })
-  students: { name: string; admissionYear: string }[];
+  students: Student[];
 
   @ApiProperty({
     description: 'apply cleaning service',
