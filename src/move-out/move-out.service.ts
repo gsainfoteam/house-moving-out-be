@@ -891,10 +891,12 @@ export class MoveOutService {
       inspectionTargetsGroupedByRooms:
         inspectionTargetInfosWithApplications.map((target) => {
           const residents = [
-            {
-              admissionYear: String(target.student1AdmissionYear),
-              name: String(target.student1Name),
-            },
+            target.student1Name && target.student1AdmissionYear
+              ? {
+                  admissionYear: String(target.student1AdmissionYear),
+                  name: String(target.student1Name),
+                }
+              : null,
             target.student2Name && target.student2AdmissionYear
               ? {
                   admissionYear: String(target.student2AdmissionYear),
@@ -969,10 +971,12 @@ export class MoveOutService {
     for (const latestApplication of latestApplications) {
       const targetInfo = latestApplication.inspectionTargetInfo;
       const residents = [
-        {
-          admissionYear: String(targetInfo.student1AdmissionYear),
-          name: String(targetInfo.student1Name),
-        },
+        targetInfo.student1Name && targetInfo.student1AdmissionYear
+          ? {
+              admissionYear: String(targetInfo.student1AdmissionYear),
+              name: String(targetInfo.student1Name),
+            }
+          : null,
         targetInfo.student2Name && targetInfo.student2AdmissionYear
           ? {
               admissionYear: String(targetInfo.student2AdmissionYear),
