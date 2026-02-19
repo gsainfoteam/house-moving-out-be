@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { InspectionType } from '../../types/inspection-type.enum';
+import { RoomInspectionType } from 'generated/prisma/client';
 
 class Resident {
   @ApiProperty({
@@ -30,10 +30,10 @@ export class InspectionTargetsGroupedByRoom {
 
   @ApiProperty({
     description: 'Inspection type',
-    example: InspectionType.SOLO,
-    enum: InspectionType,
+    example: RoomInspectionType.SOLO,
+    enum: RoomInspectionType,
   })
-  inspectionType: InspectionType;
+  inspectionType: RoomInspectionType;
 
   @ApiProperty({
     description: 'Number of inspections',

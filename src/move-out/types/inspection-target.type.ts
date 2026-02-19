@@ -1,4 +1,4 @@
-import { InspectionType } from './inspection-type.enum';
+import { RoomInspectionType } from 'generated/prisma/client';
 
 export type InspectionTargetStudent = {
   houseName: string;
@@ -8,5 +8,5 @@ export type InspectionTargetStudent = {
     admissionYear: string;
   }[];
   applyCleaningService?: boolean;
-  inspectionType: InspectionType;
+  inspectionType: RoomInspectionType;
 };

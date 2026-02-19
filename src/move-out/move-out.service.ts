@@ -9,6 +9,7 @@ import { MoveOutRepository } from './move-out.repository';
 import {
   Gender,
   MoveOutSchedule,
+  RoomInspectionType,
   ScheduleStatus,
   Season,
 } from 'generated/prisma/client';
@@ -44,7 +45,6 @@ import {
   DetailedApplication,
   FindAllInspectionApplicationsResDto,
 } from './dto/res/find-all-inspection-applications-res.dto';
-import { InspectionType } from './types/inspection-type.enum';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 
@@ -927,28 +927,10 @@ export class MoveOutService {
             lastInspectionTime = previousApplication.updatedAt;
           }
 
-          let inspectionType: InspectionType;
-          switch (target.inspectionType) {
-            case 'FULL':
-              inspectionType = InspectionType.FULL;
-              break;
-            case 'SOLO':
-              inspectionType = InspectionType.SOLO;
-              break;
-            case 'DUO':
-              inspectionType = InspectionType.DUO;
-              break;
-            case 'EMPTY':
-              inspectionType = InspectionType.EMPTY;
-              break;
-            default:
-              inspectionType = InspectionType.FULL;
-          }
-
           return {
             roomNumber: target.roomNumber,
             residents,
-            inspectionType,
+            inspectionType: target.inspectionType,
             inspectionCount: target.inspectionCount,
             lastInspectionTime,
             isPassed: latestApplication?.isPassed ?? null,
@@ -991,21 +973,11 @@ export class MoveOutService {
           : null,
       ].filter((v): v is { admissionYear: string; name: string } => v !== null);
 
-      let inspectionType: InspectionType;
-
-      if (residents.length >= 3) {
-        inspectionType = InspectionType.FULL;
-      } else if (residents.length === 2) {
-        inspectionType = InspectionType.DUO;
-      } else {
-        inspectionType = InspectionType.SOLO;
-      }
-
       detailedApplications.push({
         uuid: latestApplication.uuid,
         roomNumber: targetInfo.roomNumber,
         residents,
-        inspectionType,
+        inspectionType: targetInfo.inspectionType,
         phoneNumber: latestApplication.user.phoneNumber,
         applicationTime: latestApplication.createdAt,
         inspectionTime: latestApplication.inspectionSlot.startTime,
@@ -1053,17 +1025,17 @@ export class MoveOutService {
       const originalCount = originalStudents.length;
       const leavingCount = leavingStudents.length;
 
-      let inspectionType: InspectionType;
+      let inspectionType: RoomInspectionType;
       if (originalCount === 0) {
-        inspectionType = InspectionType.EMPTY;
+        inspectionType = RoomInspectionType.EMPTY;
       } else if (originalCount === leavingCount) {
-        inspectionType = InspectionType.FULL;
+        inspectionType = RoomInspectionType.FULL;
       } else if (originalCount >= 1 && leavingCount === 1) {
-        inspectionType = InspectionType.SOLO;
+        inspectionType = RoomInspectionType.SOLO;
       } else if (originalCount === 3 && leavingCount === 2) {
-        inspectionType = InspectionType.DUO;
+        inspectionType = RoomInspectionType.DUO;
       } else {
-        inspectionType = InspectionType.FULL;
+        inspectionType = RoomInspectionType.FULL;
       }
 
       if (originalCount > 0 && leavingCount === 0) {
