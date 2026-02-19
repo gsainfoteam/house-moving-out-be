@@ -893,20 +893,20 @@ export class MoveOutService {
           const residents = [
             target.student1Name && target.student1AdmissionYear
               ? {
-                  admissionYear: String(target.student1AdmissionYear),
-                  name: String(target.student1Name),
+                  admissionYear: target.student1AdmissionYear,
+                  name: target.student1Name,
                 }
               : null,
             target.student2Name && target.student2AdmissionYear
               ? {
-                  admissionYear: String(target.student2AdmissionYear),
-                  name: String(target.student2Name),
+                  admissionYear: target.student2AdmissionYear,
+                  name: target.student2Name,
                 }
               : null,
             target.student3Name && target.student3AdmissionYear
               ? {
-                  admissionYear: String(target.student3AdmissionYear),
-                  name: String(target.student3Name),
+                  admissionYear: target.student3AdmissionYear,
+                  name: target.student3Name,
                 }
               : null,
           ].filter(
@@ -955,20 +955,20 @@ export class MoveOutService {
       const residents = [
         targetInfo.student1Name && targetInfo.student1AdmissionYear
           ? {
-              admissionYear: String(targetInfo.student1AdmissionYear),
-              name: String(targetInfo.student1Name),
+              admissionYear: targetInfo.student1AdmissionYear,
+              name: targetInfo.student1Name,
             }
           : null,
         targetInfo.student2Name && targetInfo.student2AdmissionYear
           ? {
-              admissionYear: String(targetInfo.student2AdmissionYear),
-              name: String(targetInfo.student2Name),
+              admissionYear: targetInfo.student2AdmissionYear,
+              name: targetInfo.student2Name,
             }
           : null,
         targetInfo.student3Name && targetInfo.student3AdmissionYear
           ? {
-              admissionYear: String(targetInfo.student3AdmissionYear),
-              name: String(targetInfo.student3Name),
+              admissionYear: targetInfo.student3AdmissionYear,
+              name: targetInfo.student3Name,
             }
           : null,
       ].filter((v): v is { admissionYear: string; name: string } => v !== null);
