@@ -17,6 +17,13 @@ class Resident {
 
 export class InspectionTargetsGroupedByRoomResDto {
   @ApiProperty({
+    description: 'Inspection target UUID',
+    example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
+    format: 'uuid',
+  })
+  uuid: string;
+
+  @ApiProperty({
     description: 'Room number',
     example: 'XXX101',
   })
@@ -40,6 +47,12 @@ export class InspectionTargetsGroupedByRoomResDto {
     example: 2,
   })
   inspectionCount: number;
+
+  @ApiProperty({
+    description: 'Whether external cleaning service is applied for this room',
+    example: false,
+  })
+  applyCleaningService: boolean;
 
   @ApiProperty({
     description: 'Last inspection time',

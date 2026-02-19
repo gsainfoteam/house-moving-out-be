@@ -926,10 +926,12 @@ export class MoveOutService {
         }
 
         return {
+          uuid: target.uuid,
           roomNumber: target.roomNumber,
           residents,
           inspectionType: target.inspectionType,
           inspectionCount: target.inspectionCount,
+          applyCleaningService: target.applyCleaningService,
           lastInspectionTime,
           isPassed: latestApplication?.isPassed ?? null,
         };
