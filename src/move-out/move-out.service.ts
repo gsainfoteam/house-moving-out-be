@@ -1047,6 +1047,7 @@ export class MoveOutService {
         roomNumber: currentSemesterRoom.roomNumber,
         students: leavingStudents.slice(0, 3),
         inspectionType,
+        applyCleaningService: false,
       });
     }
 
