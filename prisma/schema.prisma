@@ -62,6 +62,13 @@ enum Role {
   @@map("role")
 }
 
+enum ArticleType {
+  Notice
+  FAQ
+
+  @@map("article_type")
+}
+
 model User {
   uuid          String @id
   name          String
@@ -246,4 +253,16 @@ model Inspector {
   applications   InspectionApplication[]
 
   @@map("inspector")
+}
+
+model Article {
+  uuid      String    @id @default(uuid())
+  titleKo   String    @map("title_ko")
+  titleEn   String    @map("title_en")
+  contentKo String    @map("content_ko")
+  contentEn String    @map("content_en")
+  isVisible Boolean   @default(true) @map("is_visible")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt() @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 }
