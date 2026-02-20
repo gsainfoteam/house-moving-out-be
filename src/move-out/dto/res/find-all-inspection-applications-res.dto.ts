@@ -70,6 +70,7 @@ export class DetailedApplication {
     description: 'Whether the inspection is passed',
     example: true,
     nullable: true,
+    type: Boolean,
   })
   isPassed: boolean | null;
 }
