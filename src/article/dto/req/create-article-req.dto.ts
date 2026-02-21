@@ -11,7 +11,7 @@ import {
 import { ArticleType } from 'generated/prisma/client';
 import { Type } from 'class-transformer';
 
-export class createArticleReqDto {
+export class CreateArticleReqDto {
   @ApiProperty({
     description: 'Type of Article(Notice,Faq)',
     example: ArticleType.NOTICE,

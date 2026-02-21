@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 
 export enum Language {
-  KO,
-  EN,
+  KO = 'KO',
+  EN = 'EN',
 }
 export class ArticleDto {
   @ApiProperty({
