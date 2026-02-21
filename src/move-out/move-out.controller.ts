@@ -55,11 +55,13 @@ import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
+import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
+import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 import {
   SubmitInspectionResultDto,
   SubmitInspectionResultFormDto,
 } from './dto/req/submit-inspection-result.dto';
-import { FindAllInspectionTargetsResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
+import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import { FindAllInspectionApplicationsResDto } from './dto/res/find-all-inspection-applications-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
@@ -289,7 +291,7 @@ export class MoveOutController {
   })
   @ApiOkResponse({
     description: 'Inspection targets successfully retrieved',
-    type: FindAllInspectionTargetsResDto,
+    type: [InspectionTargetsGroupedByRoomResDto],
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -300,8 +302,8 @@ export class MoveOutController {
   @Get('schedule/:uuid/inspection-targets')
   async findAllInspectionTargetInfos(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
-  ): Promise<FindAllInspectionTargetsResDto> {
-    return await this.moveOutService.findInspectionTargetInfoGroupedByRoomByScheduleUuid(
+  ): Promise<InspectionTargetsGroupedByRoomResDto[]> {
+    return await this.moveOutService.findAllInspectionTargetInfoByScheduleUuid(
       scheduleUuid,
     );
   }
@@ -355,6 +357,35 @@ export class MoveOutController {
   }
 
   @ApiOperation({
+    summary: 'Bulk update cleaning service for inspection targets',
+    description:
+      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT.',
+  })
+  @ApiNoContentResponse({
+    description: 'Cleaning service flags successfully updated',
+  })
+  @ApiBadRequestResponse({
+    description: 'One or more inspection target UUIDs are invalid',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Cleaning service flags can be modified only when the schedule status is DRAFT',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch('schedule/:uuid/inspection-targets/cleaning-service')
+  @HttpCode(204)
+  async bulkUpdateCleaningService(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Body() dto: BulkUpdateCleaningServiceDto,
+  ): Promise<void> {
+    await this.moveOutService.bulkUpdateCleaningService(scheduleUuid, dto);
+  }
+
+  @ApiOperation({
     summary: 'Apply for Inspection',
     description:
       'User applies for inspection. The user must be in the inspection target list and apply within the application period.',
@@ -386,6 +417,39 @@ export class MoveOutController {
     @Body() applyInspectionDto: ApplyInspectionDto,
   ): Promise<ApplicationUuidResDto> {
     return await this.moveOutService.applyInspection(user, applyInspectionDto);
+  }
+
+  @ApiOperation({
+    summary: 'Get My Inspection Type by Slot',
+    description:
+      'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot.',
+  })
+  @ApiOkResponse({
+    description: 'The inspection type has been successfully retrieved.',
+    type: MyInspectionTypeResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - User is not an inspection target for this schedule',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found - Inspection slot not found',
+    type: ErrorDto,
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('slot/:uuid/inspection-type')
+  async findMyInspectionTypeBySlot(
+    @GetUser() user: User,
+    @Param('uuid', ParseUUIDPipe) inspectionSlotUuid: string,
+  ): Promise<MyInspectionTypeResDto> {
+    return this.moveOutService.findMyInspectionTypeBySlot(
+      user,
+      inspectionSlotUuid,
+    );
   }
 
   @ApiOperation({

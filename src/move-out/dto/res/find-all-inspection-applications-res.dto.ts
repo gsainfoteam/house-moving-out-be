@@ -1,4 +1,19 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
+import { RoomInspectionType } from 'generated/prisma/client';
+
+class Resident {
+  @ApiProperty({
+    description: 'Student name',
+    example: '홍길동',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Admission year',
+    example: '25',
+  })
+  admissionYear: string;
+}
 
 export class DetailedApplication {
   @ApiProperty({
@@ -15,10 +30,10 @@ export class DetailedApplication {
   roomNumber: string;
 
   @ApiProperty({
-    description: 'Student name',
-    example: '홍길동',
+    description: 'Residents in the room',
+    type: [Resident],
   })
-  studentName: string;
+  residents: Resident[];
 
   @ApiProperty({
     description: 'Phone number',
@@ -38,7 +53,12 @@ export class DetailedApplication {
   })
   inspectionTime: Date;
 
-  // inspectionType:InspectionType;
+  @ApiProperty({
+    description: 'Inspection type',
+    example: RoomInspectionType.SOLO,
+    enum: RoomInspectionType,
+  })
+  inspectionType: RoomInspectionType;
 
   @ApiProperty({
     description: 'Inspector name',
@@ -46,11 +66,13 @@ export class DetailedApplication {
   })
   inspectorName: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Whether the inspection is passed',
     example: true,
+    nullable: true,
+    type: Boolean,
   })
-  isPassed?: boolean;
+  isPassed: boolean | null;
 }
 export class FindAllInspectionApplicationsResDto {
   @ApiProperty({

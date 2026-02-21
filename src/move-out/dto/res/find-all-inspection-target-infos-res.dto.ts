@@ -1,88 +1,72 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsBoolean,
-  IsDate,
-  IsInt,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { RoomInspectionType } from 'generated/prisma/client';
 
 class Resident {
   @ApiProperty({
     description: 'Admission year of the resident',
-    example: '2020',
+    example: '20',
   })
-  @IsString()
   admissionYear: string;
 
   @ApiProperty({
     description: 'Name of the resident',
     example: '홍길동',
   })
-  @IsString()
   name: string;
 }
 
-/* enum InspectionType {
-  Full,
-  Solo,
-  Duo,
-} */
+export class InspectionTargetsGroupedByRoomResDto {
+  @ApiProperty({
+    description: 'Inspection target UUID',
+    example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
+    format: 'uuid',
+  })
+  uuid: string;
 
-export class InspectionTargetsGroupedByRoom {
   @ApiProperty({
     description: 'Room number',
     example: 'XXX101',
   })
-  @IsString()
   roomNumber: string;
 
   @ApiProperty({
     description: 'List of residents in the room',
     type: [Resident],
   })
-  @Type(() => Resident)
-  @ValidateNested({ each: true })
-  @IsArray()
   residents: Resident[];
 
-  // inspectionType: InspectionType;
+  @ApiProperty({
+    description: 'Inspection type',
+    example: RoomInspectionType.SOLO,
+    enum: RoomInspectionType,
+  })
+  inspectionType: RoomInspectionType;
 
   @ApiProperty({
     description: 'Number of inspections',
     example: 2,
   })
-  @Type(() => Number)
-  @IsInt()
   inspectionCount: number;
+
+  @ApiProperty({
+    description: 'Whether external cleaning service is applied for this room',
+    example: false,
+  })
+  applyCleaningService: boolean;
 
   @ApiProperty({
     description: 'Last inspection time',
     example: '2026-01-22T03:00:00.000Z',
+    nullable: true,
+    type: Date,
   })
-  @Type(() => Date)
-  @IsDate()
-  lastInspectionTime: Date;
+  lastInspectionTime: Date | null;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Whether the inspection is passed',
     example: true,
+    nullable: true,
+    type: Boolean,
   })
-  @IsOptional()
-  @IsBoolean()
-  isPassed?: boolean;
-}
-
-export class FindAllInspectionTargetsResDto {
-  @ApiProperty({
-    description: 'List of inspection targets grouped by room',
-    type: [InspectionTargetsGroupedByRoom],
-  })
-  @Type(() => InspectionTargetsGroupedByRoom)
-  @ValidateNested({ each: true })
-  @IsArray()
-  inspectionTargetsGroupedByRooms: InspectionTargetsGroupedByRoom[];
+  isPassed: boolean | null;
 }
