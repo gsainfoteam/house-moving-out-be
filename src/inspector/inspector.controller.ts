@@ -32,6 +32,7 @@ import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { InspectorTargetsResDto } from 'src/inspector/dto/res/inspector-targets-res.dto';
+import { ErrorDto } from 'src/common/dto/error.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -67,6 +68,10 @@ export class InspectorController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
     description: 'Forbidden - User is not an inspector',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found - No active schedule or inspector not found',
+    type: ErrorDto,
   })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
