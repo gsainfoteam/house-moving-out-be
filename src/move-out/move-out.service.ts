@@ -39,7 +39,7 @@ import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
-import { InspectorService } from 'src/inspector/inspector.service';
+import { InspectorRepository } from 'src/inspector/inspector.repository';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import {
   DetailedApplication,
@@ -62,7 +62,7 @@ export class MoveOutService {
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
-    private readonly inspectorService: InspectorService,
+    private readonly inspectorRepository: InspectorRepository,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -806,7 +806,7 @@ export class MoveOutService {
       );
     }
 
-    const inspector = await this.inspectorService.findInspectorByUserInfo(
+    const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       email,
       name,
       studentNumber,
