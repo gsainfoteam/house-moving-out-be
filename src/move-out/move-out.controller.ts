@@ -36,7 +36,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { User } from 'generated/prisma/browser';
+import { User } from 'generated/prisma/client';
 import { GetUser } from 'src/auth/decorator/get-user.decorator';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { UserGuard } from 'src/auth/guard/user.guard';

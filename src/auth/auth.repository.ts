@@ -8,8 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { UserRefreshToken } from 'generated/prisma/browser';
-import { ConsentType, User } from 'generated/prisma/client';
+import { ConsentType, User, UserRefreshToken } from 'generated/prisma/client';
 import { PrismaTransaction } from '../common/types';
 
 @Loggable()
