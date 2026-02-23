@@ -1069,7 +1069,7 @@ export class MoveOutRepository {
   async findApplicationsByScheduleUuid(
     offset: number,
     limit: number,
-    scheduleUuid?: string,
+    scheduleUuid: string,
   ): Promise<ApplicationInfo[]> {
     return await this.prismaService.inspectionApplication
       .findMany({
