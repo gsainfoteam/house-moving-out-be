@@ -122,7 +122,7 @@ class TargetInfoResDto {
             admissionYear: partial.student2AdmissionYear,
           }
         : null,
-      partial.student2Name && partial.student3AdmissionYear
+      partial.student3Name && partial.student3AdmissionYear
         ? {
             name: partial.student3Name,
             admissionYear: partial.student3AdmissionYear,
