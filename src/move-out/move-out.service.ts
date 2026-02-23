@@ -48,10 +48,6 @@ import {
   ApplicationResDto,
 } from './dto/res/application-list-res.dto';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
-import {
-  DetailedApplication,
-  FindAllInspectionApplicationsResDto,
-} from './dto/res/find-all-inspection-applications-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 
@@ -866,7 +862,7 @@ export class MoveOutService {
     );
   }
 
-  async findApplicationList(
+  async findApplicationsByScheduleUuid(
     { offset, limit }: ApplicationListQueryDto,
     scheduleUuid: string,
   ): Promise<ApplicationListResDto> {
@@ -944,55 +940,6 @@ export class MoveOutService {
         };
       },
     );
-  }
-
-  async findAllInspectionApplicationByScheduleUuid(
-    scheduleUuid: string,
-  ): Promise<FindAllInspectionApplicationsResDto> {
-    const latestApplications =
-      await this.moveOutRepository.findLatestApplicationsWithDetailsByScheduleUuid(
-        scheduleUuid,
-      );
-
-    const detailedApplications: DetailedApplication[] = [];
-
-    for (const latestApplication of latestApplications) {
-      const targetInfo = latestApplication.inspectionTargetInfo;
-      const residents = [
-        targetInfo.student1Name && targetInfo.student1AdmissionYear
-          ? {
-              admissionYear: targetInfo.student1AdmissionYear,
-              name: targetInfo.student1Name,
-            }
-          : null,
-        targetInfo.student2Name && targetInfo.student2AdmissionYear
-          ? {
-              admissionYear: targetInfo.student2AdmissionYear,
-              name: targetInfo.student2Name,
-            }
-          : null,
-        targetInfo.student3Name && targetInfo.student3AdmissionYear
-          ? {
-              admissionYear: targetInfo.student3AdmissionYear,
-              name: targetInfo.student3Name,
-            }
-          : null,
-      ].filter((v): v is { admissionYear: string; name: string } => v !== null);
-
-      detailedApplications.push({
-        uuid: latestApplication.uuid,
-        roomNumber: targetInfo.roomNumber,
-        residents,
-        inspectionType: targetInfo.inspectionType,
-        phoneNumber: latestApplication.user.phoneNumber,
-        applicationTime: latestApplication.createdAt,
-        inspectionTime: latestApplication.inspectionSlot.startTime,
-        inspectorName: latestApplication.inspector.name,
-        isPassed: latestApplication.isPassed ?? null,
-      });
-    }
-
-    return { detailedApplications };
   }
 
   private findInspectionTargetRooms(

@@ -1083,6 +1083,7 @@ export class MoveOutRepository {
           user: true,
           inspectionSlot: true,
           inspector: true,
+          inspectionTargetInfo: true,
         },
         skip: offset,
         take: limit,
@@ -1113,6 +1114,7 @@ export class MoveOutRepository {
           user: true,
           inspectionSlot: true,
           inspector: true,
+          inspectionTargetInfo: true,
         },
       })
       .catch((error) => {

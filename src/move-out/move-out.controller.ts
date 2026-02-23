@@ -325,7 +325,10 @@ export class MoveOutController {
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
     @Query() query: ApplicationListQueryDto,
   ): Promise<ApplicationListResDto> {
-    return await this.moveOutService.findApplicationList(query, scheduleUuid);
+    return await this.moveOutService.findApplicationsByScheduleUuid(
+      query,
+      scheduleUuid,
+    );
   }
 
   @ApiOperation({

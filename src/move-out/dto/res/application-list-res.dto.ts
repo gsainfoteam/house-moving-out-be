@@ -1,7 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JsonValue } from '@prisma/client/runtime/client';
 import { Type } from 'class-transformer';
-import { InspectionSlot, Inspector, User } from 'generated/prisma/client';
+import {
+  InspectionSlot,
+  Inspector,
+  User,
+  InspectionTargetInfo,
+  RoomInspectionType,
+} from 'generated/prisma/client';
 import { ApplicationInfo } from 'src/move-out/types/application-info.type';
 
 class UserInfoResDto {
@@ -60,6 +66,76 @@ class InspectorInfoResDto {
   }
 }
 
+class Resident {
+  @ApiProperty({
+    description: 'Student name',
+    example: '홍길동',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Admission year',
+    example: '25',
+  })
+  admissionYear: string;
+}
+
+class TargetInfoResDto {
+  @ApiProperty({
+    description: 'Room number',
+    example: 'XXX101',
+  })
+  roomNumber: string;
+
+  @ApiPropertyOptional({
+    description: 'Residents in the room',
+    type: [Resident],
+    nullable: true,
+  })
+  residents: Resident[] | null;
+
+  @ApiProperty({
+    description: 'Inspection type',
+    example: RoomInspectionType.SOLO,
+    enum: RoomInspectionType,
+  })
+  inspectionType: RoomInspectionType;
+
+  @ApiProperty({
+    description: 'Whether the applicant applied for cleaning service',
+    example: true,
+  })
+  applyCleaningService: boolean;
+
+  constructor(partial: InspectionTargetInfo) {
+    this.roomNumber = partial.roomNumber;
+    this.residents = [
+      partial.student1Name && partial.student1AdmissionYear
+        ? {
+            name: partial.student1Name,
+            admissionYear: partial.student1AdmissionYear,
+          }
+        : null,
+      partial.student2Name && partial.student2AdmissionYear
+        ? {
+            name: partial.student2Name,
+            admissionYear: partial.student2AdmissionYear,
+          }
+        : null,
+      partial.student2Name && partial.student3AdmissionYear
+        ? {
+            name: partial.student3Name,
+            admissionYear: partial.student3AdmissionYear,
+          }
+        : null,
+    ].filter(
+      (res): res is { name: string; admissionYear: string } => res !== null,
+    );
+    this.inspectionType = partial.inspectionType;
+    this.applyCleaningService = partial.applyCleaningService;
+  }
+}
+
 class ItemResultsResDto {
   @ApiProperty({ description: 'Passed items', example: ['floor', 'window'] })
   passed: string[];
@@ -87,6 +163,10 @@ export class ApplicationResDto {
   @Type(() => InspectorInfoResDto)
   inspector: InspectorInfoResDto;
 
+  @ApiProperty({ type: TargetInfoResDto })
+  @Type(() => TargetInfoResDto)
+  targetInfo: TargetInfoResDto;
+
   @ApiPropertyOptional({
     description: 'Whether inspection is passed',
     type: Boolean,
@@ -111,6 +191,7 @@ export class ApplicationResDto {
     this.user = new UserInfoResDto(partial.user);
     this.inspectionSlot = new SlotInfoResDto(partial.inspectionSlot);
     this.inspector = new InspectorInfoResDto(partial.inspector);
+    this.targetInfo = new TargetInfoResDto(partial.inspectionTargetInfo);
     this.isPassed = partial.isPassed;
     this.itemResults = partial.itemResults;
     this.document = partial.document;
