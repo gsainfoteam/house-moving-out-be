@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Loggable()
@@ -18,8 +22,13 @@ export class FileService {
     });
   }
 
-  getUrl(key: string): string {
-    return `https://${this.configService.getOrThrow<string>('AWS_S3_BUCKET')}.s3.${this.configService.getOrThrow<string>('AWS_S3_REGION')}.amazonaws.com/${key}`;
+  async getUrl(key: string): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.configService.getOrThrow<string>('AWS_S3_BUCKET'),
+      Key: key,
+    });
+    const expiresIn = 60 * 60; // 1 hour
+    return getSignedUrl(this.s3Client, command, { expiresIn });
   }
 
   async createPresignedUrl(key: string, length: number): Promise<string> {
