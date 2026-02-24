@@ -796,7 +796,7 @@ export class MoveOutService {
       document:
         application.document === null
           ? null
-          : this.fileService.getUrl(application.document),
+          : await this.fileService.getUrl(application.document),
     });
   }
 
@@ -866,19 +866,25 @@ export class MoveOutService {
     { offset, limit }: ApplicationListQueryDto,
     scheduleUuid: string,
   ): Promise<ApplicationListResDto> {
-    const applications =
-      await this.moveOutRepository.findApplicationsByScheduleUuid(
+    const [applications, totalCount] = await Promise.all([
+      this.moveOutRepository.findApplicationsByScheduleUuid(
         offset ?? 0,
         limit ?? 20,
         scheduleUuid,
-      );
+      ),
+      this.moveOutRepository.countApplications(scheduleUuid),
+    ]);
     return new ApplicationListResDto(
-      applications.map((app) => ({
-        ...app,
-        document:
-          app.document === null ? null : this.fileService.getUrl(app.document),
-      })),
-      await this.moveOutRepository.countApplications(scheduleUuid),
+      await Promise.all(
+        applications.map(async (app) => ({
+          ...app,
+          document:
+            app.document === null
+              ? null
+              : await this.fileService.getUrl(app.document),
+        })),
+      ),
+      totalCount,
     );
   }
 
