@@ -9,6 +9,8 @@ import {
   Param,
   Query,
   Patch,
+  Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
@@ -22,6 +24,7 @@ import {
   ApiOperation,
   ApiOkResponse,
   ApiNotFoundResponse,
+  ApiNoContentResponse,
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { CreateArticleResDto } from './dto/res/create-article-res.dto';
@@ -156,5 +159,19 @@ export class ArticleController {
       isVisible,
     );
     return { uuid: article.uuid };
+  }
+
+  @ApiOperation({
+    summary: 'Delete Article',
+    description: 'Soft delete an article by its UUID.',
+  })
+  @ApiNoContentResponse({ description: 'Article successfully deleted' })
+  @ApiNotFoundResponse({ description: 'Article not found' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @HttpCode(204)
+  @Delete(':uuid')
+  async deleteArticle(@Param('uuid') uuid: string): Promise<void> {
+    await this.articleService.deleteArticle(uuid);
   }
 }

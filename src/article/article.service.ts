@@ -117,4 +117,9 @@ export class ArticleService {
       isVisible,
     );
   }
+
+  async deleteArticle(uuid: string) {
+    await this.articleRepository.findArticleByUuid(uuid);
+    return await this.articleRepository.DeleteArticle(uuid);
+  }
 }
