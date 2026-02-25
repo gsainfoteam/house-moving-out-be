@@ -8,6 +8,7 @@ import {
   Get,
   Param,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
@@ -31,6 +32,7 @@ import { User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
+import { UpdateArticleVisibilityReqDto } from './dto/req/update-article-visibility-req.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('article')
@@ -114,5 +116,45 @@ export class ArticleController {
     @Query() query: FindArticlesQueryDto,
   ): Promise<FindArticlesResDto> {
     return await this.articleService.findFaq(user, query);
+  }
+
+  @ApiOperation({
+    summary: 'Update Article',
+    description: 'Update an article by its UUID.',
+  })
+  @ApiOkResponse({ type: CreateArticleResDto })
+  @ApiNotFoundResponse({ description: 'Article not found' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid')
+  async updateArticle(
+    @Param('uuid') uuid: string,
+    @Body() updateArticleDto: CreateArticleReqDto,
+  ): Promise<CreateArticleResDto> {
+    const article = await this.articleService.updateArticle(
+      uuid,
+      updateArticleDto,
+    );
+    return { uuid: article.uuid };
+  }
+
+  @ApiOperation({
+    summary: 'Change Article Visibility',
+    description: 'Toggle the visibility of an article.',
+  })
+  @ApiOkResponse({ type: CreateArticleResDto })
+  @ApiNotFoundResponse({ description: 'Article not found' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid/visibility')
+  async changeArticleVisibility(
+    @Param('uuid') uuid: string,
+    @Body() { isVisible }: UpdateArticleVisibilityReqDto,
+  ): Promise<CreateArticleResDto> {
+    const article = await this.articleService.changeArticleVisibility(
+      uuid,
+      isVisible,
+    );
+    return { uuid: article.uuid };
   }
 }

@@ -10,6 +10,7 @@ import { PrismaService } from '@lib/prisma';
 import { CreateArticleType } from './types/create-article.type';
 import { Article, ArticleType, Prisma } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { PrismaTransaction } from 'src/common/types';
 
 @Loggable()
 @Injectable()
@@ -31,6 +32,27 @@ export class ArticleRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`createArticle error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async createArticleInTx(
+    data: CreateArticleType,
+    tx: PrismaTransaction,
+  ): Promise<Article> {
+    return await tx.article
+      .create({
+        data,
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            throw new ConflictException('Article already exists.');
+          }
+          this.logger.error(`createArticleInTx prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`createArticleInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -79,6 +101,71 @@ export class ArticleRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findArticleByUuid error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async updateArticleVisibility(
+    uuid: string,
+    isVisible: boolean,
+  ): Promise<Article> {
+    return await this.prismaService.article
+      .update({
+        where: { uuid, deletedAt: null },
+        data: { isVisible },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Article not found.');
+          }
+          this.logger.error(
+            `updateArticleVisibility prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateArticleVisibility error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async DeleteArticle(uuid: string): Promise<Article> {
+    return await this.prismaService.article
+      .update({
+        where: { uuid, deletedAt: null },
+        data: { deletedAt: new Date() },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Article not found.');
+          }
+          this.logger.error(`DeleteArticle prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`DeleteArticle error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async DeleteArticleInTx(
+    uuid: string,
+    tx: PrismaTransaction,
+  ): Promise<Article> {
+    return await tx.article
+      .update({
+        where: { uuid, deletedAt: null },
+        data: { deletedAt: new Date() },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Article not found.');
+          }
+          this.logger.error(`DeleteArticleInTx prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`DeleteArticleInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

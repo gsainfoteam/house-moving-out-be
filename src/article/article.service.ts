@@ -11,11 +11,16 @@ import { ArticleType, Role, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
+import { PrismaService } from '@lib/prisma';
+import { PrismaTransaction } from 'src/common/types';
 
 @Loggable()
 @Injectable()
 export class ArticleService {
-  constructor(private readonly articleRepository: ArticleRepository) {}
+  constructor(
+    private readonly articleRepository: ArticleRepository,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   async createArticle(createArticleReqDto: CreateArticleReqDto) {
     const { type, isVisible, articles } = createArticleReqDto;
@@ -75,5 +80,41 @@ export class ArticleService {
       );
 
     return new FindArticlesResDto(articles, totalCount);
+  }
+
+  async updateArticle(uuid: string, createArticleReqDto: CreateArticleReqDto) {
+    const { type, isVisible, articles } = createArticleReqDto;
+
+    const koContent = articles.find((a) => a.language === Language.KO);
+    const enContent = articles.find((a) => a.language === Language.EN);
+
+    if (!koContent || !enContent) {
+      throw new BadRequestException(
+        'Both Korean and English articles must be provided.',
+      );
+    }
+
+    return await this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        await this.articleRepository.DeleteArticleInTx(uuid, tx);
+
+        return await this.articleRepository.createArticle({
+          type,
+          titleKo: koContent.title,
+          titleEn: enContent.title,
+          contentKo: koContent.content,
+          contentEn: enContent.content,
+          isVisible,
+        });
+      },
+    );
+  }
+
+  async changeArticleVisibility(uuid: string, isVisible: boolean) {
+    await this.articleRepository.findArticleByUuid(uuid);
+    return await this.articleRepository.updateArticleVisibility(
+      uuid,
+      isVisible,
+    );
   }
 }
