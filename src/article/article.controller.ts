@@ -7,6 +7,7 @@ import {
   UseInterceptors,
   Get,
   Param,
+  Query,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
@@ -27,6 +28,8 @@ import { ErrorDto } from 'src/common/dto/error.dto';
 import { UserGuard } from 'src/auth/guard/user.guard';
 import { GetUser } from 'src/auth/decorator/get-user.decorator';
 import { User } from 'generated/prisma/client';
+import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
+import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
@@ -67,8 +70,8 @@ export class ArticleController {
   })
   @ApiOkResponse({ type: ArticleDetailResDto })
   @ApiNotFoundResponse({ description: 'Article not found', type: ErrorDto })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorDto })
-  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Get(':uuid')
@@ -77,5 +80,39 @@ export class ArticleController {
     @Param('uuid') uuid: string,
   ): Promise<ArticleDetailResDto> {
     return await this.articleService.findArticleByUuid(user, uuid);
+  }
+
+  @ApiOperation({
+    summary: 'Find Notice Articles',
+    description: 'Get a paginated list of notice articles.',
+  })
+  @ApiOkResponse({ type: FindArticlesResDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('notice')
+  async findNotices(
+    @GetUser() user: User,
+    @Query() query: FindArticlesQueryDto,
+  ): Promise<FindArticlesResDto> {
+    return await this.articleService.findNotices(user, query);
+  }
+
+  @ApiOperation({
+    summary: 'Find FAQ Articles',
+    description: 'Get a paginated list of FAQ articles.',
+  })
+  @ApiOkResponse({ type: FindArticlesResDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('faq')
+  async findFaq(
+    @GetUser() user: User,
+    @Query() query: FindArticlesQueryDto,
+  ): Promise<FindArticlesResDto> {
+    return await this.articleService.findFaq(user, query);
   }
 }

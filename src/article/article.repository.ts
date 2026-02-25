@@ -8,7 +8,7 @@ import {
 import { Loggable } from '@lib/logger';
 import { PrismaService } from '@lib/prisma';
 import { CreateArticleType } from './types/create-article.type';
-import { Article } from 'generated/prisma/client';
+import { Article, ArticleType, Prisma } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
 @Loggable()
@@ -33,6 +33,36 @@ export class ArticleRepository {
         this.logger.error(`createArticle error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
+  }
+
+  async findArticlesByType(
+    type: ArticleType,
+    isAdmin: boolean,
+    offset: number,
+    limit: number,
+  ): Promise<[Article[], number]> {
+    const where: Prisma.ArticleWhereInput = {
+      type,
+      deletedAt: null,
+      ...(!isAdmin && { isVisible: true }),
+    };
+
+    return await Promise.all([
+      this.prismaService.article.findMany({
+        where,
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prismaService.article.count({ where }),
+    ]).catch((error) => {
+      if (error instanceof PrismaClientKnownRequestError) {
+        this.logger.error(`findArticlesByType prisma error: ${error.message}`);
+        throw new InternalServerErrorException('Database Error');
+      }
+      this.logger.error(`findArticlesByType error: ${error}`);
+      throw new InternalServerErrorException('Unknown Error');
+    });
   }
 
   async findArticleByUuid(uuid: string): Promise<Article> {

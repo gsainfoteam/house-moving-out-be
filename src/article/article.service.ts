@@ -7,7 +7,9 @@ import {
 import { ArticleRepository } from './article.repository';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
 import { Language } from './dto/article.dto';
-import { Role, User } from 'generated/prisma/client';
+import { ArticleType, Role, User } from 'generated/prisma/client';
+import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
+import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
 
 @Loggable()
@@ -47,5 +49,31 @@ export class ArticleService {
     }
 
     return new ArticleDetailResDto(article);
+  }
+
+  async findNotices(user: User, query: FindArticlesQueryDto) {
+    return await this.findArticles(ArticleType.NOTICE, user, query);
+  }
+
+  async findFaq(user: User, query: FindArticlesQueryDto) {
+    return await this.findArticles(ArticleType.FAQ, user, query);
+  }
+
+  private async findArticles(
+    type: ArticleType,
+    user: User,
+    { offset, limit }: FindArticlesQueryDto,
+  ): Promise<FindArticlesResDto> {
+    const isAdmin = user.role === Role.ADMIN;
+
+    const [articles, totalCount] =
+      await this.articleRepository.findArticlesByType(
+        type,
+        isAdmin,
+        offset ?? 0,
+        limit ?? 20,
+      );
+
+    return new FindArticlesResDto(articles, totalCount);
   }
 }
