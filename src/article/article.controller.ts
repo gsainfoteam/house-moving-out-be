@@ -5,6 +5,8 @@ import {
   Controller,
   UseGuards,
   UseInterceptors,
+  Get,
+  Param,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
@@ -16,10 +18,16 @@ import {
   ApiInternalServerErrorResponse,
   ApiUnauthorizedResponse,
   ApiOperation,
+  ApiOkResponse,
+  ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { CreateArticleResDto } from './dto/res/create-article-res.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
+import { UserGuard } from 'src/auth/guard/user.guard';
+import { GetUser } from 'src/auth/decorator/get-user.decorator';
+import { User } from 'generated/prisma/client';
+import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('article')
@@ -51,5 +59,23 @@ export class ArticleController {
     const article =
       await this.articleService.createArticle(createArticleReqDto);
     return { uuid: article.uuid };
+  }
+
+  @ApiOperation({
+    summary: 'Find Article by UUID',
+    description: 'Get a single article by its UUID.',
+  })
+  @ApiOkResponse({ type: ArticleDetailResDto })
+  @ApiNotFoundResponse({ description: 'Article not found', type: ErrorDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorDto })
+  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorDto })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get(':uuid')
+  async findArticleByUuid(
+    @GetUser() user: User,
+    @Param('uuid') uuid: string,
+  ): Promise<ArticleDetailResDto> {
+    return await this.articleService.findArticleByUuid(user, uuid);
   }
 }

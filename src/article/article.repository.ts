@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { PrismaService } from '@lib/prisma';
@@ -30,6 +31,24 @@ export class ArticleRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`createArticle error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findArticleByUuid(uuid: string): Promise<Article> {
+    return await this.prismaService.article
+      .findUniqueOrThrow({
+        where: { uuid, deletedAt: null },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException('Article not found.');
+          }
+          this.logger.error(`findArticleByUuid prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findArticleByUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
