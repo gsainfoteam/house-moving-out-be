@@ -194,7 +194,7 @@ export class ApplicationResDto {
     this.targetInfo = new TargetInfoResDto(partial.inspectionTargetInfo);
     this.isPassed = partial.isPassed;
     this.itemResults = partial.itemResults;
-    this.document = partial.document;
+    this.document = partial.isDocumentActive ? partial.document : null;
     this.createdAt = partial.createdAt;
   }
 }
