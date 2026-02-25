@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Article, ArticleType } from 'generated/prisma/client';
 
-export class ArticleResDto {
+export class ArticleDetailResDto {
   @ApiProperty({
     description: 'The UUID of the article',
     example: '123e4567-e89b-12d3-a456-426614174000',
@@ -28,6 +28,18 @@ export class ArticleResDto {
   titleEn: string;
 
   @ApiProperty({
+    description: 'The content of the article in Korean',
+    example: '일정을 하루 앞당깁니다.',
+  })
+  contentKo: string;
+
+  @ApiProperty({
+    description: 'The content of the article in English',
+    example: 'We are moving the schedule up by one day.',
+  })
+  contentEn: string;
+
+  @ApiProperty({
     description: 'Whether the article is visible to general users',
     example: true,
   })
@@ -50,27 +62,10 @@ export class ArticleResDto {
     this.type = article.type;
     this.titleKo = article.titleKo;
     this.titleEn = article.titleEn;
+    this.contentKo = article.contentKo;
+    this.contentEn = article.contentEn;
     this.isVisible = article.isVisible;
     this.createdAt = article.createdAt;
     this.updatedAt = article.updatedAt;
-  }
-}
-
-export class FindArticlesResDto {
-  @ApiProperty({
-    description: 'Total count of articles matching the filters',
-    example: 100,
-  })
-  totalCount: number;
-
-  @ApiProperty({
-    description: 'List of articles for the current page',
-    type: [ArticleResDto],
-  })
-  articles: ArticleResDto[];
-
-  constructor(articles: Article[], totalCount: number) {
-    this.totalCount = totalCount;
-    this.articles = articles.map((article) => new ArticleResDto(article));
   }
 }
