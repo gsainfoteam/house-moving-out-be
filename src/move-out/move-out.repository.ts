@@ -29,7 +29,6 @@ import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { ApplicationInfo } from './types/application-info.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
-import { LatestApplicationWithDetails } from './types/latest-application-with-details.type';
 
 @Loggable()
 @Injectable()
@@ -1037,6 +1036,7 @@ export class MoveOutRepository {
     itemResults: Prisma.InputJsonValue,
     isPassed: boolean,
     document: string,
+    isDocumentActive: boolean,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
@@ -1046,6 +1046,7 @@ export class MoveOutRepository {
           itemResults,
           isPassed,
           document,
+          isDocumentActive,
         },
       })
       .catch((error) => {
@@ -1062,6 +1063,33 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`updateInspectionResultInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async updateDocumentActiveStatus(
+    applicationUuid: string,
+    isDocumentActive: boolean,
+  ): Promise<InspectionApplication> {
+    return await this.prismaService.inspectionApplication
+      .update({
+        where: { uuid: applicationUuid },
+        data: { isDocumentActive },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found for update status: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `updateDocumentActiveStatus prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateDocumentActiveStatus error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -1182,38 +1210,6 @@ export class MoveOutRepository {
         }
         this.logger.error(
           `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid error: ${error}`,
-        );
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async findLatestApplicationsWithDetailsByScheduleUuid(
-    scheduleUuid: string,
-  ): Promise<LatestApplicationWithDetails[]> {
-    return await this.prismaService.inspectionApplication
-      .findMany({
-        where: {
-          deletedAt: null,
-          inspectionTargetInfo: { scheduleUuid },
-        },
-        orderBy: [{ inspectionTargetInfoUuid: 'asc' }, { createdAt: 'desc' }],
-        distinct: ['inspectionTargetInfoUuid'],
-        include: {
-          inspectionSlot: true,
-          inspector: true,
-          user: true,
-          inspectionTargetInfo: true,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findLatestApplicationsWithDetailsByScheduleUuid prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(
-          `findLatestApplicationsWithDetailsByScheduleUuid error: ${error}`,
         );
         throw new InternalServerErrorException('Unknown Error');
       });

@@ -594,4 +594,26 @@ export class MoveOutController {
       submitInspectionResultDto,
     );
   }
+
+  @ApiOperation({
+    summary: 'Verify inspection document upload',
+    description:
+      'Verify if the inspection document has been successfully uploaded to S3 and set its status to active.',
+  })
+  @ApiOkResponse({
+    description: 'The document has been successfully verified.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - No document or not uploaded',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Patch('application/:uuid/document/verify')
+  async verifyInspectionDocument(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    await this.moveOutService.verifyInspectionDocument(uuid);
+  }
 }

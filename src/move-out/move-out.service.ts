@@ -819,6 +819,12 @@ export class MoveOutService {
       );
     }
 
+    const key = `application/${applicationUuid}/application_${crypto.randomBytes(16).toString('base64url')}.pdf`;
+    const presignedUrl = await this.fileService.createPresignedUrl(
+      key,
+      contentLength,
+    );
+
     const inspector = await this.inspectorService.findInspectorByUserInfo(
       email,
       name,
@@ -845,20 +851,34 @@ export class MoveOutService {
           );
         }
 
-        const key = `application/${applicationUuid}/profile_${crypto.randomBytes(16).toString('base64url')}.pdf`;
-        const presignedUrl = await this.fileService.createPresignedUrl(
-          key,
-          contentLength,
-        );
         await this.moveOutRepository.updateInspectionResultInTx(
           applicationUuid,
           { passed, failed },
           failed.length === 0,
           key,
+          false,
           tx,
         );
         return { presignedUrl };
       },
+    );
+  }
+
+  async verifyInspectionDocument(applicationUuid: string): Promise<void> {
+    const application =
+      await this.moveOutRepository.findApplicationByUuid(applicationUuid);
+
+    if (!application.document) {
+      throw new BadRequestException(
+        'No document associated with this application.',
+      );
+    }
+
+    await this.fileService.verifyFileExists(application.document);
+
+    await this.moveOutRepository.updateDocumentActiveStatus(
+      applicationUuid,
+      true,
     );
   }
 

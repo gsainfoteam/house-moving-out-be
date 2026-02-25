@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { ConfigService } from '@nestjs/config';
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
+  S3ServiceException,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -39,5 +41,24 @@ export class FileService {
     });
     const expiresIn = 5 * 60; // 5 minutes
     return getSignedUrl(this.s3Client, command, { expiresIn });
+  }
+
+  async verifyFileExists(key: string): Promise<boolean> {
+    const command = new HeadObjectCommand({
+      Bucket: this.configService.getOrThrow<string>('AWS_S3_BUCKET'),
+      Key: key,
+    });
+
+    return await this.s3Client
+      .send(command)
+      .then(() => true)
+      .catch((error) => {
+        if (error instanceof S3ServiceException && error.name === 'NotFound') {
+          throw new NotFoundException(
+            `File with key ${key} not found in S3 bucket`,
+          );
+        }
+        throw error;
+      });
   }
 }
