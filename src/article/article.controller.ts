@@ -52,12 +52,9 @@ export class ArticleController {
     type: CreateArticleResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request', type: ErrorDto })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorDto })
-  @ApiForbiddenResponse({ description: 'Forbidden', type: ErrorDto })
-  @ApiInternalServerErrorResponse({
-    description: 'Internal Server Error',
-    type: ErrorDto,
-  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Post()
@@ -74,9 +71,10 @@ export class ArticleController {
     description: 'Get a single article by its UUID.',
   })
   @ApiOkResponse({ type: ArticleDetailResDto })
-  @ApiNotFoundResponse({ description: 'Article not found', type: ErrorDto })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Get(':uuid')
@@ -126,7 +124,11 @@ export class ArticleController {
     description: 'Update an article by its UUID.',
   })
   @ApiOkResponse({ type: CreateArticleResDto })
-  @ApiNotFoundResponse({ description: 'Article not found' })
+  @ApiBadRequestResponse({ description: 'Bad Request', type: ErrorDto })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Patch(':uuid')
@@ -146,7 +148,11 @@ export class ArticleController {
     description: 'Toggle the visibility of an article.',
   })
   @ApiOkResponse({ type: CreateArticleResDto })
-  @ApiNotFoundResponse({ description: 'Article not found' })
+  @ApiBadRequestResponse({ description: 'Bad Request', type: ErrorDto })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Patch(':uuid/visibility')
@@ -166,7 +172,10 @@ export class ArticleController {
     description: 'Soft delete an article by its UUID.',
   })
   @ApiNoContentResponse({ description: 'Article successfully deleted' })
-  @ApiNotFoundResponse({ description: 'Article not found' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @HttpCode(204)
