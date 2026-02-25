@@ -29,6 +29,7 @@ import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { ApplicationInfo } from './types/application-info.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
+import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
 
 @Loggable()
 @Injectable()
@@ -1211,6 +1212,36 @@ export class MoveOutRepository {
         this.logger.error(
           `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid error: ${error}`,
         );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findLatestApplicationsByInspector(
+    inspectorUuid: string,
+    scheduleUuid: string,
+  ): Promise<InspectorApplicationWithDetails[]> {
+    return await this.prismaService.inspectionApplication
+      .findMany({
+        where: {
+          deletedAt: null,
+          inspectorUuid,
+          inspectionTargetInfo: { scheduleUuid },
+        },
+        orderBy: [{ inspectionTargetInfoUuid: 'asc' }, { createdAt: 'desc' }],
+        distinct: ['inspectionTargetInfoUuid'],
+        include: {
+          inspectionSlot: true,
+          inspectionTargetInfo: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findLatestApplicationsByInspector prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findLatestApplicationsByInspector error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

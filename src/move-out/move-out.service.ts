@@ -38,11 +38,11 @@ import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res
 import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
-import { InspectorService } from 'src/inspector/inspector.service';
 import { FileService } from '@lib/file';
 import * as crypto from 'crypto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
+import { InspectorRepository } from 'src/inspector/inspector.repository';
 import {
   ApplicationListResDto,
   ApplicationResDto,
@@ -63,8 +63,8 @@ export class MoveOutService {
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
-    private readonly inspectorService: InspectorService,
     private readonly fileService: FileService,
+    private readonly inspectorRepository: InspectorRepository,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -825,7 +825,7 @@ export class MoveOutService {
       contentLength,
     );
 
-    const inspector = await this.inspectorService.findInspectorByUserInfo(
+    const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       email,
       name,
       studentNumber,

@@ -6,7 +6,10 @@ import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 import { Loggable } from '@lib/logger';
-import { Inspector } from 'generated/prisma/client';
+import { User } from 'generated/prisma/client';
+import { InspectorTargetsResDto } from 'src/inspector/dto/res/inspector-targets-res.dto';
+import { MoveOutRepository } from 'src/move-out/move-out.repository';
+import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
 
 @Loggable()
 @Injectable()
@@ -14,6 +17,7 @@ export class InspectorService {
   constructor(
     private readonly inspectorRepository: InspectorRepository,
     private readonly prismaService: PrismaService,
+    private readonly moveOutRepository: MoveOutRepository,
   ) {}
 
   async getInspectors(): Promise<InspectorResDto[]> {
@@ -42,18 +46,6 @@ export class InspectorService {
     return new InspectorResDto(inspector);
   }
 
-  async findInspectorByUserInfo(
-    email: string,
-    name: string,
-    studentNumber: string,
-  ): Promise<Inspector> {
-    return await this.inspectorRepository.findInspectorByUserInfo(
-      email,
-      name,
-      studentNumber,
-    );
-  }
-
   async updateInspector(
     uuid: string,
     { availableSlotUuids }: UpdateInspectorDto,
@@ -73,5 +65,65 @@ export class InspectorService {
 
   async deleteInspector(uuid: string): Promise<void> {
     await this.inspectorRepository.deleteInspector(uuid);
+  }
+
+  async getMyInspectionTargets({
+    email,
+    name,
+    studentNumber,
+  }: User): Promise<InspectorTargetsResDto> {
+    const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+      email,
+      name,
+      studentNumber,
+    );
+
+    const schedule = await this.moveOutRepository.findActiveSchedule();
+
+    const latestApplications: InspectorApplicationWithDetails[] =
+      await this.moveOutRepository.findLatestApplicationsByInspector(
+        inspector.uuid,
+        schedule.uuid,
+      );
+
+    const targets = latestApplications
+      .map((latestApplication) => {
+        const targetInfo = latestApplication.inspectionTargetInfo;
+        const residents = [
+          targetInfo.student1Name && targetInfo.student1AdmissionYear
+            ? {
+                admissionYear: targetInfo.student1AdmissionYear,
+                name: targetInfo.student1Name,
+              }
+            : null,
+          targetInfo.student2Name && targetInfo.student2AdmissionYear
+            ? {
+                admissionYear: targetInfo.student2AdmissionYear,
+                name: targetInfo.student2Name,
+              }
+            : null,
+          targetInfo.student3Name && targetInfo.student3AdmissionYear
+            ? {
+                admissionYear: targetInfo.student3AdmissionYear,
+                name: targetInfo.student3Name,
+              }
+            : null,
+        ].filter(
+          (v): v is { admissionYear: string; name: string } => v !== null,
+        );
+
+        return {
+          uuid: latestApplication.uuid,
+          roomNumber: targetInfo.roomNumber,
+          residents,
+          inspectionType: targetInfo.inspectionType,
+          inspectionTime: latestApplication.inspectionSlot.startTime,
+          isPassed: latestApplication.isPassed ?? null,
+          inspectionCount: targetInfo.inspectionCount,
+        };
+      })
+      .sort((a, b) => a.inspectionTime.getTime() - b.inspectionTime.getTime());
+
+    return { targets };
   }
 }

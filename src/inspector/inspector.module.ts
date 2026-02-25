@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { InspectorController } from './inspector.controller';
 import { InspectorService } from './inspector.service';
-import { InspectorRepository } from './inspector.repository';
 import { PrismaModule } from '@lib/prisma';
+import { MoveOutDataAccessModule } from 'src/move-out/move-out-data-access.module';
+import { InspectorDataAccessModule } from './inspector-data-access.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MoveOutDataAccessModule, InspectorDataAccessModule],
   controllers: [InspectorController],
-  providers: [InspectorService, InspectorRepository],
+  providers: [InspectorService],
   exports: [InspectorService],
 })
 export class InspectorModule {}

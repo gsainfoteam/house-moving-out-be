@@ -1,16 +1,22 @@
 import { Module } from '@nestjs/common';
 import { MoveOutService } from './move-out.service';
 import { MoveOutController } from './move-out.controller';
-import { MoveOutRepository } from './move-out.repository';
 import { PrismaModule } from '@lib/prisma';
 import { ExcelParserModule } from '@lib/excel-parser';
-import { InspectorModule } from 'src/inspector/inspector.module';
 import { FileModule } from '@lib/file';
+import { InspectorDataAccessModule } from 'src/inspector/inspector-data-access.module';
+import { MoveOutDataAccessModule } from './move-out-data-access.module';
 
 @Module({
-  imports: [PrismaModule, ExcelParserModule, InspectorModule, FileModule],
+  imports: [
+    PrismaModule,
+    ExcelParserModule,
+    InspectorDataAccessModule,
+    FileModule,
+    MoveOutDataAccessModule,
+  ],
   controllers: [MoveOutController],
-  providers: [MoveOutService, MoveOutRepository],
+  providers: [MoveOutService],
   exports: [MoveOutService],
 })
 export class MoveOutModule {}

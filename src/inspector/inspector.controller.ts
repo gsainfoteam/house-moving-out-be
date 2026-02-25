@@ -16,17 +16,23 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { User } from 'generated/prisma/client';
+import { GetUser } from 'src/auth/decorator/get-user.decorator';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
+import { UserGuard } from 'src/auth/guard/user.guard';
 import { InspectorService } from './inspector.service';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
+import { InspectorTargetsResDto } from 'src/inspector/dto/res/inspector-targets-res.dto';
+import { ErrorDto } from 'src/common/dto/error.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -48,6 +54,33 @@ export class InspectorController {
   @Get()
   async getInspectors(): Promise<InspectorResDto[]> {
     return await this.inspectorService.getInspectors();
+  }
+
+  @ApiOperation({
+    summary: 'Get My Inspection Targets (Inspector)',
+    description:
+      'Get inspection targets assigned to the inspector in the active schedule',
+  })
+  @ApiOkResponse({
+    description: 'The inspection targets have been successfully retrieved.',
+    type: InspectorTargetsResDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - User is not an inspector',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found - No active schedule or inspector not found',
+    type: ErrorDto,
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('targets')
+  async getMyInspectionTargets(
+    @GetUser() user: User,
+  ): Promise<InspectorTargetsResDto> {
+    return await this.inspectorService.getMyInspectionTargets(user);
   }
 
   @ApiOperation({
