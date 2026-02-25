@@ -14,5 +14,5 @@ CREATE TABLE "article" (
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" TIMESTAMP(3),
 
-    CONSTRAINT "Article_pkey" PRIMARY KEY ("uuid")
+    CONSTRAINT "article_pkey" PRIMARY KEY ("uuid")
 );
