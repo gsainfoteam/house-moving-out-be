@@ -44,9 +44,6 @@ import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
-import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
-import { DeleteInspectionTargetsResDto } from './dto/res/delete-inspection-targets-res.dto';
-import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
@@ -259,30 +256,6 @@ export class MoveOutController {
   }
 
   @ApiOperation({
-    summary: 'Get Inspection Targets by Semester Combination',
-    description:
-      'Retrieve inspection targets by current/next semester combination.',
-  })
-  @ApiOkResponse({
-    description: 'Inspection targets successfully retrieved',
-    type: [InspectionTargetInfoResDto],
-  })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Get('inspection-targets')
-  async findInspectionTargetsBySemesters(
-    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
-  ): Promise<InspectionTargetInfoResDto[]> {
-    return await this.moveOutService.findInspectionTargetsBySemesters(
-      semestersQuery,
-    );
-  }
-
-  @ApiOperation({
     summary: 'Get Inspection Targets by Schedule Uuid',
     description: 'Retrieve inspection targets by Inspection Schedule Uuid',
   })
@@ -328,30 +301,6 @@ export class MoveOutController {
     return await this.moveOutService.findApplicationsByScheduleUuid(
       query,
       scheduleUuid,
-    );
-  }
-
-  @ApiOperation({
-    summary: 'Delete Inspection Targets by Semester Combination',
-    description:
-      'Delete inspection targets by current/next semester combination.',
-  })
-  @ApiOkResponse({
-    description: 'Inspection targets successfully deleted',
-    type: DeleteInspectionTargetsResDto,
-  })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Delete('inspection-targets')
-  async deleteInspectionTargetsBySemesters(
-    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
-  ): Promise<DeleteInspectionTargetsResDto> {
-    return await this.moveOutService.deleteInspectionTargetsBySemesters(
-      semestersQuery,
     );
   }
 

@@ -34,8 +34,6 @@ import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import ms from 'ms';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
-import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
-import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { FileService } from '@lib/file';
@@ -351,100 +349,6 @@ export class MoveOutService {
         return createdCount;
       },
     );
-  }
-
-  async findInspectionTargetsBySemesters({
-    currentYear,
-    currentSeason,
-    nextYear,
-    nextSeason,
-  }: InspectionTargetsBySemestersQueryDto): Promise<
-    InspectionTargetInfoResDto[]
-  > {
-    const currentSemester: Semester = {
-      year: currentYear,
-      season: currentSeason,
-    };
-    const nextSemester: Semester = {
-      year: nextYear,
-      season: nextSeason,
-    };
-
-    this.validateSemesterOrder(currentSemester, nextSemester);
-
-    const currentSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        currentSemester.year,
-        currentSemester.season,
-      );
-    const nextSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        nextSemester.year,
-        nextSemester.season,
-      );
-
-    const schedule =
-      await this.moveOutRepository.findMoveOutScheduleBySemesterUuids(
-        currentSemesterEntity.uuid,
-        nextSemesterEntity.uuid,
-      );
-    const targets =
-      await this.moveOutRepository.findInspectionTargetInfosByScheduleUuid(
-        schedule.uuid,
-      );
-
-    if (targets.length === 0) {
-      throw new NotFoundException('Inspection targets not found');
-    }
-
-    return targets.map((target) => new InspectionTargetInfoResDto(target));
-  }
-
-  async deleteInspectionTargetsBySemesters({
-    currentYear,
-    currentSeason,
-    nextYear,
-    nextSeason,
-  }: InspectionTargetsBySemestersQueryDto): Promise<{ count: number }> {
-    const currentSemester: Semester = {
-      year: currentYear,
-      season: currentSeason,
-    };
-    const nextSemester: Semester = {
-      year: nextYear,
-      season: nextSeason,
-    };
-
-    this.validateSemesterOrder(currentSemester, nextSemester);
-
-    const currentSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        currentSemester.year,
-        currentSemester.season,
-      );
-    const nextSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        nextSemester.year,
-        nextSemester.season,
-      );
-
-    const schedule =
-      await this.moveOutRepository.findMoveOutScheduleBySemesterUuids(
-        currentSemesterEntity.uuid,
-        nextSemesterEntity.uuid,
-      );
-    const result =
-      await this.moveOutRepository.deleteInspectionTargetInfosByScheduleUuid(
-        schedule.uuid,
-      );
-
-    if (result.count === 0) {
-      throw new NotFoundException('Inspection targets not found');
-    }
-
-    return {
-      count: result.count,
-    };
   }
 
   async bulkUpdateCleaningService(

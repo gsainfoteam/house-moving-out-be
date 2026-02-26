@@ -91,37 +91,6 @@ export class MoveOutRepository {
       });
   }
 
-  async findMoveOutScheduleBySemesterUuids(
-    currentSemesterUuid: string,
-    nextSemesterUuid: string,
-  ): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
-      .findFirstOrThrow({
-        where: {
-          currentSemesterUuid,
-          nextSemesterUuid,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(
-              `MoveOutSchedule not found for semesters: ${currentSemesterUuid}, ${nextSemesterUuid}`,
-            );
-            throw new NotFoundException(
-              'Schedule not found for the given semesters.',
-            );
-          }
-          this.logger.error(
-            `findMoveOutScheduleBySemesterUuids prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findMoveOutScheduleBySemesterUuids error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async findMoveOutScheduleWithSlotsByUuid(
     uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
@@ -288,80 +257,6 @@ export class MoveOutRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findOrCreateSemester error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async findSemesterByYearAndSeason(
-    year: number,
-    season: Season,
-  ): Promise<Semester> {
-    return await this.prismaService.semester
-      .findUniqueOrThrow({
-        where: {
-          year_season: {
-            year,
-            season,
-          },
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(
-              `Semester not found: year=${year}, season=${season}`,
-            );
-            throw new NotFoundException('Semester not found.');
-          }
-          this.logger.error(
-            `findSemesterByYearAndSeason prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findSemesterByYearAndSeason error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async findInspectionTargetInfosByScheduleUuid(
-    scheduleUuid: string,
-  ): Promise<InspectionTargetInfo[]> {
-    return await this.prismaService.inspectionTargetInfo
-      .findMany({
-        where: { scheduleUuid },
-        orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findInspectionTargetInfosByScheduleUuid prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(
-          `findInspectionTargetInfosByScheduleUuid error: ${error}`,
-        );
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async deleteInspectionTargetInfosByScheduleUuid(
-    scheduleUuid: string,
-  ): Promise<{ count: number }> {
-    return await this.prismaService.inspectionTargetInfo
-      .deleteMany({
-        where: { scheduleUuid },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `deleteInspectionTargetInfosByScheduleUuid prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(
-          `deleteInspectionTargetInfosByScheduleUuid error: ${error}`,
-        );
         throw new InternalServerErrorException('Unknown Error');
       });
   }
