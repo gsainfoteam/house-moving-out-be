@@ -621,6 +621,7 @@ export class MoveOutService {
           application.inspectionTargetInfoUuid,
           inspectionSlotUuid,
           inspector.uuid,
+          application.inspectionCount,
           tx,
         );
 
