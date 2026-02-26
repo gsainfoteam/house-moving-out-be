@@ -180,7 +180,10 @@ export class ApplicationResDto {
   @Type(() => ItemResultsResDto)
   itemResults?: ItemResultsResDto | JsonValue;
 
-  @ApiPropertyOptional({ description: 'Inspection document URL', type: String })
+  @ApiPropertyOptional({
+    description: 'Inspection document URL (Expires in 10 minutes)',
+    type: String,
+  })
   document?: string | null;
 
   @ApiProperty({ description: 'Application created at' })
