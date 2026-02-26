@@ -212,6 +212,7 @@ model InspectionApplication {
   updatedAt                DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt                DateTime? @map("deleted_at")
   inspectorUuid            String    @map("inspector_uuid")
+  inspectionCount          Int       @map("inspection_count")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   inspectionTargetInfo InspectionTargetInfo @relation(fields: [inspectionTargetInfoUuid], references: [uuid], onDelete: Cascade)

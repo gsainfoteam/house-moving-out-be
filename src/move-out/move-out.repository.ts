@@ -727,6 +727,7 @@ export class MoveOutRepository {
     inspectionTargetInfoUuid: string,
     inspectionSlotUuid: string,
     inspectorUuid: string,
+    inspectionCount: number,
     tx: PrismaTransaction,
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
@@ -736,6 +737,7 @@ export class MoveOutRepository {
           inspectionTargetInfoUuid,
           inspectionSlotUuid,
           inspectorUuid,
+          inspectionCount,
         },
       })
       .catch((error) => {
