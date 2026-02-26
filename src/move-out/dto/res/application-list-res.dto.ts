@@ -20,10 +20,14 @@ class UserInfoResDto {
   @ApiProperty({ description: 'Student Number', example: '20250000' })
   studentNumber: string;
 
+  @ApiProperty({ description: 'Phone Number', example: '+82 10-1234-5678' })
+  phoneNumber: string;
+
   constructor(partial: User) {
     this.name = partial.name;
     this.email = partial.email;
     this.studentNumber = partial.studentNumber;
+    this.phoneNumber = partial.phoneNumber;
   }
 }
 
