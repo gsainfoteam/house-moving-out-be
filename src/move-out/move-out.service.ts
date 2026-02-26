@@ -485,10 +485,11 @@ export class MoveOutService {
           inspectionTargetInfo.houseName,
         );
 
-        await this.moveOutRepository.incrementInspectionCountInTx(
-          inspectionTargetInfo.uuid,
-          tx,
-        );
+        const updatedTargetInfo =
+          await this.moveOutRepository.incrementInspectionCountInTx(
+            inspectionTargetInfo.uuid,
+            tx,
+          );
         const updatedSlot =
           await this.moveOutRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
@@ -520,6 +521,7 @@ export class MoveOutService {
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
             inspector.uuid,
+            updatedTargetInfo.inspectionCount,
             tx,
           );
 
