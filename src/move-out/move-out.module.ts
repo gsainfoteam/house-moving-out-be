@@ -3,6 +3,7 @@ import { MoveOutService } from './move-out.service';
 import { MoveOutController } from './move-out.controller';
 import { PrismaModule } from '@lib/prisma';
 import { ExcelParserModule } from '@lib/excel-parser';
+import { FileModule } from '@lib/file';
 import { InspectorDataAccessModule } from 'src/inspector/inspector-data-access.module';
 import { MoveOutDataAccessModule } from './move-out-data-access.module';
 
@@ -11,6 +12,7 @@ import { MoveOutDataAccessModule } from './move-out-data-access.module';
     PrismaModule,
     ExcelParserModule,
     InspectorDataAccessModule,
+    FileModule,
     MoveOutDataAccessModule,
   ],
   controllers: [MoveOutController],

@@ -6,9 +6,9 @@ import {
   User,
 } from 'generated/prisma/client';
 
-export type LatestApplicationWithDetails = InspectionApplication & {
-  inspectionSlot: InspectionSlot;
-  inspector: Inspector;
+export type ApplicationInfo = InspectionApplication & {
   user: User;
+  inspector: Inspector;
+  inspectionSlot: InspectionSlot;
   inspectionTargetInfo: InspectionTargetInfo;
 };

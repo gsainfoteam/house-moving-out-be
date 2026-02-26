@@ -32,19 +32,20 @@ import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
-import { fileTypeFromBuffer } from 'file-type';
 import ms from 'ms';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
-import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
-import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
+import { FileService } from '@lib/file';
+import * as crypto from 'crypto';
+import { RegisterResultResDto } from './dto/res/register-result-res.dto';
+import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
 import { InspectorRepository } from 'src/inspector/inspector.repository';
-import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import {
-  DetailedApplication,
-  FindAllInspectionApplicationsResDto,
-} from './dto/res/find-all-inspection-applications-res.dto';
+  ApplicationListResDto,
+  ApplicationResDto,
+} from './dto/res/application-list-res.dto';
+import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 
@@ -55,13 +56,12 @@ export class MoveOutService {
   private readonly WEIGHT_FACTOR = 1.5;
   private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
-  private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
-  private readonly MAX_SIGNATURE_SIZE = 3 * 1024 * 1024;
   constructor(
     private readonly moveOutRepository: MoveOutRepository,
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
+    private readonly fileService: FileService,
     private readonly inspectorRepository: InspectorRepository,
   ) {}
 
@@ -349,100 +349,6 @@ export class MoveOutService {
         return createdCount;
       },
     );
-  }
-
-  async findInspectionTargetsBySemesters({
-    currentYear,
-    currentSeason,
-    nextYear,
-    nextSeason,
-  }: InspectionTargetsBySemestersQueryDto): Promise<
-    InspectionTargetInfoResDto[]
-  > {
-    const currentSemester: Semester = {
-      year: currentYear,
-      season: currentSeason,
-    };
-    const nextSemester: Semester = {
-      year: nextYear,
-      season: nextSeason,
-    };
-
-    this.validateSemesterOrder(currentSemester, nextSemester);
-
-    const currentSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        currentSemester.year,
-        currentSemester.season,
-      );
-    const nextSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        nextSemester.year,
-        nextSemester.season,
-      );
-
-    const schedule =
-      await this.moveOutRepository.findMoveOutScheduleBySemesterUuids(
-        currentSemesterEntity.uuid,
-        nextSemesterEntity.uuid,
-      );
-    const targets =
-      await this.moveOutRepository.findInspectionTargetInfosByScheduleUuid(
-        schedule.uuid,
-      );
-
-    if (targets.length === 0) {
-      throw new NotFoundException('Inspection targets not found');
-    }
-
-    return targets.map((target) => new InspectionTargetInfoResDto(target));
-  }
-
-  async deleteInspectionTargetsBySemesters({
-    currentYear,
-    currentSeason,
-    nextYear,
-    nextSeason,
-  }: InspectionTargetsBySemestersQueryDto): Promise<{ count: number }> {
-    const currentSemester: Semester = {
-      year: currentYear,
-      season: currentSeason,
-    };
-    const nextSemester: Semester = {
-      year: nextYear,
-      season: nextSeason,
-    };
-
-    this.validateSemesterOrder(currentSemester, nextSemester);
-
-    const currentSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        currentSemester.year,
-        currentSemester.season,
-      );
-    const nextSemesterEntity =
-      await this.moveOutRepository.findSemesterByYearAndSeason(
-        nextSemester.year,
-        nextSemester.season,
-      );
-
-    const schedule =
-      await this.moveOutRepository.findMoveOutScheduleBySemesterUuids(
-        currentSemesterEntity.uuid,
-        nextSemesterEntity.uuid,
-      );
-    const result =
-      await this.moveOutRepository.deleteInspectionTargetInfosByScheduleUuid(
-        schedule.uuid,
-      );
-
-    if (result.count === 0) {
-      throw new NotFoundException('Inspection targets not found');
-    }
-
-    return {
-      count: result.count,
-    };
   }
 
   async bulkUpdateCleaningService(
@@ -785,13 +691,24 @@ export class MoveOutService {
     };
   }
 
+  async findApplication(uuid: string): Promise<ApplicationResDto> {
+    const application =
+      await this.moveOutRepository.findApplicationByUuid(uuid);
+
+    return new ApplicationResDto({
+      ...application,
+      document:
+        application.document === null
+          ? null
+          : await this.fileService.getUrl(application.document),
+    });
+  }
+
   async submitInspectionResult(
     { email, name, studentNumber }: User,
     applicationUuid: string,
-    { passed, failed }: SubmitInspectionResultDto,
-    inspectorSignature: Express.Multer.File | undefined,
-    targetSignature: Express.Multer.File | undefined,
-  ): Promise<void> {
+    { passed, failed, contentLength }: SubmitInspectionResultDto,
+  ): Promise<RegisterResultResDto> {
     if (passed.length === 0 && failed.length === 0) {
       throw new BadRequestException(
         'At least one inspection item result (passed or failed) is required.',
@@ -806,19 +723,16 @@ export class MoveOutService {
       );
     }
 
+    const key = `application/${applicationUuid}/application_${crypto.randomBytes(16).toString('base64url')}.pdf`;
+    const presignedUrl = await this.fileService.createPresignedUrl(
+      key,
+      contentLength,
+    );
+
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       email,
       name,
       studentNumber,
-    );
-
-    const inspectorSignatureImage = await this.validateSignatureFile(
-      inspectorSignature,
-      'inspector',
-    );
-    const targetSignatureImage = await this.validateSignatureFile(
-      targetSignature,
-      'target',
     );
 
     return await this.prismaService.$transaction(
@@ -845,40 +759,57 @@ export class MoveOutService {
           applicationUuid,
           { passed, failed },
           failed.length === 0,
-          inspectorSignatureImage,
-          targetSignatureImage,
+          key,
+          false,
           tx,
         );
+        return { presignedUrl };
       },
     );
   }
 
-  private async validateSignatureFile(
-    file: Express.Multer.File | undefined,
-    role: 'inspector' | 'target',
-  ): Promise<Uint8Array<ArrayBuffer>> {
-    if (!file?.buffer || file.size === 0) {
-      const subject =
-        role === 'inspector' ? 'Inspector signature' : 'Target signature';
-      throw new BadRequestException(`${subject} is required.`);
-    }
+  async verifyInspectionDocument(applicationUuid: string): Promise<void> {
+    const application =
+      await this.moveOutRepository.findApplicationByUuid(applicationUuid);
 
-    if (file.size > this.MAX_SIGNATURE_SIZE) {
+    if (!application.document) {
       throw new BadRequestException(
-        `Signature image size must be less than ${this.MAX_SIGNATURE_SIZE / 1024 / 1024}MB.`,
+        'No document associated with this application.',
       );
     }
 
-    const fileType = await fileTypeFromBuffer(file.buffer);
-    const allowedMimeTypes = ['image/png', 'image/jpeg'];
+    await this.fileService.verifyFileExists(application.document);
 
-    if (!fileType || !allowedMimeTypes.includes(fileType.mime)) {
-      throw new BadRequestException(
-        `Invalid ${role} signature image type. Only PNG and JPEG are allowed.`,
-      );
-    }
+    await this.moveOutRepository.updateDocumentActiveStatus(
+      applicationUuid,
+      true,
+    );
+  }
 
-    return new Uint8Array(file.buffer);
+  async findApplicationsByScheduleUuid(
+    { offset, limit }: ApplicationListQueryDto,
+    scheduleUuid: string,
+  ): Promise<ApplicationListResDto> {
+    const [applications, totalCount] = await Promise.all([
+      this.moveOutRepository.findApplicationsByScheduleUuid(
+        offset ?? 0,
+        limit ?? 20,
+        scheduleUuid,
+      ),
+      this.moveOutRepository.countApplications(scheduleUuid),
+    ]);
+    return new ApplicationListResDto(
+      await Promise.all(
+        applications.map(async (app) => ({
+          ...app,
+          document:
+            app.document === null
+              ? null
+              : await this.fileService.getUrl(app.document),
+        })),
+      ),
+      totalCount,
+    );
   }
 
   async findAllInspectionTargetInfoByScheduleUuid(
@@ -939,55 +870,6 @@ export class MoveOutService {
         };
       },
     );
-  }
-
-  async findAllInspectionApplicationByScheduleUuid(
-    scheduleUuid: string,
-  ): Promise<FindAllInspectionApplicationsResDto> {
-    const latestApplications =
-      await this.moveOutRepository.findLatestApplicationsWithDetailsByScheduleUuid(
-        scheduleUuid,
-      );
-
-    const detailedApplications: DetailedApplication[] = [];
-
-    for (const latestApplication of latestApplications) {
-      const targetInfo = latestApplication.inspectionTargetInfo;
-      const residents = [
-        targetInfo.student1Name && targetInfo.student1AdmissionYear
-          ? {
-              admissionYear: targetInfo.student1AdmissionYear,
-              name: targetInfo.student1Name,
-            }
-          : null,
-        targetInfo.student2Name && targetInfo.student2AdmissionYear
-          ? {
-              admissionYear: targetInfo.student2AdmissionYear,
-              name: targetInfo.student2Name,
-            }
-          : null,
-        targetInfo.student3Name && targetInfo.student3AdmissionYear
-          ? {
-              admissionYear: targetInfo.student3AdmissionYear,
-              name: targetInfo.student3Name,
-            }
-          : null,
-      ].filter((v): v is { admissionYear: string; name: string } => v !== null);
-
-      detailedApplications.push({
-        uuid: latestApplication.uuid,
-        roomNumber: targetInfo.roomNumber,
-        residents,
-        inspectionType: targetInfo.inspectionType,
-        phoneNumber: latestApplication.user.phoneNumber,
-        applicationTime: latestApplication.createdAt,
-        inspectionTime: latestApplication.inspectionSlot.startTime,
-        inspectorName: latestApplication.inspector.name,
-        isPassed: latestApplication.isPassed ?? null,
-      });
-    }
-
-    return { detailedApplications };
   }
 
   private findInspectionTargetRooms(

@@ -12,15 +12,10 @@ import {
   Post,
   Query,
   UploadedFile,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -49,20 +44,19 @@ import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
 import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
-import { InspectionTargetsBySemestersQueryDto } from './dto/req/inspection-targets-by-semesters-query.dto';
-import { DeleteInspectionTargetsResDto } from './dto/res/delete-inspection-targets-res.dto';
-import { InspectionTargetInfoResDto } from './dto/res/inspection-target-info-res.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
+import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
+import { RegisterResultResDto } from './dto/res/register-result-res.dto';
+import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
+import {
+  ApplicationListResDto,
+  ApplicationResDto,
+} from './dto/res/application-list-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
-import {
-  SubmitInspectionResultDto,
-  SubmitInspectionResultFormDto,
-} from './dto/req/submit-inspection-result.dto';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
-import { FindAllInspectionApplicationsResDto } from './dto/res/find-all-inspection-applications-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('move-out')
@@ -262,30 +256,6 @@ export class MoveOutController {
   }
 
   @ApiOperation({
-    summary: 'Get Inspection Targets by Semester Combination',
-    description:
-      'Retrieve inspection targets by current/next semester combination.',
-  })
-  @ApiOkResponse({
-    description: 'Inspection targets successfully retrieved',
-    type: [InspectionTargetInfoResDto],
-  })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Get('inspection-targets')
-  async findInspectionTargetsBySemesters(
-    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
-  ): Promise<InspectionTargetInfoResDto[]> {
-    return await this.moveOutService.findInspectionTargetsBySemesters(
-      semestersQuery,
-    );
-  }
-
-  @ApiOperation({
     summary: 'Get Inspection Targets by Schedule Uuid',
     description: 'Retrieve inspection targets by Inspection Schedule Uuid',
   })
@@ -315,7 +285,7 @@ export class MoveOutController {
   })
   @ApiOkResponse({
     description: 'Inspection applications successfully retrieved',
-    type: FindAllInspectionApplicationsResDto,
+    type: ApplicationListResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -326,33 +296,11 @@ export class MoveOutController {
   @Get('schedule/:uuid/applications')
   async findAllInspectionApplications(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
-  ): Promise<FindAllInspectionApplicationsResDto> {
-    return await this.moveOutService.findAllInspectionApplicationByScheduleUuid(
+    @Query() query: ApplicationListQueryDto,
+  ): Promise<ApplicationListResDto> {
+    return await this.moveOutService.findApplicationsByScheduleUuid(
+      query,
       scheduleUuid,
-    );
-  }
-
-  @ApiOperation({
-    summary: 'Delete Inspection Targets by Semester Combination',
-    description:
-      'Delete inspection targets by current/next semester combination.',
-  })
-  @ApiOkResponse({
-    description: 'Inspection targets successfully deleted',
-    type: DeleteInspectionTargetsResDto,
-  })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Delete('inspection-targets')
-  async deleteInspectionTargetsBySemesters(
-    @Query() semestersQuery: InspectionTargetsBySemestersQueryDto,
-  ): Promise<DeleteInspectionTargetsResDto> {
-    return await this.moveOutService.deleteInspectionTargetsBySemesters(
-      semestersQuery,
     );
   }
 
@@ -475,6 +423,31 @@ export class MoveOutController {
   }
 
   @ApiOperation({
+    summary: 'Get Inspection Application',
+    description:
+      'Retrieve inspection application for the active move-out schedule.',
+  })
+  @ApiOkResponse({
+    description: 'The inspection application has been successfully retrieved.',
+    type: ApplicationResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({
+    description: 'Not Found',
+    type: ErrorDto,
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get('application/:uuid')
+  async findApplication(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<ApplicationResDto> {
+    return await this.moveOutService.findApplication(uuid);
+  }
+
+  @ApiOperation({
     summary: 'Update My Inspection Application',
     description:
       "Update the current user's inspection application to a new inspection slot.",
@@ -540,8 +513,9 @@ export class MoveOutController {
     description:
       'Inspector submits inspection result for the given application.',
   })
-  @ApiNoContentResponse({
+  @ApiOkResponse({
     description: 'The inspection result has been successfully submitted.',
+    type: RegisterResultResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -557,53 +531,38 @@ export class MoveOutController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: SubmitInspectionResultFormDto })
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'inspectorSignature', maxCount: 1 },
-        { name: 'targetSignature', maxCount: 1 },
-      ],
-      {
-        limits: {
-          fileSize: 3 * 1024 * 1024,
-        },
-        fileFilter: (req, file, cb) => {
-          const allowedMimeTypes = ['image/png', 'image/jpeg'];
-          if (!allowedMimeTypes.includes(file.mimetype)) {
-            cb(
-              new BadRequestException('Signature image must be PNG or JPEG.'),
-              false,
-            );
-            return;
-          }
-          cb(null, true);
-        },
-      },
-    ),
-  )
   @Patch('application/:uuid/result')
-  @HttpCode(204)
   async submitInspectionResult(
     @GetUser() user: User,
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() submitInspectionResultDto: SubmitInspectionResultDto,
-    @UploadedFiles()
-    {
-      inspectorSignature,
-      targetSignature,
-    }: {
-      inspectorSignature: Express.Multer.File[];
-      targetSignature: Express.Multer.File[];
-    },
-  ): Promise<void> {
+  ): Promise<RegisterResultResDto> {
     return this.moveOutService.submitInspectionResult(
       user,
       uuid,
       submitInspectionResultDto,
-      inspectorSignature?.[0],
-      targetSignature?.[0],
     );
+  }
+
+  @ApiOperation({
+    summary: 'Verify inspection document upload',
+    description:
+      'Verify if the inspection document has been successfully uploaded to S3 and set its status to active.',
+  })
+  @ApiOkResponse({
+    description: 'The document has been successfully verified.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request - No document or not uploaded',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Patch('application/:uuid/document/verify')
+  async verifyInspectionDocument(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    await this.moveOutService.verifyInspectionDocument(uuid);
   }
 }
