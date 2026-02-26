@@ -189,7 +189,10 @@ export class ApplicationResDto {
   @ApiProperty({ description: 'Application created at' })
   createdAt: Date;
 
-  @ApiProperty({ description: 'Inspection count (1-3)', example: 1 })
+  @ApiProperty({
+    description: 'Inspection count at the time of application (1-3)',
+    example: 1,
+  })
   inspectionCount: number;
 
   constructor(partial: ApplicationInfo) {
