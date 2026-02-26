@@ -43,7 +43,7 @@ import { UpdateInspectionTargetsResDto } from './dto/res/update-inspection-targe
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { ApplicationUuidResDto } from './dto/res/application-uuid-res.dto';
-import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
+import { UpdateApplicationDto } from './dto/req/update-inspection.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { MoveOutService } from './move-out.service';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
@@ -471,15 +471,15 @@ export class MoveOutController {
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Patch('application/:uuid')
-  async updateInspection(
+  async updateApplication(
     @GetUser() user: User,
     @Param('uuid', ParseUUIDPipe) uuid: string,
-    @Body() updateInspectionDto: UpdateInspectionDto,
+    @Body() updateApplicationDto: UpdateApplicationDto,
   ): Promise<ApplicationUuidResDto> {
-    return this.moveOutService.updateInspection(
+    return this.moveOutService.updateApplication(
       user,
       uuid,
-      updateInspectionDto,
+      updateApplicationDto,
     );
   }
 

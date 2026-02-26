@@ -29,7 +29,7 @@ import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.t
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
-import { UpdateInspectionDto } from './dto/req/update-inspection.dto';
+import { UpdateApplicationDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import ms from 'ms';
@@ -530,10 +530,10 @@ export class MoveOutService {
     );
   }
 
-  async updateInspection(
+  async updateApplication(
     user: User,
     applicationUuid: string,
-    { inspectionSlotUuid }: UpdateInspectionDto,
+    { inspectionSlotUuid }: UpdateApplicationDto,
   ): Promise<ApplicationUuidResDto> {
     return this.prismaService.$transaction(async (tx: PrismaTransaction) => {
       const application =
