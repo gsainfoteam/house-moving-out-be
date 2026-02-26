@@ -189,6 +189,9 @@ export class ApplicationResDto {
   @ApiProperty({ description: 'Application created at' })
   createdAt: Date;
 
+  @ApiProperty({ description: 'Inspection count (1-3)', example: 1 })
+  inspectionCount: number;
+
   constructor(partial: ApplicationInfo) {
     this.uuid = partial.uuid;
     this.user = new UserInfoResDto(partial.user);
@@ -199,6 +202,7 @@ export class ApplicationResDto {
     this.itemResults = partial.itemResults;
     this.document = partial.isDocumentActive ? partial.document : null;
     this.createdAt = partial.createdAt;
+    this.inspectionCount = partial.inspectionCount;
   }
 }
 
