@@ -178,7 +178,6 @@ model InspectionTargetInfo {
 
   @@unique([scheduleUuid, houseName, roomNumber], name: "inspection_target_room_unique")
   @@index([scheduleUuid])
-  @@index([scheduleUuid, houseName, roomNumber])
   @@map("inspection_target")
 }
 
