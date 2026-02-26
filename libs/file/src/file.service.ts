@@ -29,7 +29,7 @@ export class FileService {
       Bucket: this.configService.getOrThrow<string>('AWS_S3_BUCKET'),
       Key: key,
     });
-    const expiresIn = 60 * 60; // 1 hour
+    const expiresIn = 10 * 60; // 10 minutes
     return getSignedUrl(this.s3Client, command, { expiresIn });
   }
 
