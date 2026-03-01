@@ -114,7 +114,6 @@ export class ArticleService {
   }
 
   async deleteArticle(uuid: string) {
-    await this.articleRepository.findArticleByUuid(uuid);
     return await this.articleRepository.deleteArticle(uuid);
   }
 }
