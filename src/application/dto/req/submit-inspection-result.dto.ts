@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  Min,
 } from 'class-validator';
 
 export class SubmitInspectionResultDto {
@@ -37,5 +38,6 @@ export class SubmitInspectionResultDto {
   @IsNumber()
   @IsInt()
   @Max(3 * 1024 * 1024)
+  @Min(1)
   contentLength: number;
 }

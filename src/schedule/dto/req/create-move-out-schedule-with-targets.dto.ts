@@ -175,6 +175,7 @@ export class CreateMoveOutScheduleWithTargetsDto {
     return toRanges(value);
   })
   @Type(() => InspectionTimeRange)
+  @ValidateNested({ each: true })
   @IsArray()
   inspectionTimeRange: InspectionTimeRange[];
 

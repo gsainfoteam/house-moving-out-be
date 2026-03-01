@@ -19,6 +19,7 @@ export class ApplicationListQueryDto {
   })
   @IsOptional()
   @IsInt()
+  @Min(1)
   @Type(() => Number)
   limit?: number;
 }
