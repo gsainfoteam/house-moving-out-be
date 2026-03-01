@@ -59,7 +59,7 @@ export class InspectorController {
   @ApiOperation({
     summary: 'Get My Inspection Targets (Inspector)',
     description:
-      'Get inspection targets assigned to the inspector in the active schedule',
+      'Get inspection targets assigned to the inspector in the active schedule. [Moved to GET /inspection-target/me]',
     deprecated: true,
   })
   @ApiOkResponse({

@@ -65,7 +65,7 @@ export class MoveOutController {
 
   @ApiOperation({
     summary: 'Get All Move Out Schedules',
-    description: 'Retrieve all move out schedules.',
+    description: 'Retrieve all move out schedules. [Moved to GET /schedule]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -84,7 +84,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Create Move Out Schedule with Targets',
     description:
-      'Create a new move out schedule, inspection targets and slots in a single transaction.',
+      'Create a new move out schedule, inspection targets and slots in a single transaction. [Moved to POST /schedule]',
     deprecated: true,
   })
   @ApiCreatedResponse({
@@ -122,7 +122,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Active Move Out Schedule with Slots',
     description:
-      'Retrieve an active move out schedule including its inspection slots.',
+      'Retrieve an active move out schedule including its inspection slots. [Moved to GET /schedule/active]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -179,7 +179,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Move Out Schedule with Slots',
     description:
-      'Retrieve a specific move out schedule including its inspection slots by UUID.',
+      'Retrieve a specific move out schedule including its inspection slots by UUID. [Moved to GET /schedule/:uuid]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -203,7 +203,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Inspectors using schedule uuid',
     description:
-      'Get available inspectors for a move out schedule using schedule UUID.',
+      'Get available inspectors for a move out schedule using schedule UUID. [Moved to GET /schedule/:uuid/inspector]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -224,7 +224,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Replace Inspection Targets and Update Slot Capacities',
     description:
-      'Upload Excel (2 sheets: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started.',
+      'Upload Excel (2 sheets: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started. [Moved to PUT /inspection-target/schedule/:uuid]',
     deprecated: true,
   })
   @ApiForbiddenResponse({
@@ -263,7 +263,8 @@ export class MoveOutController {
 
   @ApiOperation({
     summary: 'Get Inspection Targets by Schedule Uuid',
-    description: 'Retrieve inspection targets by Inspection Schedule Uuid',
+    description:
+      'Retrieve inspection targets by Inspection Schedule Uuid. [Moved to GET /inspection-target/schedule/:uuid]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -288,7 +289,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get All Inspection Applications by Schedule Uuid',
     description:
-      'Retrieve all inspection applications by Inspection Schedule Uuid',
+      'Retrieve all inspection applications by Inspection Schedule Uuid. [Moved to GET /application/schedule/:uuid]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -315,7 +316,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Bulk update cleaning service for inspection targets',
     description:
-      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT.',
+      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT. [Moved to PATCH /inspection-target/schedule/:uuid/cleaning-service]',
     deprecated: true,
   })
   @ApiNoContentResponse({
@@ -345,7 +346,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Apply for Inspection',
     description:
-      'User applies for inspection. The user must be in the inspection target list and apply within the application period.',
+      'User applies for inspection. The user must be in the inspection target list and apply within the application period. [Moved to POST /application]',
     deprecated: true,
   })
   @ApiCreatedResponse({
@@ -380,7 +381,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get My Inspection Type by Slot',
     description:
-      'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot.',
+      'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot. [Moved to GET /application/inspection-type]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -414,7 +415,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get My Inspection Application',
     description:
-      "Retrieve the current user's inspection application for the active move-out schedule.",
+      "Retrieve the current user's inspection application for the active move-out schedule. [Moved to GET /application/me]",
     deprecated: true,
   })
   @ApiOkResponse({
@@ -437,7 +438,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Inspection Application',
     description:
-      'Retrieve inspection application for the active move-out schedule.',
+      'Retrieve inspection application for the active move-out schedule. [Moved to GET /application/:uuid]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -463,7 +464,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Update My Inspection Application',
     description:
-      "Update the current user's inspection application to a new inspection slot.",
+      "Update the current user's inspection application to a new inspection slot. [Moved to PATCH /application/:uuid]",
     deprecated: true,
   })
   @ApiOkResponse({
@@ -500,7 +501,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Cancel My Inspection Application',
     description:
-      "Cancel the current user's inspection application. If canceled within 1 hour of the inspection time, it will be recorded as a 'no-show' and consume an application attempt.",
+      "Cancel the current user's inspection application. If canceled within 1 hour of the inspection time, it will be recorded as a 'no-show' and consume an application attempt. [Moved to DELETE /application/:uuid]",
     deprecated: true,
   })
   @ApiNoContentResponse({
@@ -526,7 +527,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Submit inspection result',
     description:
-      'Inspector submits inspection result for the given application.',
+      'Inspector submits inspection result for the given application. [Moved to PATCH /application/:uuid/result]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -563,7 +564,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Verify inspection document upload',
     description:
-      'Verify if the inspection document has been successfully uploaded to S3 and set its status to active.',
+      'Verify if the inspection document has been successfully uploaded to S3 and set its status to active. [Moved to PATCH /application/:uuid/document/verify]',
     deprecated: true,
   })
   @ApiOkResponse({
