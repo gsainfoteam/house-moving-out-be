@@ -67,25 +67,6 @@ export class ArticleController {
   }
 
   @ApiOperation({
-    summary: 'Find Article by UUID',
-    description: 'Get a single article by its UUID.',
-  })
-  @ApiOkResponse({ type: ArticleDetailResDto })
-  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiForbiddenResponse({ description: 'Forbidden' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('user')
-  @UseGuards(UserGuard)
-  @Get(':uuid')
-  async findArticleByUuid(
-    @GetUser() user: User,
-    @Param('uuid') uuid: string,
-  ): Promise<ArticleDetailResDto> {
-    return await this.articleService.findArticleByUuid(user, uuid);
-  }
-
-  @ApiOperation({
     summary: 'Find Notice Articles',
     description: 'Get a paginated list of notice articles.',
   })
@@ -125,6 +106,25 @@ export class ArticleController {
       user,
       query,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Find Article by UUID',
+    description: 'Get a single article by its UUID.',
+  })
+  @ApiOkResponse({ type: ArticleDetailResDto })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get(':uuid')
+  async findArticleByUuid(
+    @GetUser() user: User,
+    @Param('uuid') uuid: string,
+  ): Promise<ArticleDetailResDto> {
+    return await this.articleService.findArticleByUuid(user, uuid);
   }
 
   @ApiOperation({
