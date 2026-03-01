@@ -31,7 +31,7 @@ import { CreateArticleResDto } from './dto/res/create-article-res.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
 import { UserGuard } from 'src/auth/guard/user.guard';
 import { GetUser } from 'src/auth/decorator/get-user.decorator';
-import { User } from 'generated/prisma/client';
+import { ArticleType, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
@@ -99,7 +99,11 @@ export class ArticleController {
     @GetUser() user: User,
     @Query() query: FindArticlesQueryDto,
   ): Promise<FindArticlesResDto> {
-    return await this.articleService.findNotices(user, query);
+    return await this.articleService.findArticlesByType(
+      ArticleType.NOTICE,
+      user,
+      query,
+    );
   }
 
   @ApiOperation({
@@ -116,7 +120,11 @@ export class ArticleController {
     @GetUser() user: User,
     @Query() query: FindArticlesQueryDto,
   ): Promise<FindArticlesResDto> {
-    return await this.articleService.findFaq(user, query);
+    return await this.articleService.findArticlesByType(
+      ArticleType.FAQ,
+      user,
+      query,
+    );
   }
 
   @ApiOperation({

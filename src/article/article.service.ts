@@ -56,15 +56,7 @@ export class ArticleService {
     return new ArticleDetailResDto(article);
   }
 
-  async findNotices(user: User, query: FindArticlesQueryDto) {
-    return await this.findArticles(ArticleType.NOTICE, user, query);
-  }
-
-  async findFaq(user: User, query: FindArticlesQueryDto) {
-    return await this.findArticles(ArticleType.FAQ, user, query);
-  }
-
-  private async findArticles(
+  async findArticlesByType(
     type: ArticleType,
     user: User,
     { offset, limit }: FindArticlesQueryDto,
