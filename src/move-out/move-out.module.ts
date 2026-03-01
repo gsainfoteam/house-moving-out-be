@@ -4,19 +4,24 @@ import { MoveOutController } from './move-out.controller';
 import { PrismaModule } from '@lib/prisma';
 import { ExcelParserModule } from '@lib/excel-parser';
 import { FileModule } from '@lib/file';
-import { InspectorDataAccessModule } from 'src/inspector/inspector-data-access.module';
-import { MoveOutDataAccessModule } from './move-out-data-access.module';
+import { InspectorModule } from 'src/inspector/inspector.module';
+import { ScheduleModule } from '../schedule/schedule.module';
+import { InspectionTargetModule } from '../inspection-target/inspection-target.module';
+import { ApplicationModule } from '../application/application.module';
+import { MoveOutRepository } from './move-out.repository';
 
 @Module({
   imports: [
     PrismaModule,
     ExcelParserModule,
-    InspectorDataAccessModule,
+    InspectorModule,
     FileModule,
-    MoveOutDataAccessModule,
+    ScheduleModule,
+    InspectionTargetModule,
+    ApplicationModule,
   ],
   controllers: [MoveOutController],
-  providers: [MoveOutService],
-  exports: [MoveOutService],
+  providers: [MoveOutService, MoveOutRepository],
+  exports: [MoveOutService, MoveOutRepository],
 })
 export class MoveOutModule {}

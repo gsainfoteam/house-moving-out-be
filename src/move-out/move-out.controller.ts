@@ -66,6 +66,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get All Move Out Schedules',
     description: 'Retrieve all move out schedules.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The move out schedules have been successfully retrieved.',
@@ -84,6 +85,7 @@ export class MoveOutController {
     summary: 'Create Move Out Schedule with Targets',
     description:
       'Create a new move out schedule, inspection targets and slots in a single transaction.',
+    deprecated: true,
   })
   @ApiCreatedResponse({
     description:
@@ -121,6 +123,7 @@ export class MoveOutController {
     summary: 'Get Active Move Out Schedule with Slots',
     description:
       'Retrieve an active move out schedule including its inspection slots.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description:
@@ -177,6 +180,7 @@ export class MoveOutController {
     summary: 'Get Move Out Schedule with Slots',
     description:
       'Retrieve a specific move out schedule including its inspection slots by UUID.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description:
@@ -200,6 +204,7 @@ export class MoveOutController {
     summary: 'Get Inspectors using schedule uuid',
     description:
       'Get available inspectors for a move out schedule using schedule UUID.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The available inspectors has been successfully retrieved.',
@@ -220,6 +225,7 @@ export class MoveOutController {
     summary: 'Replace Inspection Targets and Update Slot Capacities',
     description:
       'Upload Excel (2 sheets: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started.',
+    deprecated: true,
   })
   @ApiForbiddenResponse({
     description:
@@ -258,6 +264,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Inspection Targets by Schedule Uuid',
     description: 'Retrieve inspection targets by Inspection Schedule Uuid',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'Inspection targets successfully retrieved',
@@ -282,6 +289,7 @@ export class MoveOutController {
     summary: 'Get All Inspection Applications by Schedule Uuid',
     description:
       'Retrieve all inspection applications by Inspection Schedule Uuid',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'Inspection applications successfully retrieved',
@@ -308,6 +316,7 @@ export class MoveOutController {
     summary: 'Bulk update cleaning service for inspection targets',
     description:
       'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT.',
+    deprecated: true,
   })
   @ApiNoContentResponse({
     description: 'Cleaning service flags successfully updated',
@@ -337,6 +346,7 @@ export class MoveOutController {
     summary: 'Apply for Inspection',
     description:
       'User applies for inspection. The user must be in the inspection target list and apply within the application period.',
+    deprecated: true,
   })
   @ApiCreatedResponse({
     description: 'Inspection application completed successfully.',
@@ -371,6 +381,7 @@ export class MoveOutController {
     summary: 'Get My Inspection Type by Slot',
     description:
       'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The inspection type has been successfully retrieved.',
@@ -404,6 +415,7 @@ export class MoveOutController {
     summary: 'Get My Inspection Application',
     description:
       "Retrieve the current user's inspection application for the active move-out schedule.",
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The inspection application has been successfully retrieved.',
@@ -426,6 +438,7 @@ export class MoveOutController {
     summary: 'Get Inspection Application',
     description:
       'Retrieve inspection application for the active move-out schedule.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The inspection application has been successfully retrieved.',
@@ -451,6 +464,7 @@ export class MoveOutController {
     summary: 'Update My Inspection Application',
     description:
       "Update the current user's inspection application to a new inspection slot.",
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The inspection application has been successfully updated.',
@@ -487,6 +501,7 @@ export class MoveOutController {
     summary: 'Cancel My Inspection Application',
     description:
       "Cancel the current user's inspection application. If canceled within 1 hour of the inspection time, it will be recorded as a 'no-show' and consume an application attempt.",
+    deprecated: true,
   })
   @ApiNoContentResponse({
     description: 'The inspection application has been successfully canceled.',
@@ -512,6 +527,7 @@ export class MoveOutController {
     summary: 'Submit inspection result',
     description:
       'Inspector submits inspection result for the given application.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The inspection result has been successfully submitted.',
@@ -548,6 +564,7 @@ export class MoveOutController {
     summary: 'Verify inspection document upload',
     description:
       'Verify if the inspection document has been successfully uploaded to S3 and set its status to active.',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The document has been successfully verified.',

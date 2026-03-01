@@ -60,6 +60,7 @@ export class InspectorController {
     summary: 'Get My Inspection Targets (Inspector)',
     description:
       'Get inspection targets assigned to the inspector in the active schedule',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The inspection targets have been successfully retrieved.',

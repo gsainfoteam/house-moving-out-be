@@ -1,16 +1,19 @@
 import { Loggable } from '@lib/logger';
 import { Injectable } from '@nestjs/common';
 import { UserDto } from './dto/res/user.dto';
-import { MoveOutService } from 'src/move-out/move-out.service';
+import { InspectionTargetService } from 'src/inspection-target/inspection-target.service';
 import { User } from 'generated/prisma/client';
 
 @Loggable()
 @Injectable()
 export class UserService {
-  constructor(private readonly moveOutService: MoveOutService) {}
+  constructor(
+    private readonly inspectionTargetService: InspectionTargetService,
+  ) {}
 
   async getMe(user: User): Promise<UserDto> {
-    const targetInfo = await this.moveOutService.findTargetInfoByUserInfo(user);
+    const targetInfo =
+      await this.inspectionTargetService.findTargetInfoByUserInfo(user);
     return new UserDto(user, targetInfo);
   }
 }
