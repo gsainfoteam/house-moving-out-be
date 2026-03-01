@@ -50,6 +50,5 @@ export class CreateArticleReqDto {
     example: true,
   })
   @IsBoolean()
-  @Type(() => Boolean)
   isVisible: boolean;
 }
