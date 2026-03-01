@@ -7,9 +7,9 @@ import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 import { Loggable } from '@lib/logger';
 import { User } from 'generated/prisma/client';
-import { InspectorTargetsResDto } from 'src/inspector/dto/res/inspector-targets-res.dto';
-import { MoveOutRepository } from 'src/move-out/move-out.repository';
 import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
+import { ScheduleRepository } from 'src/schedule/schedule.repository';
+import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 
 @Loggable()
 @Injectable()
@@ -17,7 +17,7 @@ export class InspectorService {
   constructor(
     private readonly inspectorRepository: InspectorRepository,
     private readonly prismaService: PrismaService,
-    private readonly moveOutRepository: MoveOutRepository,
+    private readonly scheduleRepository: ScheduleRepository,
   ) {}
 
   async getInspectors(): Promise<InspectorResDto[]> {
@@ -67,21 +67,21 @@ export class InspectorService {
     await this.inspectorRepository.deleteInspector(uuid);
   }
 
-  async getMyInspectionTargets({
+  async getMyAssignedTargets({
     email,
     name,
     studentNumber,
-  }: User): Promise<InspectorTargetsResDto> {
+  }: User): Promise<AssignedTargetsResDto> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       email,
       name,
       studentNumber,
     );
 
-    const schedule = await this.moveOutRepository.findActiveSchedule();
+    const schedule = await this.scheduleRepository.findActiveSchedule();
 
     const latestApplications: InspectorApplicationWithDetails[] =
-      await this.moveOutRepository.findLatestApplicationsByInspector(
+      await this.inspectorRepository.findLatestApplicationsByInspector(
         inspector.uuid,
         schedule.uuid,
       );

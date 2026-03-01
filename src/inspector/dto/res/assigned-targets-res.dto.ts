@@ -15,7 +15,7 @@ class Resident {
   admissionYear: string;
 }
 
-export class InspectorTarget {
+class AssignedTarget {
   @ApiProperty({
     description: 'Application UUID',
     example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
@@ -63,10 +63,10 @@ export class InspectorTarget {
   inspectionCount: number;
 }
 
-export class InspectorTargetsResDto {
+export class AssignedTargetsResDto {
   @ApiProperty({
     description: 'List of inspection targets assigned to the inspector',
-    type: [InspectorTarget],
+    type: [AssignedTarget],
   })
-  targets: InspectorTarget[];
+  targets: AssignedTarget[];
 }

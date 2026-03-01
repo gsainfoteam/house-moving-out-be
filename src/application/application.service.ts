@@ -26,9 +26,8 @@ import {
   ApplicationResDto,
 } from './dto/res/application-list-res.dto';
 import { ScheduleRepository } from '../schedule/schedule.repository';
-import { InspectionTargetRepository } from '../inspection-target/inspection-target.repository';
 import { ScheduleService } from '../schedule/schedule.service';
-import { InspectionTargetService } from 'src/inspection-target/inspection-target.service';
+import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 
 @Loggable()
 @Injectable()
@@ -38,8 +37,6 @@ export class ApplicationService {
   constructor(
     private readonly applicationRepository: ApplicationRepository,
     private readonly scheduleRepository: ScheduleRepository,
-    private readonly inspectionTargetRepository: InspectionTargetRepository,
-    private readonly inspectionTargetService: InspectionTargetService,
     private readonly scheduleService: ScheduleService,
     private readonly prismaService: PrismaService,
     private readonly fileService: FileService,
@@ -50,7 +47,7 @@ export class ApplicationService {
     user: User,
     { inspectionSlotUuid }: ApplyInspectionDto,
   ): Promise<ApplicationUuidResDto> {
-    const admissionYear = this.inspectionTargetService.extractAdmissionYear(
+    const admissionYear = this.scheduleService.extractAdmissionYear(
       user.studentNumber,
     );
 
@@ -74,7 +71,7 @@ export class ApplicationService {
         }
 
         const inspectionTargetInfo =
-          await this.inspectionTargetRepository.findInspectionTargetInfoByUserInfoInTx(
+          await this.scheduleRepository.findInspectionTargetInfoByUserInfoInTx(
             admissionYear,
             user.name,
             schedule.uuid,
@@ -89,12 +86,12 @@ export class ApplicationService {
           );
         }
 
-        const isMale = this.inspectionTargetService.extractGenderFromHouseName(
+        const isMale = this.scheduleService.extractGenderFromHouseName(
           inspectionTargetInfo.houseName,
         );
 
         const updatedTargetInfo =
-          await this.inspectionTargetRepository.incrementInspectionCountInTx(
+          await this.scheduleRepository.incrementInspectionCountInTx(
             inspectionTargetInfo.uuid,
             tx,
           );
@@ -136,6 +133,25 @@ export class ApplicationService {
         return { applicationUuid: application.uuid };
       },
     );
+  }
+
+  async findMyInspectionTypeBySlot(
+    user: User,
+  ): Promise<MyInspectionTypeResDto> {
+    const admissionYear = this.scheduleService.extractAdmissionYear(
+      user.studentNumber,
+    );
+
+    const schedule = await this.scheduleRepository.findActiveSchedule();
+
+    const targetInfo =
+      await this.scheduleRepository.findInspectionTargetInfoByUserInfo(
+        admissionYear,
+        user.name,
+        schedule.uuid,
+      );
+
+    return new MyInspectionTypeResDto(targetInfo);
   }
 
   async updateApplication(
@@ -181,7 +197,7 @@ export class ApplicationService {
         );
       }
 
-      const isMale = this.inspectionTargetService.extractGenderFromHouseName(
+      const isMale = this.scheduleService.extractGenderFromHouseName(
         application.inspectionTargetInfo.houseName,
       );
 
@@ -263,13 +279,13 @@ export class ApplicationService {
           application.inspectionSlot.startTime.getTime() - now.getTime();
 
         if (timeDiff >= this.APPLICATION_UPDATE_DEADLINE) {
-          await this.inspectionTargetRepository.decrementInspectionCountInTx(
+          await this.scheduleRepository.decrementInspectionCountInTx(
             application.inspectionTargetInfo.uuid,
             tx,
           );
         }
 
-        const isMale = this.inspectionTargetService.extractGenderFromHouseName(
+        const isMale = this.scheduleService.extractGenderFromHouseName(
           application.inspectionTargetInfo.houseName,
         );
 

@@ -31,8 +31,8 @@ import { InspectorService } from './inspector.service';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
-import { InspectorTargetsResDto } from 'src/inspector/dto/res/inspector-targets-res.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
+import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -57,14 +57,13 @@ export class InspectorController {
   }
 
   @ApiOperation({
-    summary: 'Get My Inspection Targets (Inspector)',
+    summary: 'Get My Assigned Inspection Targets (Inspector)',
     description:
-      'Get inspection targets assigned to the inspector in the active schedule. [Moved to GET /inspection-target/me]',
-    deprecated: true,
+      'Get inspection targets assigned to the inspector in the active schedule',
   })
   @ApiOkResponse({
     description: 'The inspection targets have been successfully retrieved.',
-    type: InspectorTargetsResDto,
+    type: AssignedTargetsResDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
@@ -77,11 +76,11 @@ export class InspectorController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Get('targets')
-  async getMyInspectionTargets(
+  @Get('me/assigned-targets')
+  async getMyAssignedTargets(
     @GetUser() user: User,
-  ): Promise<InspectorTargetsResDto> {
-    return await this.inspectorService.getMyInspectionTargets(user);
+  ): Promise<AssignedTargetsResDto> {
+    return await this.inspectorService.getMyAssignedTargets(user);
   }
 
   @ApiOperation({

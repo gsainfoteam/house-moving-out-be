@@ -2,11 +2,14 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { ScheduleRepository } from './schedule.repository';
 import {
+  Gender,
   MoveOutSchedule,
   RoomInspectionType,
+  ScheduleStatus,
   Season,
 } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
@@ -18,17 +21,17 @@ import {
   ExcelParserService,
   ExcelValidatorService,
 } from '@lib/excel-parser';
-import { InspectionTargetStudent } from '../inspection-target/types/inspection-target.type';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
-import { InspectionTargetCount } from '../inspection-target/types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';
 import ms from 'ms';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
-import { InspectionTargetRepository } from '../inspection-target/inspection-target.repository';
-import { InspectionTargetService } from 'src/inspection-target/inspection-target.service';
+import { InspectionTargetStudent } from './types/inspection-target.type';
+import { InspectionTargetCount } from './types/inspection-target-count.type';
+import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
+import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 
 @Loggable()
 @Injectable()
@@ -37,8 +40,6 @@ export class ScheduleService {
   private readonly WEIGHT_FACTOR = 1.5;
   constructor(
     private readonly scheduleRepository: ScheduleRepository,
-    private readonly inspectionTargetRepository: InspectionTargetRepository,
-    private readonly inspectionTargetService: InspectionTargetService,
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
@@ -165,7 +166,7 @@ export class ScheduleService {
             tx,
           );
 
-        await this.inspectionTargetRepository.createInspectionTargetsInTx(
+        await this.scheduleRepository.createInspectionTargetsInTx(
           schedule.uuid,
           inspectionTargets,
           tx,
@@ -202,11 +203,9 @@ export class ScheduleService {
       throw new ForbiddenException('Application period has ended.');
     }
 
-    const admissionYear = this.inspectionTargetService.extractAdmissionYear(
-      user.studentNumber,
-    );
+    const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
-    await this.inspectionTargetRepository.findInspectionTargetInfoByUserInfo(
+    await this.scheduleRepository.findInspectionTargetInfoByUserInfo(
       admissionYear,
       user.name,
       schedule.uuid,
@@ -221,7 +220,234 @@ export class ScheduleService {
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
-  private findInspectionTargetRooms(
+  // --- From InspectionTargetService ---
+
+  async updateInspectionTargetsAndUpdateSlotCapacities(
+    file: Express.Multer.File,
+    scheduleUuid: string,
+  ): Promise<{ count: number }> {
+    await this.excelValidatorService.validateExcelFile(file);
+
+    if (!file?.buffer) {
+      throw new BadRequestException('File buffer is missing');
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await workbook.xlsx.load(file.buffer);
+
+    if (workbook.worksheets.length < 2) {
+      throw new BadRequestException(
+        'Excel file must have at least 2 sheets for comparison',
+      );
+    }
+
+    const currentSemesterSheet = workbook.worksheets[0];
+    const nextSemesterSheet = workbook.worksheets[1];
+
+    if (!currentSemesterSheet || !nextSemesterSheet) {
+      throw new BadRequestException('Excel file has invalid sheets');
+    }
+
+    const currentSemesterRooms =
+      this.excelParserService.parseSheetToRoomInfoMap(currentSemesterSheet);
+    const nextSemesterRooms =
+      this.excelParserService.parseSheetToRoomInfoMap(nextSemesterSheet);
+
+    const inspectionTargets = this.findInspectionTargetRooms(
+      currentSemesterRooms,
+      nextSemesterRooms,
+    );
+
+    const targetCounts =
+      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
+
+    return await this.prismaService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const schedule =
+          await this.scheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
+            scheduleUuid,
+            tx,
+          );
+
+        const now = new Date();
+        if (now >= schedule.applicationStartTime) {
+          throw new ForbiddenException(
+            'Inspection targets cannot be replaced after the application period has started.',
+          );
+        }
+
+        if (!schedule.inspectionSlots?.length) {
+          throw new BadRequestException(
+            'Schedule has no slots. Cannot update inspection targets.',
+          );
+        }
+
+        const slotCount = schedule.inspectionSlots.length;
+        const { maleCapacity, femaleCapacity } = this.calculateCapacity(
+          slotCount,
+          targetCounts,
+          this.WEIGHT_FACTOR,
+        );
+
+        await this.scheduleRepository.deleteInspectionTargetsByScheduleUuidInTx(
+          scheduleUuid,
+          tx,
+        );
+
+        const createdCount =
+          await this.scheduleRepository.createInspectionTargetsInTx(
+            scheduleUuid,
+            inspectionTargets,
+            tx,
+          );
+
+        await this.scheduleRepository.updateSlotCapacitiesByScheduleUuidInTx(
+          scheduleUuid,
+          maleCapacity,
+          femaleCapacity,
+          tx,
+        );
+
+        return createdCount;
+      },
+    );
+  }
+
+  async bulkUpdateCleaningService(
+    scheduleUuid: string,
+    { targetUuids, applyCleaningService }: BulkUpdateCleaningServiceDto,
+  ): Promise<void> {
+    const uniqueTargetUuids = [...new Set(targetUuids)];
+
+    await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
+      const schedule =
+        await this.scheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
+          scheduleUuid,
+          tx,
+        );
+
+      if (schedule.status !== ScheduleStatus.DRAFT) {
+        throw new ForbiddenException(
+          'Cleaning service application can be modified only when the schedule status is DRAFT.',
+        );
+      }
+
+      const count =
+        await this.scheduleRepository.countInspectionTargetsByScheduleAndUuidsInTx(
+          scheduleUuid,
+          uniqueTargetUuids,
+          tx,
+        );
+
+      if (count !== uniqueTargetUuids.length) {
+        throw new BadRequestException(
+          'Request contains invalid inspection target UUID(s).',
+        );
+      }
+
+      await this.scheduleRepository.updateApplyCleaningServiceByScheduleAndUuidsInTx(
+        scheduleUuid,
+        uniqueTargetUuids,
+        applyCleaningService,
+        tx,
+      );
+    });
+  }
+
+  async findTargetInfoByUserInfo(
+    user: User,
+  ): Promise<{ gender: Gender; roomNumber: string } | null> {
+    try {
+      const schedule =
+        await this.scheduleRepository.findActiveMoveOutScheduleWithSlots();
+
+      const admissionYear = this.extractAdmissionYear(user.studentNumber);
+
+      const targetInfo =
+        await this.scheduleRepository.findInspectionTargetInfoByUserInfo(
+          admissionYear,
+          user.name,
+          schedule.uuid,
+        );
+
+      return {
+        gender: this.extractGenderFromHouseName(targetInfo.houseName)
+          ? Gender.MALE
+          : Gender.FEMALE,
+        roomNumber: targetInfo.roomNumber,
+      };
+    } catch (error) {
+      if (
+        error instanceof ForbiddenException ||
+        error instanceof NotFoundException
+      )
+        return null;
+      throw error;
+    }
+  }
+
+  async findAllInspectionTargetInfoByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<InspectionTargetsGroupedByRoomResDto[]> {
+    const inspectionTargetInfosWithApplications =
+      await this.scheduleRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
+        scheduleUuid,
+      );
+    return inspectionTargetInfosWithApplications.map(
+      (target): InspectionTargetsGroupedByRoomResDto => {
+        const residents = [
+          target.student1Name && target.student1AdmissionYear
+            ? {
+                admissionYear: target.student1AdmissionYear,
+                name: target.student1Name,
+              }
+            : null,
+          target.student2Name && target.student2AdmissionYear
+            ? {
+                admissionYear: target.student2AdmissionYear,
+                name: target.student2Name,
+              }
+            : null,
+          target.student3Name && target.student3AdmissionYear
+            ? {
+                admissionYear: target.student3AdmissionYear,
+                name: target.student3Name,
+              }
+            : null,
+        ].filter(
+          (v): v is { admissionYear: string; name: string } => v !== null,
+        );
+
+        const [latestApplication, previousApplication] =
+          target.inspectionApplication;
+
+        let lastInspectionTime: Date | null = null;
+
+        if (latestApplication && latestApplication.isPassed !== null) {
+          lastInspectionTime = latestApplication.updatedAt;
+        } else if (
+          previousApplication &&
+          previousApplication.isPassed !== null
+        ) {
+          lastInspectionTime = previousApplication.updatedAt;
+        }
+
+        return {
+          uuid: target.uuid,
+          roomNumber: target.roomNumber,
+          residents,
+          inspectionType: target.inspectionType,
+          inspectionCount: target.inspectionCount,
+          applyCleaningService: target.applyCleaningService,
+          lastInspectionTime,
+          isPassed: latestApplication?.isPassed ?? null,
+        };
+      },
+    );
+  }
+
+  public findInspectionTargetRooms(
     currentSemesterRooms: Map<string, RoomInfo>,
     nextSemesterRooms: Map<string, RoomInfo>,
   ): InspectionTargetStudent[] {
@@ -286,30 +512,6 @@ export class ScheduleService {
     return inspectionTargets;
   }
 
-  private generateSlots(
-    inspectionTimeRanges: InspectionTimeRange[],
-    slotDuration: number,
-  ): { startTime: Date; endTime: Date }[] {
-    const slots: { startTime: Date; endTime: Date }[] = [];
-
-    for (const range of inspectionTimeRanges) {
-      const rangeStart = new Date(range.start);
-      const rangeEndMs = new Date(range.end).getTime();
-
-      let slotStart = rangeStart;
-      for (
-        let slotEndMs = rangeStart.getTime() + slotDuration;
-        slotEndMs <= rangeEndMs;
-        slotEndMs += slotDuration
-      ) {
-        const slotEnd = new Date(slotEndMs);
-        slots.push({ startTime: slotStart, endTime: slotEnd });
-        slotStart = slotEnd;
-      }
-    }
-    return slots;
-  }
-
   public calculateCapacity(
     totalSlots: number,
     targetCounts: InspectionTargetCount,
@@ -347,8 +549,7 @@ export class ScheduleService {
     const counts: InspectionTargetCount = { male: 0, female: 0 };
 
     for (const { houseName } of inspectionTargets) {
-      const isMale =
-        this.inspectionTargetService.extractGenderFromHouseName(houseName);
+      const isMale = this.extractGenderFromHouseName(houseName);
       if (isMale) {
         counts.male += 1;
       } else {
@@ -363,6 +564,53 @@ export class ScheduleService {
     }
 
     return counts;
+  }
+
+  extractGenderFromHouseName(houseName: string): boolean {
+    const lastParenMatch = houseName.match(/\(([^()]*)\)\s*$/);
+    const genderToken = lastParenMatch?.[1]?.trim();
+
+    if (genderToken === '남') {
+      return true;
+    }
+    if (genderToken === '여') {
+      return false;
+    }
+
+    throw new BadRequestException(
+      `Invalid InspectionTargetInfo.houseName format. Expected last token "(남)" or "(여)". Regenerate inspection targets and retry. Invalid houseName: ${houseName}`,
+    );
+  }
+
+  extractAdmissionYear(studentNumber: string): string {
+    if (!studentNumber || studentNumber.length < 4) {
+      throw new BadRequestException('Invalid student number format');
+    }
+    return studentNumber.substring(2, 4);
+  }
+
+  private generateSlots(
+    inspectionTimeRanges: InspectionTimeRange[],
+    slotDuration: number,
+  ): { startTime: Date; endTime: Date }[] {
+    const slots: { startTime: Date; endTime: Date }[] = [];
+
+    for (const range of inspectionTimeRanges) {
+      const rangeStart = new Date(range.start);
+      const rangeEndMs = new Date(range.end).getTime();
+
+      let slotStart = rangeStart;
+      for (
+        let slotEndMs = rangeStart.getTime() + slotDuration;
+        slotEndMs <= rangeEndMs;
+        slotEndMs += slotDuration
+      ) {
+        const slotEnd = new Date(slotEndMs);
+        slots.push({ startTime: slotStart, endTime: slotEnd });
+        slotStart = slotEnd;
+      }
+    }
+    return slots;
   }
 
   private validateScheduleAndRanges(

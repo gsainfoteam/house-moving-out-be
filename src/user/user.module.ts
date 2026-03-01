@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { PrismaModule } from '@lib/prisma';
-import { InspectionTargetModule } from 'src/inspection-target/inspection-target.module';
+import { ScheduleModule } from 'src/schedule/schedule.module';
 
 @Module({
-  imports: [PrismaModule, InspectionTargetModule],
+  imports: [PrismaModule, ScheduleModule],
   controllers: [UserController],
   providers: [UserService],
 })

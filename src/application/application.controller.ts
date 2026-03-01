@@ -44,14 +44,14 @@ import {
   ApplicationResDto,
 } from './dto/res/application-list-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
-import { InspectionTargetService } from '../inspection-target/inspection-target.service';
+import { ScheduleService } from 'src/schedule/schedule.service';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('application')
 export class ApplicationController {
   constructor(
     private readonly applicationService: ApplicationService,
-    private readonly inspectionTargetService: InspectionTargetService,
+    private readonly scheduleService: ScheduleService,
   ) {}
 
   @ApiOperation({
@@ -143,7 +143,7 @@ export class ApplicationController {
   async findMyInspectionTypeBySlot(
     @GetUser() user: User,
   ): Promise<MyInspectionTypeResDto> {
-    return await this.inspectionTargetService.findMyInspectionTypeBySlot(user);
+    return await this.applicationService.findMyInspectionTypeBySlot(user);
   }
 
   @ApiOperation({

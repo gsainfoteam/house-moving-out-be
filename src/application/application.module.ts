@@ -6,18 +6,10 @@ import { FileModule } from '@lib/file';
 import { InspectorModule } from 'src/inspector/inspector.module';
 import { ApplicationRepository } from './application.repository';
 import { ScheduleModule } from '../schedule/schedule.module';
-import { InspectionTargetModule } from '../inspection-target/inspection-target.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    InspectorModule,
-    FileModule,
-    ScheduleModule,
-    InspectionTargetModule,
-  ],
+  imports: [PrismaModule, InspectorModule, FileModule, ScheduleModule],
   controllers: [ApplicationController],
   providers: [ApplicationService, ApplicationRepository],
-  exports: [ApplicationService, ApplicationRepository],
 })
 export class ApplicationModule {}

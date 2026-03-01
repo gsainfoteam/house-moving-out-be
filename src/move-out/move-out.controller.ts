@@ -224,7 +224,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Replace Inspection Targets and Update Slot Capacities',
     description:
-      'Upload Excel (2 sheets: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started. [Moved to PUT /inspection-target/schedule/:uuid]',
+      'Upload Excel (2 sheets: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started. [Moved to PUT /schedule/:uuid/targets]',
     deprecated: true,
   })
   @ApiForbiddenResponse({
@@ -264,7 +264,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get Inspection Targets by Schedule Uuid',
     description:
-      'Retrieve inspection targets by Inspection Schedule Uuid. [Moved to GET /inspection-target/schedule/:uuid]',
+      'Retrieve inspection targets by Inspection Schedule Uuid. [Moved to GET /schedule/:uuid/targets]',
     deprecated: true,
   })
   @ApiOkResponse({
@@ -316,7 +316,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Bulk update cleaning service for inspection targets',
     description:
-      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT. [Moved to PATCH /inspection-target/schedule/:uuid/cleaning-service]',
+      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT. [Moved to PATCH /schedule/:uuid/targets/cleaning-service]',
     deprecated: true,
   })
   @ApiNoContentResponse({
