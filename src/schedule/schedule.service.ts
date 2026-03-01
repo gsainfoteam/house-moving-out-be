@@ -447,7 +447,7 @@ export class ScheduleService {
     );
   }
 
-  public findInspectionTargetRooms(
+  private findInspectionTargetRooms(
     currentSemesterRooms: Map<string, RoomInfo>,
     nextSemesterRooms: Map<string, RoomInfo>,
   ): InspectionTargetStudent[] {
@@ -512,7 +512,7 @@ export class ScheduleService {
     return inspectionTargets;
   }
 
-  public calculateCapacity(
+  private calculateCapacity(
     totalSlots: number,
     targetCounts: InspectionTargetCount,
     weightFactor: number,
@@ -543,7 +543,7 @@ export class ScheduleService {
     };
   }
 
-  public calculateTargetCountsFromInspectionTargets(
+  private calculateTargetCountsFromInspectionTargets(
     inspectionTargets: InspectionTargetStudent[],
   ): InspectionTargetCount {
     const counts: InspectionTargetCount = { male: 0, female: 0 };
