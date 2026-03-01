@@ -7,6 +7,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { Season } from 'generated/prisma/client';
 

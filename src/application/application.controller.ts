@@ -307,8 +307,9 @@ export class ApplicationController {
   @UseGuards(UserGuard)
   @Patch(':uuid/document/verify')
   async verifyInspectionDocument(
+    @GetUser() user: User,
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
-    await this.applicationService.verifyInspectionDocument(uuid);
+    await this.applicationService.verifyInspectionDocument(user.uuid, uuid);
   }
 }

@@ -395,9 +395,18 @@ export class ApplicationService {
     );
   }
 
-  async verifyInspectionDocument(applicationUuid: string): Promise<void> {
+  async verifyInspectionDocument(
+    userUuid: string,
+    applicationUuid: string,
+  ): Promise<void> {
     const application =
       await this.applicationRepository.findApplicationByUuid(applicationUuid);
+
+    if (application.inspectorUuid !== userUuid) {
+      throw new ForbiddenException(
+        'The inspector is not assigned to this application.',
+      );
+    }
 
     if (!application.document) {
       throw new BadRequestException(
