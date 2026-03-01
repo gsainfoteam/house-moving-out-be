@@ -90,14 +90,17 @@ export class ArticleService {
       async (tx: PrismaTransaction) => {
         await this.articleRepository.DeleteArticleInTx(uuid, tx);
 
-        return await this.articleRepository.createArticle({
-          type,
-          titleKo: koContent.title,
-          titleEn: enContent.title,
-          contentKo: koContent.content,
-          contentEn: enContent.content,
-          isVisible,
-        });
+        return await this.articleRepository.createArticleInTx(
+          {
+            type,
+            titleKo: koContent.title,
+            titleEn: enContent.title,
+            contentKo: koContent.content,
+            contentEn: enContent.content,
+            isVisible,
+          },
+          tx,
+        );
       },
     );
   }
