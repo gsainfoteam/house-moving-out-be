@@ -129,7 +129,7 @@ export class ArticleRepository {
       });
   }
 
-  async DeleteArticle(uuid: string): Promise<Article> {
+  async deleteArticle(uuid: string): Promise<Article> {
     return await this.prismaService.article
       .update({
         where: { uuid, deletedAt: null },
@@ -148,7 +148,7 @@ export class ArticleRepository {
       });
   }
 
-  async DeleteArticleInTx(
+  async deleteArticleInTx(
     uuid: string,
     tx: PrismaTransaction,
   ): Promise<Article> {

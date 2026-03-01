@@ -88,7 +88,7 @@ export class ArticleService {
 
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
-        await this.articleRepository.DeleteArticleInTx(uuid, tx);
+        await this.articleRepository.deleteArticleInTx(uuid, tx);
 
         return await this.articleRepository.createArticleInTx(
           {
@@ -115,6 +115,6 @@ export class ArticleService {
 
   async deleteArticle(uuid: string) {
     await this.articleRepository.findArticleByUuid(uuid);
-    return await this.articleRepository.DeleteArticle(uuid);
+    return await this.articleRepository.deleteArticle(uuid);
   }
 }
