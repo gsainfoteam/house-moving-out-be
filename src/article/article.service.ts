@@ -74,9 +74,10 @@ export class ArticleService {
     return new FindArticlesResDto(articles, totalCount);
   }
 
-  async updateArticle(uuid: string, createArticleReqDto: CreateArticleReqDto) {
-    const { type, isVisible, articles } = createArticleReqDto;
-
+  async updateArticle(
+    uuid: string,
+    { type, isVisible, articles }: CreateArticleReqDto,
+  ) {
     const koContent = articles.find((a) => a.language === Language.KO);
     const enContent = articles.find((a) => a.language === Language.EN);
 
