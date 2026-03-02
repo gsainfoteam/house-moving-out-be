@@ -57,6 +57,34 @@ export class InspectorController {
   }
 
   @ApiOperation({
+    summary: 'Get My Inspection Targets (Inspector)',
+    description:
+      'Get inspection targets assigned to the inspector in the active schedule. [Moved to GET /inspector/me/assigned-targets]',
+    deprecated: true,
+  })
+  @ApiOkResponse({
+    description: 'The inspection targets have been successfully retrieved.',
+    type: AssignedTargetsResDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - User is not an inspector',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found - No active schedule or inspector not found',
+    type: ErrorDto,
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('targets')
+  async getMyInspectionTargets(
+    @GetUser() user: User,
+  ): Promise<AssignedTargetsResDto> {
+    return await this.inspectorService.getMyAssignedTargets(user);
+  }
+
+  @ApiOperation({
     summary: 'Get My Assigned Inspection Targets (Inspector)',
     description:
       'Get inspection targets assigned to the inspector in the active schedule',
