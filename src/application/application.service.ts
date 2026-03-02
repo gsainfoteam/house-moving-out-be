@@ -135,9 +135,7 @@ export class ApplicationService {
     );
   }
 
-  async findMyInspectionTypeBySlot(
-    user: User,
-  ): Promise<MyInspectionTypeResDto> {
+  async findMyInspectionType(user: User): Promise<MyInspectionTypeResDto> {
     const admissionYear = this.scheduleService.extractAdmissionYear(
       user.studentNumber,
     );

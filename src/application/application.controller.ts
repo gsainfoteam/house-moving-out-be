@@ -118,6 +118,28 @@ export class ApplicationController {
   }
 
   @ApiOperation({
+    summary: 'Get My Inspection Application',
+    description:
+      "Retrieve the current user's inspection application for the active move-out schedule.",
+  })
+  @ApiOkResponse({
+    description: 'The inspection application has been successfully retrieved.',
+    type: InspectionResDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found',
+    type: ErrorDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('me')
+  async findMyInspection(@GetUser() user: User): Promise<InspectionResDto> {
+    return await this.applicationService.findMyInspection(user);
+  }
+
+  @ApiOperation({
     summary: 'Get My Inspection Type by Slot',
     description:
       'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot.',
@@ -139,33 +161,11 @@ export class ApplicationController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Get('inspection-type')
-  async findMyInspectionTypeBySlot(
+  @Get('me/inspection-type')
+  async findMyInspectionType(
     @GetUser() user: User,
   ): Promise<MyInspectionTypeResDto> {
-    return await this.applicationService.findMyInspectionTypeBySlot(user);
-  }
-
-  @ApiOperation({
-    summary: 'Get My Inspection Application',
-    description:
-      "Retrieve the current user's inspection application for the active move-out schedule.",
-  })
-  @ApiOkResponse({
-    description: 'The inspection application has been successfully retrieved.',
-    type: InspectionResDto,
-  })
-  @ApiNotFoundResponse({
-    description: 'Not Found',
-    type: ErrorDto,
-  })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('user')
-  @UseGuards(UserGuard)
-  @Get('me')
-  async findMyInspection(@GetUser() user: User): Promise<InspectionResDto> {
-    return await this.applicationService.findMyInspection(user);
+    return await this.applicationService.findMyInspectionType(user);
   }
 
   @ApiOperation({

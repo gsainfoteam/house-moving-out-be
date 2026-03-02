@@ -381,7 +381,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get My Inspection Type by Slot',
     description:
-      'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot. [Moved to GET /application/inspection-type]',
+      'Retrieve the current user’s move-out inspection type for the schedule of the given inspection slot. [Moved to GET /application/me/inspection-type]',
     deprecated: true,
   })
   @ApiOkResponse({
