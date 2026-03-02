@@ -32,6 +32,9 @@ import { InspectionTargetStudent } from './types/inspection-target.type';
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
+import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
+import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
+import { FileService } from '@lib/file';
 
 @Loggable()
 @Injectable()
@@ -43,6 +46,7 @@ export class ScheduleService {
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
+    private readonly fileService: FileService,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -220,7 +224,31 @@ export class ScheduleService {
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
-  // --- From InspectionTargetService ---
+  async findApplicationsByScheduleUuid(
+    { offset, limit }: ApplicationListQueryDto,
+    scheduleUuid: string,
+  ): Promise<ApplicationListResDto> {
+    const [applications, totalCount] = await Promise.all([
+      this.scheduleRepository.findApplicationsByScheduleUuid(
+        offset ?? 0,
+        limit ?? 20,
+        scheduleUuid,
+      ),
+      this.scheduleRepository.countApplications(scheduleUuid),
+    ]);
+    return new ApplicationListResDto(
+      await Promise.all(
+        applications.map(async (app) => ({
+          ...app,
+          document:
+            app.document === null
+              ? null
+              : await this.fileService.getUrl(app.document),
+        })),
+      ),
+      totalCount,
+    );
+  }
 
   async updateInspectionTargetsAndUpdateSlotCapacities(
     file: Express.Multer.File,

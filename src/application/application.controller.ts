@@ -9,7 +9,6 @@ import {
   HttpCode,
   Param,
   Post,
-  Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -38,11 +37,7 @@ import { UpdateApplicationDto } from './dto/req/update-inspection.dto';
 import { ApplicationService } from './application.service';
 import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
-import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
-import {
-  ApplicationListResDto,
-  ApplicationResDto,
-} from './dto/res/application-list-res.dto';
+import { ApplicationResDto } from './dto/res/application-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { ScheduleService } from 'src/schedule/schedule.service';
 
@@ -53,32 +48,6 @@ export class ApplicationController {
     private readonly applicationService: ApplicationService,
     private readonly scheduleService: ScheduleService,
   ) {}
-
-  @ApiOperation({
-    summary: 'Get All Inspection Applications by Schedule Uuid',
-    description:
-      'Retrieve all inspection applications by Inspection Schedule Uuid',
-  })
-  @ApiOkResponse({
-    description: 'Inspection applications successfully retrieved',
-    type: ApplicationListResDto,
-  })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Get('schedule/:uuid')
-  async findAllInspectionApplications(
-    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
-    @Query() query: ApplicationListQueryDto,
-  ): Promise<ApplicationListResDto> {
-    return await this.applicationService.findApplicationsByScheduleUuid(
-      query,
-      scheduleUuid,
-    );
-  }
 
   @ApiOperation({
     summary: 'Apply for Inspection',

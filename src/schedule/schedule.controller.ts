@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -43,6 +44,8 @@ import { UpdateInspectionTargetsDto } from './dto/req/update-inspection-targets.
 import { UpdateInspectionTargetsResDto } from './dto/res/update-inspection-targets-res.dto';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
+import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
+import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schedule')
@@ -166,6 +169,32 @@ export class ScheduleController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<InspectorResDto[]> {
     return await this.scheduleService.findInspectorsByScheduleUuid(uuid);
+  }
+
+  @ApiOperation({
+    summary: 'Get All Inspection Applications by Schedule Uuid',
+    description:
+      'Retrieve all inspection applications by Inspection Schedule Uuid',
+  })
+  @ApiOkResponse({
+    description: 'Inspection applications successfully retrieved',
+    type: ApplicationListResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get(':uuid/applications')
+  async findAllInspectionApplications(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Query() query: ApplicationListQueryDto,
+  ): Promise<ApplicationListResDto> {
+    return await this.scheduleService.findApplicationsByScheduleUuid(
+      query,
+      scheduleUuid,
+    );
   }
 
   @ApiOperation({

@@ -289,7 +289,7 @@ export class MoveOutController {
   @ApiOperation({
     summary: 'Get All Inspection Applications by Schedule Uuid',
     description:
-      'Retrieve all inspection applications by Inspection Schedule Uuid. [Moved to GET /application/schedule/:uuid]',
+      'Retrieve all inspection applications by Inspection Schedule Uuid. [Moved to GET /schedule/:uuid/applications]',
     deprecated: true,
   })
   @ApiOkResponse({

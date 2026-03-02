@@ -19,12 +19,8 @@ import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dt
 import { FileService } from '@lib/file';
 import * as crypto from 'crypto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
-import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
 import { InspectorRepository } from 'src/inspector/inspector.repository';
-import {
-  ApplicationListResDto,
-  ApplicationResDto,
-} from './dto/res/application-list-res.dto';
+import { ApplicationResDto } from './dto/res/application-res.dto';
 import { ScheduleRepository } from '../schedule/schedule.repository';
 import { ScheduleService } from '../schedule/schedule.service';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
@@ -417,32 +413,6 @@ export class ApplicationService {
     await this.applicationRepository.updateDocumentActiveStatus(
       applicationUuid,
       true,
-    );
-  }
-
-  async findApplicationsByScheduleUuid(
-    { offset, limit }: ApplicationListQueryDto,
-    scheduleUuid: string,
-  ): Promise<ApplicationListResDto> {
-    const [applications, totalCount] = await Promise.all([
-      this.applicationRepository.findApplicationsByScheduleUuid(
-        offset ?? 0,
-        limit ?? 20,
-        scheduleUuid,
-      ),
-      this.applicationRepository.countApplications(scheduleUuid),
-    ]);
-    return new ApplicationListResDto(
-      await Promise.all(
-        applications.map(async (app) => ({
-          ...app,
-          document:
-            app.document === null
-              ? null
-              : await this.fileService.getUrl(app.document),
-        })),
-      ),
-      totalCount,
     );
   }
 }

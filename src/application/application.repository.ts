@@ -273,43 +273,6 @@ export class ApplicationRepository {
       });
   }
 
-  async findApplicationsByScheduleUuid(
-    offset: number,
-    limit: number,
-    scheduleUuid: string,
-  ): Promise<ApplicationInfo[]> {
-    return await this.prismaService.inspectionApplication
-      .findMany({
-        where: {
-          inspectionSlot: {
-            scheduleUuid,
-          },
-          deletedAt: null,
-        },
-        include: {
-          user: true,
-          inspectionSlot: true,
-          inspector: true,
-          inspectionTargetInfo: true,
-        },
-        skip: offset,
-        take: limit,
-        orderBy: {
-          createdAt: 'desc',
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findApplicationsByScheduleUuid prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findApplicationsByScheduleUuid error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async findApplicationByUuid(uuid: string): Promise<ApplicationInfo> {
     return await this.prismaService.inspectionApplication
       .findUniqueOrThrow({
@@ -336,26 +299,6 @@ export class ApplicationRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findApplicationByUuid error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async countApplications(scheduleUuid: string): Promise<number> {
-    return await this.prismaService.inspectionApplication
-      .count({
-        where: {
-          inspectionSlot: {
-            scheduleUuid,
-          },
-          deletedAt: null,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          this.logger.error(`countApplications prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`countApplications error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

@@ -23,6 +23,7 @@ import { Loggable } from '@lib/logger';
 import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { InspectionTargetStudent } from './types/inspection-target.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
+import { ApplicationInfo } from 'src/application/types/application-info.type';
 
 @Loggable()
 @Injectable()
@@ -166,6 +167,63 @@ export class ScheduleRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findInspectorByScheduleUuid error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findApplicationsByScheduleUuid(
+    offset: number,
+    limit: number,
+    scheduleUuid: string,
+  ): Promise<ApplicationInfo[]> {
+    return await this.prismaService.inspectionApplication
+      .findMany({
+        where: {
+          inspectionSlot: {
+            scheduleUuid,
+          },
+          deletedAt: null,
+        },
+        include: {
+          user: true,
+          inspectionSlot: true,
+          inspector: true,
+          inspectionTargetInfo: true,
+        },
+        skip: offset,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findApplicationsByScheduleUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findApplicationsByScheduleUuid error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async countApplications(scheduleUuid: string): Promise<number> {
+    return await this.prismaService.inspectionApplication
+      .count({
+        where: {
+          inspectionSlot: {
+            scheduleUuid,
+          },
+          deletedAt: null,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          this.logger.error(`countApplications prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`countApplications error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
