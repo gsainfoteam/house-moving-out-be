@@ -39,15 +39,11 @@ import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dt
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationResDto } from './dto/res/application-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
-import { ScheduleService } from 'src/schedule/schedule.service';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('application')
 export class ApplicationController {
-  constructor(
-    private readonly applicationService: ApplicationService,
-    private readonly scheduleService: ScheduleService,
-  ) {}
+  constructor(private readonly applicationService: ApplicationService) {}
 
   @ApiOperation({
     summary: 'Apply for Inspection',
@@ -279,6 +275,6 @@ export class ApplicationController {
     @GetUser() user: User,
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
-    await this.applicationService.verifyInspectionDocument(user.uuid, uuid);
+    await this.applicationService.verifyInspectionDocument(user, uuid);
   }
 }
