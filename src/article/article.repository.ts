@@ -140,10 +140,10 @@ export class ArticleRepository {
           if (error.code === 'P2025') {
             throw new NotFoundException('Article not found.');
           }
-          this.logger.error(`DeleteArticle prisma error: ${error.message}`);
+          this.logger.error(`deleteArticle prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`DeleteArticle error: ${error}`);
+        this.logger.error(`deleteArticle error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
@@ -162,10 +162,10 @@ export class ArticleRepository {
           if (error.code === 'P2025') {
             throw new NotFoundException('Article not found.');
           }
-          this.logger.error(`DeleteArticleInTx prisma error: ${error.message}`);
+          this.logger.error(`deleteArticleInTx prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`DeleteArticleInTx error: ${error}`);
+        this.logger.error(`deleteArticleInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
