@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ArticleRepository } from './article.repository';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
-import { Language } from './dto/article.dto';
+import { ArticleDto, Language } from './dto/article.dto';
 import { ArticleType, Role, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
@@ -25,21 +25,11 @@ export class ArticleService {
   async createArticle(createArticleReqDto: CreateArticleReqDto) {
     const { type, isVisible, articles } = createArticleReqDto;
 
-    const koContent = articles.find((a) => a.language === Language.KO);
-    const enContent = articles.find((a) => a.language === Language.EN);
-
-    if (!koContent || !enContent) {
-      throw new BadRequestException(
-        'Both Korean and English articles must be provided.',
-      );
-    }
+    const articleContents = this.extractMultilingualContent(articles);
 
     return await this.articleRepository.createArticle({
       type,
-      titleKo: koContent.title,
-      titleEn: enContent.title,
-      contentKo: koContent.content,
-      contentEn: enContent.content,
+      ...articleContents,
       isVisible,
     });
   }
@@ -78,14 +68,7 @@ export class ArticleService {
     uuid: string,
     { type, isVisible, articles }: CreateArticleReqDto,
   ) {
-    const koContent = articles.find((a) => a.language === Language.KO);
-    const enContent = articles.find((a) => a.language === Language.EN);
-
-    if (!koContent || !enContent) {
-      throw new BadRequestException(
-        'Both Korean and English articles must be provided.',
-      );
-    }
+    const articleContents = this.extractMultilingualContent(articles);
 
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
@@ -94,10 +77,7 @@ export class ArticleService {
         return await this.articleRepository.createArticleInTx(
           {
             type,
-            titleKo: koContent.title,
-            titleEn: enContent.title,
-            contentKo: koContent.content,
-            contentEn: enContent.content,
+            ...articleContents,
             isVisible,
           },
           tx,
@@ -116,5 +96,22 @@ export class ArticleService {
 
   async deleteArticle(uuid: string) {
     return await this.articleRepository.deleteArticle(uuid);
+  }
+
+  private extractMultilingualContent(articles: ArticleDto[]) {
+    const koContent = articles.find((a) => a.language === Language.KO);
+    const enContent = articles.find((a) => a.language === Language.EN);
+
+    if (!koContent || !enContent) {
+      throw new BadRequestException(
+        'Both Korean and English articles must be provided.',
+      );
+    }
+    return {
+      titleKo: koContent.title,
+      titleEn: enContent.title,
+      contentKo: koContent.content,
+      contentEn: enContent.content,
+    };
   }
 }
