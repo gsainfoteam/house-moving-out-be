@@ -6,13 +6,14 @@ import {
 } from '@nestjs/common';
 import { ArticleRepository } from './article.repository';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
-import { ArticleDto, Language } from './dto/article.dto';
-import { ArticleType, Role, User } from 'generated/prisma/client';
+import { Language } from './dto/article.dto';
+import { Article, ArticleType, Role, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
+import { CreateArticleType } from './types/create-article.type';
 
 @Loggable()
 @Injectable()
@@ -22,16 +23,13 @@ export class ArticleService {
     private readonly prismaService: PrismaService,
   ) {}
 
-  async createArticle(createArticleReqDto: CreateArticleReqDto) {
-    const { type, isVisible, articles } = createArticleReqDto;
+  async createArticle(
+    createArticleReqDto: CreateArticleReqDto,
+  ): Promise<Article> {
+    const createArticleType =
+      this.extractMultilingualContent(createArticleReqDto);
 
-    const articleContents = this.extractMultilingualContent(articles);
-
-    return await this.articleRepository.createArticle({
-      type,
-      ...articleContents,
-      isVisible,
-    });
+    return await this.articleRepository.createArticle(createArticleType);
   }
 
   async findArticleByUuid(user: User, uuid: string) {
@@ -66,27 +64,27 @@ export class ArticleService {
 
   async updateArticle(
     uuid: string,
-    { type, isVisible, articles }: CreateArticleReqDto,
-  ) {
-    const articleContents = this.extractMultilingualContent(articles);
+    createArticleReqDto: CreateArticleReqDto,
+  ): Promise<Article> {
+    const createArticleType =
+      this.extractMultilingualContent(createArticleReqDto);
 
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         await this.articleRepository.deleteArticleInTx(uuid, tx);
 
         return await this.articleRepository.createArticleInTx(
-          {
-            type,
-            ...articleContents,
-            isVisible,
-          },
+          createArticleType,
           tx,
         );
       },
     );
   }
 
-  async changeArticleVisibility(uuid: string, isVisible: boolean) {
+  async changeArticleVisibility(
+    uuid: string,
+    isVisible: boolean,
+  ): Promise<Article> {
     await this.articleRepository.findArticleByUuid(uuid);
     return await this.articleRepository.updateArticleVisibility(
       uuid,
@@ -94,11 +92,15 @@ export class ArticleService {
     );
   }
 
-  async deleteArticle(uuid: string) {
+  async deleteArticle(uuid: string): Promise<Article> {
     return await this.articleRepository.deleteArticle(uuid);
   }
 
-  private extractMultilingualContent(articles: ArticleDto[]) {
+  private extractMultilingualContent({
+    type,
+    articles,
+    isVisible,
+  }: CreateArticleReqDto): CreateArticleType {
     const koContent = articles.find((a) => a.language === Language.KO);
     const enContent = articles.find((a) => a.language === Language.EN);
 
@@ -108,10 +110,12 @@ export class ArticleService {
       );
     }
     return {
+      type,
       titleKo: koContent.title,
       titleEn: enContent.title,
       contentKo: koContent.content,
       contentEn: enContent.content,
+      isVisible,
     };
   }
 }
