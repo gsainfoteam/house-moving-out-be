@@ -7,8 +7,12 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { ConsentType, User, UserRefreshToken } from 'generated/prisma/client';
+import {
+  ConsentType,
+  Prisma,
+  User,
+  UserRefreshToken,
+} from 'generated/prisma/client';
 import { PrismaTransaction } from '../common/types';
 
 @Loggable()
@@ -39,7 +43,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`upsertUserInTx prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
@@ -56,7 +60,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `deleteUserRefreshToken prisma error: ${error.message}`,
           );
@@ -83,7 +87,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `setUserRefreshToken prisma error: ${error.message}`,
           );
@@ -102,7 +106,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `deleteAllUserRefreshTokens prisma error: ${error.message}`,
           );
@@ -124,7 +128,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `deleteAllUserRefreshTokensInTx prisma error: ${error.message}`,
           );
@@ -152,7 +156,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `setUserRefreshTokenInTx prisma error: ${error.message}`,
           );
@@ -179,7 +183,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('user refresh token not found');
             throw new UnauthorizedException();
@@ -207,7 +211,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findUserRefreshTokenBySessionId prisma error: ${error.message}`,
           );
@@ -227,7 +231,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`user not found: ${uuid}`);
             throw new UnauthorizedException();
@@ -258,7 +262,7 @@ export class AuthRepository {
           })),
         })
         .catch((error) => {
-          if (error instanceof PrismaClientKnownRequestError) {
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
             this.logger.error(
               `createUserConsentsInTx prisma error: ${error.message}`,
             );
@@ -290,7 +294,7 @@ export class AuthRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `getLatestUserConsentInTx prisma error: ${error.message}`,
           );

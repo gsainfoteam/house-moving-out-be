@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 
 @Loggable()
@@ -30,7 +30,7 @@ export class AuditLogRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `createAuditLogInTx prisma error: ${error.message}`,
           );

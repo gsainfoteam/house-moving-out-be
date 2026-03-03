@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@lib/prisma';
 import { Inspector, Prisma } from 'generated/prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { InspectorWithSlots } from './types/inspector-with-slots.type';
 import { PrismaTransaction } from 'src/common/types';
 import { Loggable } from '@lib/logger';
@@ -32,7 +31,7 @@ export class InspectorRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`findAllInspectors prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
@@ -46,7 +45,7 @@ export class InspectorRepository {
     tx: PrismaTransaction,
   ) {
     return await tx.inspector.create({ data: inspector }).catch((error) => {
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           this.logger.debug(`Conflict email: ${error.message}`);
           throw new ConflictException('Conflict Error');
@@ -72,7 +71,7 @@ export class InspectorRepository {
         })),
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2003') {
             this.logger.debug(`Inspection slot not found: ${error.message}`);
             throw new NotFoundException(`Inspection slot not found`);
@@ -98,7 +97,7 @@ export class InspectorRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`Inspector not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
@@ -117,7 +116,7 @@ export class InspectorRepository {
         where: { uuid },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`Inspector not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
@@ -139,7 +138,7 @@ export class InspectorRepository {
         where: { inspectorUuid },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `deleteInspectorAvailableSlotsInTx prisma error: ${error.message}`,
           );
@@ -164,7 +163,7 @@ export class InspectorRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('Inspector not found');
             throw new ForbiddenException('User is not an inspector.');
@@ -198,7 +197,7 @@ export class InspectorRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findLatestApplicationsByInspector prisma error: ${error.message}`,
           );

@@ -16,7 +16,6 @@ import {
   InspectionSlot,
   InspectionTargetInfo,
 } from 'generated/prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { Loggable } from '@lib/logger';
@@ -35,7 +34,7 @@ export class ScheduleRepository {
     return await this.prismaService.moveOutSchedule
       .findMany()
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findAllMoveOutSchedules prisma error: ${error.message}`,
           );
@@ -70,7 +69,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException('Move out schedule already exists.');
           }
@@ -97,7 +96,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
@@ -124,7 +123,7 @@ export class ScheduleRepository {
         orderBy: { createdAt: 'desc' },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`Active MoveOutSchedule not found`);
             throw new NotFoundException(`Not Found Error`);
@@ -160,7 +159,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findInspectorByScheduleUuid prisma error: ${error.message}`,
           );
@@ -197,7 +196,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findApplicationsByScheduleUuid prisma error: ${error.message}`,
           );
@@ -219,7 +218,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`countApplications prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
@@ -244,7 +243,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findOrCreateSemester prisma error: ${error.message}`,
           );
@@ -265,7 +264,7 @@ export class ScheduleRepository {
         include: { schedule: true },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -289,7 +288,7 @@ export class ScheduleRepository {
         where: { uuid: slotUuid },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -326,7 +325,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -363,7 +362,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -399,7 +398,7 @@ export class ScheduleRepository {
         END
       WHERE uuid IN (${currentSlotUuid}, ${updatedSlotUuid});
     `.catch((error) => {
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.error(
           `swapSlotReservedCountsInTx prisma error: ${error.message}`,
         );
@@ -421,7 +420,7 @@ export class ScheduleRepository {
         orderBy: { createdAt: 'desc' },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('Activated MoveOut-Schedule not found');
             throw new NotFoundException('Not Found Error');
@@ -435,8 +434,6 @@ export class ScheduleRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
-
-  // --- From InspectionTargetRepository ---
 
   async findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
     uuid: string,
@@ -452,7 +449,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
@@ -482,7 +479,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `countInspectionTargetsByScheduleAndUuids prisma error: ${error.message}`,
           );
@@ -504,7 +501,7 @@ export class ScheduleRepository {
         where: { scheduleUuid },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `deleteInspectionTargetsByScheduleUuidInTx prisma error: ${error.message}`,
           );
@@ -529,7 +526,7 @@ export class ScheduleRepository {
         data: { maleCapacity, femaleCapacity },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `updateSlotCapacitiesByScheduleUuidInTx prisma error: ${error.message}`,
           );
@@ -564,7 +561,7 @@ export class ScheduleRepository {
         })),
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException(
               'Duplicate inspection target room exists in the given schedule.',
@@ -595,7 +592,7 @@ export class ScheduleRepository {
         data: { applyCleaningService },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `updateApplyCleaningServiceByScheduleAndUuids prisma error: ${error.message}`,
           );
@@ -634,7 +631,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             throw new ForbiddenException('User is not an inspection target.');
           }
@@ -675,7 +672,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             throw new ForbiddenException('User is not an inspection target.');
           }
@@ -703,7 +700,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
             throw new NotFoundException('Inspection target info not found.');
@@ -730,7 +727,7 @@ export class ScheduleRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
             throw new NotFoundException('Inspection target info not found.');
@@ -766,7 +763,7 @@ export class ScheduleRepository {
         orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid prisma error: ${error.message}`,
           );

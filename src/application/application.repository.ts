@@ -12,7 +12,6 @@ import {
   InspectionApplication,
   Inspector,
 } from 'generated/prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { PrismaTransaction } from 'src/common/types';
 import { InspectionApplicationWithDetails } from '../inspector/types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
@@ -44,7 +43,7 @@ export class ApplicationRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException(
               'Inspection application already exists.',
@@ -70,7 +69,7 @@ export class ApplicationRepository {
         data: { deletedAt: new Date() },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(
               `InspectionApplication not found: ${applicationUuid}`,
@@ -116,7 +115,7 @@ export class ApplicationRepository {
       LIMIT 1
       FOR UPDATE
     `.catch((error) => {
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.error(
           `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
         );
@@ -155,7 +154,7 @@ export class ApplicationRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('Application not found');
             throw new NotFoundException('Not Found Error');
@@ -186,7 +185,7 @@ export class ApplicationRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('Application not found');
             throw new NotFoundException('Not Found Error');
@@ -229,7 +228,7 @@ export class ApplicationRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(
               `InspectionApplication not found for update result: ${applicationUuid}`,
@@ -256,7 +255,7 @@ export class ApplicationRepository {
         data: { isDocumentActive },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(
               `InspectionApplication not found for update status: ${applicationUuid}`,
@@ -288,7 +287,7 @@ export class ApplicationRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionApplication not found: ${uuid}`);
             throw new NotFoundException('Inspection application not found.');
