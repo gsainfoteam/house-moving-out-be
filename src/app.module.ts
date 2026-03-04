@@ -6,6 +6,7 @@ import { LoggerModule } from '@lib/logger';
 import { InspectorModule } from './inspector/inspector.module';
 import { UserModule } from './user/user.module';
 import { HealthModule } from './health/health.module';
+import { ArticleModule } from './article/article.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { HealthModule } from './health/health.module';
     InspectorModule,
     HealthModule,
     UserModule,
+    ArticleModule,
   ],
   controllers: [],
   providers: [],
