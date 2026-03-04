@@ -4,12 +4,18 @@ import { ApplicationController } from './application.controller';
 import { PrismaModule } from '@lib/prisma';
 import { FileModule } from '@lib/file';
 import { InspectorModule } from 'src/inspector/inspector.module';
-import { ApplicationRepository } from './application.repository';
 import { ScheduleModule } from '../schedule/schedule.module';
+import { DatabaseModule } from '@lib/database';
 
 @Module({
-  imports: [PrismaModule, InspectorModule, FileModule, ScheduleModule],
+  imports: [
+    PrismaModule,
+    InspectorModule,
+    FileModule,
+    ScheduleModule,
+    DatabaseModule,
+  ],
   controllers: [ApplicationController],
-  providers: [ApplicationService, ApplicationRepository],
+  providers: [ApplicationService],
 })
 export class ApplicationModule {}

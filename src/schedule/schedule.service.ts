@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ScheduleRepository } from './schedule.repository';
 import {
   Gender,
   MoveOutSchedule,
@@ -35,6 +34,14 @@ import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspect
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { FileService } from '@lib/file';
+import {
+  MoveOutScheduleRepository,
+  InspectionSlotRepository,
+  InspectionTargetInfoRepository,
+  SemesterRepository,
+  InspectionApplicationRepository,
+  InspectorRepository,
+} from '@lib/database';
 
 @Loggable()
 @Injectable()
@@ -42,15 +49,20 @@ export class ScheduleService {
   private readonly SLOT_DURATION = ms('30m');
   private readonly WEIGHT_FACTOR = 1.5;
   constructor(
-    private readonly scheduleRepository: ScheduleRepository,
     private readonly prismaService: PrismaService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
     private readonly fileService: FileService,
+    private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
+    private readonly inspectionSlotRepository: InspectionSlotRepository,
+    private readonly inspectionTargetInfoRepository: InspectionTargetInfoRepository,
+    private readonly semesterRepository: SemesterRepository,
+    private readonly inspectionApplicationRepository: InspectionApplicationRepository,
+    private readonly inspectorRepository: InspectorRepository,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
-    return await this.scheduleRepository.findAllMoveOutSchedules();
+    return await this.moveOutScheduleRepository.findAllMoveOutSchedules();
   }
 
   async createMoveOutScheduleWithTargets(
@@ -117,12 +129,12 @@ export class ScheduleService {
     );
 
     const currentSemesterEntity =
-      await this.scheduleRepository.findOrCreateSemester(
+      await this.semesterRepository.findOrCreateSemester(
         currentSemester.year,
         currentSemester.season,
       );
     const nextSemesterEntity =
-      await this.scheduleRepository.findOrCreateSemester(
+      await this.semesterRepository.findOrCreateSemester(
         nextSemester.year,
         nextSemester.season,
       );
@@ -164,13 +176,13 @@ export class ScheduleService {
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const schedule =
-          await this.scheduleRepository.createMoveOutScheduleInTx(
+          await this.moveOutScheduleRepository.createMoveOutScheduleInTx(
             scheduleData,
             slotsData,
             tx,
           );
 
-        await this.scheduleRepository.createInspectionTargetsInTx(
+        await this.inspectionTargetInfoRepository.createInspectionTargetsInTx(
           schedule.uuid,
           inspectionTargets,
           tx,
@@ -187,7 +199,7 @@ export class ScheduleService {
   async findMoveOutScheduleWithSlots(
     uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
-    return await this.scheduleRepository.findMoveOutScheduleWithSlotsByUuid(
+    return await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuid(
       uuid,
     );
   }
@@ -196,7 +208,7 @@ export class ScheduleService {
     user: User,
   ): Promise<MoveOutScheduleWithSlots> {
     const schedule =
-      await this.scheduleRepository.findActiveMoveOutScheduleWithSlots();
+      await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
 
     const now = new Date();
     if (now < schedule.applicationStartTime) {
@@ -209,7 +221,7 @@ export class ScheduleService {
 
     const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
-    await this.scheduleRepository.findInspectionTargetInfoByUserInfo(
+    await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
       admissionYear,
       user.name,
       schedule.uuid,
@@ -220,7 +232,7 @@ export class ScheduleService {
 
   async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
     const inspectors =
-      await this.scheduleRepository.findInspectorByScheduleUuid(uuid);
+      await this.inspectorRepository.findInspectorByScheduleUuid(uuid);
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
@@ -229,12 +241,12 @@ export class ScheduleService {
     scheduleUuid: string,
   ): Promise<ApplicationListResDto> {
     const [applications, totalCount] = await Promise.all([
-      this.scheduleRepository.findApplicationsByScheduleUuid(
+      this.inspectionApplicationRepository.findApplicationsByScheduleUuid(
         offset ?? 0,
         limit ?? 20,
         scheduleUuid,
       ),
-      this.scheduleRepository.countApplications(scheduleUuid),
+      this.inspectionApplicationRepository.countApplications(scheduleUuid),
     ]);
     return new ApplicationListResDto(
       await Promise.all(
@@ -293,7 +305,7 @@ export class ScheduleService {
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const schedule =
-          await this.scheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
+          await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
             scheduleUuid,
             tx,
           );
@@ -318,19 +330,19 @@ export class ScheduleService {
           this.WEIGHT_FACTOR,
         );
 
-        await this.scheduleRepository.deleteInspectionTargetsByScheduleUuidInTx(
+        await this.inspectionTargetInfoRepository.deleteInspectionTargetsByScheduleUuidInTx(
           scheduleUuid,
           tx,
         );
 
         const createdCount =
-          await this.scheduleRepository.createInspectionTargetsInTx(
+          await this.inspectionTargetInfoRepository.createInspectionTargetsInTx(
             scheduleUuid,
             inspectionTargets,
             tx,
           );
 
-        await this.scheduleRepository.updateSlotCapacitiesByScheduleUuidInTx(
+        await this.inspectionSlotRepository.updateSlotCapacitiesByScheduleUuidInTx(
           scheduleUuid,
           maleCapacity,
           femaleCapacity,
@@ -350,7 +362,7 @@ export class ScheduleService {
 
     await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
       const schedule =
-        await this.scheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
+        await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
           scheduleUuid,
           tx,
         );
@@ -362,7 +374,7 @@ export class ScheduleService {
       }
 
       const count =
-        await this.scheduleRepository.countInspectionTargetsByScheduleAndUuidsInTx(
+        await this.inspectionTargetInfoRepository.countInspectionTargetsByScheduleAndUuidsInTx(
           scheduleUuid,
           uniqueTargetUuids,
           tx,
@@ -374,7 +386,7 @@ export class ScheduleService {
         );
       }
 
-      await this.scheduleRepository.updateApplyCleaningServiceByScheduleAndUuidsInTx(
+      await this.inspectionTargetInfoRepository.updateApplyCleaningServiceByScheduleAndUuidsInTx(
         scheduleUuid,
         uniqueTargetUuids,
         applyCleaningService,
@@ -388,12 +400,12 @@ export class ScheduleService {
   ): Promise<{ gender: Gender; roomNumber: string } | null> {
     try {
       const schedule =
-        await this.scheduleRepository.findActiveMoveOutScheduleWithSlots();
+        await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
 
       const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
       const targetInfo =
-        await this.scheduleRepository.findInspectionTargetInfoByUserInfo(
+        await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
           admissionYear,
           user.name,
           schedule.uuid,
@@ -419,7 +431,7 @@ export class ScheduleService {
     scheduleUuid: string,
   ): Promise<InspectionTargetsGroupedByRoomResDto[]> {
     const inspectionTargetInfosWithApplications =
-      await this.scheduleRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
+      await this.inspectionTargetInfoRepository.findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
         scheduleUuid,
       );
     return inspectionTargetInfosWithApplications.map(

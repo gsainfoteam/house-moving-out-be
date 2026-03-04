@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { InspectorController } from './inspector.controller';
 import { InspectorService } from './inspector.service';
 import { PrismaModule } from '@lib/prisma';
-import { InspectorRepository } from './inspector.repository';
 import { ScheduleModule } from 'src/schedule/schedule.module';
+import { DatabaseModule } from '@lib/database';
 
 @Module({
-  imports: [PrismaModule, ScheduleModule],
+  imports: [PrismaModule, ScheduleModule, DatabaseModule],
   controllers: [InspectorController],
-  providers: [InspectorService, InspectorRepository],
-  exports: [InspectorService, InspectorRepository],
+  providers: [InspectorService],
+  exports: [InspectorService],
 })
 export class InspectorModule {}

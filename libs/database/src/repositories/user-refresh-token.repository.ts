@@ -1,56 +1,19 @@
-import { UserInfo } from '@lib/infoteam-account/types/userInfo.type';
 import { Loggable } from '@lib/logger';
-import { PrismaService } from '@lib/prisma';
 import {
   Injectable,
   InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import {
-  ConsentType,
-  Prisma,
-  User,
-  UserRefreshToken,
-} from 'generated/prisma/client';
-import { PrismaTransaction } from '../common/types';
+import { PrismaService } from '@lib/prisma';
+import { Prisma, UserRefreshToken } from 'generated/prisma/client';
+import { PrismaTransaction } from 'src/common/types';
 
 @Loggable()
 @Injectable()
-export class AuthRepository {
-  private readonly logger = new Logger(AuthRepository.name);
+export class UserRefreshTokenRepository {
+  private readonly logger = new Logger(UserRefreshTokenRepository.name);
   constructor(private readonly prismaService: PrismaService) {}
-
-  async upsertUserInTx(
-    { uuid, name, email, phoneNumber, studentNumber }: UserInfo,
-    tx: PrismaTransaction,
-  ): Promise<User> {
-    return await tx.user
-      .upsert({
-        where: { uuid },
-        create: {
-          uuid,
-          name,
-          email,
-          phoneNumber,
-          studentNumber,
-        },
-        update: {
-          name,
-          email,
-          phoneNumber,
-          studentNumber,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          this.logger.error(`upsertUserInTx prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`upsertUserInTx error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
 
   async deleteUserRefreshToken(hashedRefreshToken: string): Promise<void> {
     await this.prismaService.userRefreshToken
@@ -72,7 +35,7 @@ export class AuthRepository {
   }
 
   async setUserRefreshToken(
-    uuid: string,
+    userUuid: string,
     hashedRefreshToken: string,
     sessionId: string,
     expiredAt: Date,
@@ -80,7 +43,7 @@ export class AuthRepository {
     await this.prismaService.userRefreshToken
       .create({
         data: {
-          userUuid: uuid,
+          userUuid,
           refreshToken: hashedRefreshToken,
           sessionId,
           expiredAt,
@@ -140,7 +103,7 @@ export class AuthRepository {
   }
 
   async setUserRefreshTokenInTx(
-    uuid: string,
+    userUuid: string,
     hashedRefreshToken: string,
     sessionId: string,
     expiredAt: Date,
@@ -149,7 +112,7 @@ export class AuthRepository {
     await tx.userRefreshToken
       .create({
         data: {
-          userUuid: uuid,
+          userUuid,
           refreshToken: hashedRefreshToken,
           sessionId,
           expiredAt,
@@ -186,7 +149,7 @@ export class AuthRepository {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('user refresh token not found');
-            throw new UnauthorizedException();
+            throw new UnauthorizedException('User refresh token not found');
           }
           this.logger.error(
             `findUserByRefreshToken prisma error: ${error.message}`,
@@ -218,89 +181,6 @@ export class AuthRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findUserRefreshTokenBySessionId error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async findUser(uuid: string): Promise<User> {
-    return await this.prismaService.user
-      .findFirstOrThrow({
-        where: {
-          uuid,
-          deletedAt: null,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`user not found: ${uuid}`);
-            throw new UnauthorizedException();
-          }
-          this.logger.error(`findUser prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findUser error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
-  async createUserConsentsInTx(
-    userUuid: string,
-    consents: Array<{
-      consentType: ConsentType;
-      version: string;
-    }>,
-    tx: PrismaTransaction,
-  ): Promise<void> {
-    if (consents.length > 0) {
-      await tx.userConsent
-        .createMany({
-          data: consents.map((consent) => ({
-            userUuid,
-            consentType: consent.consentType,
-            version: consent.version,
-          })),
-        })
-        .catch((error) => {
-          if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            this.logger.error(
-              `createUserConsentsInTx prisma error: ${error.message}`,
-            );
-            throw new InternalServerErrorException('Database Error');
-          }
-          this.logger.error(`createUserConsentsInTx error: ${error}`);
-          throw new InternalServerErrorException('Unknown Error');
-        });
-    }
-  }
-
-  async getLatestUserConsentInTx(
-    userUuid: string,
-    consentType: ConsentType,
-    tx: PrismaTransaction,
-  ): Promise<{ version: string; agreedAt: Date } | null> {
-    return await tx.userConsent
-      .findFirst({
-        where: {
-          userUuid,
-          consentType,
-        },
-        select: {
-          version: true,
-          agreedAt: true,
-        },
-        orderBy: {
-          agreedAt: 'desc',
-        },
-      })
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          this.logger.error(
-            `getLatestUserConsentInTx prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`getLatestUserConsentInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

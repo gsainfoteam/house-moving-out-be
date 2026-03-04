@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { ApplicationRepository } from './application.repository';
 import { Gender } from 'generated/prisma/client';
 import { Loggable } from '@lib/logger';
 import { PrismaService } from '@lib/prisma';
@@ -19,11 +18,16 @@ import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dt
 import { FileService } from '@lib/file';
 import * as crypto from 'crypto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
-import { InspectorRepository } from 'src/inspector/inspector.repository';
 import { ApplicationResDto } from './dto/res/application-res.dto';
-import { ScheduleRepository } from '../schedule/schedule.repository';
 import { ScheduleService } from '../schedule/schedule.service';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
+import {
+  InspectionApplicationRepository,
+  InspectionSlotRepository,
+  InspectionTargetInfoRepository,
+  MoveOutScheduleRepository,
+  InspectorRepository,
+} from '@lib/database';
 
 @Loggable()
 @Injectable()
@@ -31,12 +35,14 @@ export class ApplicationService {
   private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
   constructor(
-    private readonly applicationRepository: ApplicationRepository,
-    private readonly scheduleRepository: ScheduleRepository,
     private readonly scheduleService: ScheduleService,
     private readonly prismaService: PrismaService,
     private readonly fileService: FileService,
     private readonly inspectorRepository: InspectorRepository,
+    private readonly inspectionApplicationRepository: InspectionApplicationRepository,
+    private readonly inspectionSlotRepository: InspectionSlotRepository,
+    private readonly inspectionTargetInfoRepository: InspectionTargetInfoRepository,
+    private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
   ) {}
 
   async applyInspection(
@@ -50,7 +56,7 @@ export class ApplicationService {
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const { schedule } =
-          await this.scheduleRepository.findInspectionSlotByUuidInTx(
+          await this.inspectionSlotRepository.findInspectionSlotByUuidInTx(
             inspectionSlotUuid,
             tx,
           );
@@ -67,7 +73,7 @@ export class ApplicationService {
         }
 
         const inspectionTargetInfo =
-          await this.scheduleRepository.findInspectionTargetInfoByUserInfoInTx(
+          await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfoInTx(
             admissionYear,
             user.name,
             schedule.uuid,
@@ -87,12 +93,12 @@ export class ApplicationService {
         );
 
         const updatedTargetInfo =
-          await this.scheduleRepository.incrementInspectionCountInTx(
+          await this.inspectionTargetInfoRepository.incrementInspectionCountInTx(
             inspectionTargetInfo.uuid,
             tx,
           );
         const updatedSlot =
-          await this.scheduleRepository.incrementSlotReservedCountInTx(
+          await this.inspectionSlotRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
             isMale,
             tx,
@@ -109,7 +115,7 @@ export class ApplicationService {
         }
 
         const inspector =
-          await this.applicationRepository.findAvailableInspectorBySlotUuidInTx(
+          await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
             user.email,
             inspectionSlotUuid,
             isMale ? Gender.MALE : Gender.FEMALE,
@@ -117,7 +123,7 @@ export class ApplicationService {
           );
 
         const application =
-          await this.applicationRepository.createInspectionApplicationInTx(
+          await this.inspectionApplicationRepository.createInspectionApplicationInTx(
             user.uuid,
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
@@ -136,10 +142,10 @@ export class ApplicationService {
       user.studentNumber,
     );
 
-    const schedule = await this.scheduleRepository.findActiveSchedule();
+    const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
 
     const targetInfo =
-      await this.scheduleRepository.findInspectionTargetInfoByUserInfo(
+      await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
         admissionYear,
         user.name,
         schedule.uuid,
@@ -155,7 +161,7 @@ export class ApplicationService {
   ): Promise<ApplicationUuidResDto> {
     return this.prismaService.$transaction(async (tx: PrismaTransaction) => {
       const application =
-        await this.applicationRepository.findApplicationByUuidWithXLockInTx(
+        await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
           applicationUuid,
           tx,
         );
@@ -176,7 +182,7 @@ export class ApplicationService {
         return { applicationUuid };
       }
 
-      await this.applicationRepository.deleteInspectionApplicationInTx(
+      await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
         applicationUuid,
         tx,
       );
@@ -195,17 +201,18 @@ export class ApplicationService {
         application.inspectionTargetInfo.houseName,
       );
 
-      await this.scheduleRepository.swapSlotReservedCountsInTx(
+      await this.inspectionSlotRepository.swapSlotReservedCountsInTx(
         application.inspectionSlotUuid,
         inspectionSlotUuid,
         isMale,
         tx,
       );
 
-      const updatedSlot = await this.scheduleRepository.findSlotByUuidInTx(
-        inspectionSlotUuid,
-        tx,
-      );
+      const updatedSlot =
+        await this.inspectionSlotRepository.findSlotByUuidInTx(
+          inspectionSlotUuid,
+          tx,
+        );
 
       if (
         application.inspectionSlot.scheduleUuid !== updatedSlot.scheduleUuid
@@ -226,7 +233,7 @@ export class ApplicationService {
       }
 
       const inspector =
-        await this.applicationRepository.findAvailableInspectorBySlotUuidInTx(
+        await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
           user.email,
           inspectionSlotUuid,
           isMale ? Gender.MALE : Gender.FEMALE,
@@ -234,7 +241,7 @@ export class ApplicationService {
         );
 
       const updatedApplication =
-        await this.applicationRepository.createInspectionApplicationInTx(
+        await this.inspectionApplicationRepository.createInspectionApplicationInTx(
           user.uuid,
           application.inspectionTargetInfoUuid,
           inspectionSlotUuid,
@@ -251,7 +258,7 @@ export class ApplicationService {
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const application =
-          await this.applicationRepository.findApplicationByUuidWithXLockInTx(
+          await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
             applicationUuid,
             tx,
           );
@@ -273,7 +280,7 @@ export class ApplicationService {
           application.inspectionSlot.startTime.getTime() - now.getTime();
 
         if (timeDiff >= this.APPLICATION_UPDATE_DEADLINE) {
-          await this.scheduleRepository.decrementInspectionCountInTx(
+          await this.inspectionTargetInfoRepository.decrementInspectionCountInTx(
             application.inspectionTargetInfo.uuid,
             tx,
           );
@@ -283,13 +290,13 @@ export class ApplicationService {
           application.inspectionTargetInfo.houseName,
         );
 
-        await this.scheduleRepository.decrementSlotReservedCountInTx(
+        await this.inspectionSlotRepository.decrementSlotReservedCountInTx(
           application.inspectionSlotUuid,
           isMale,
           tx,
         );
 
-        await this.applicationRepository.deleteInspectionApplicationInTx(
+        await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
           application.uuid,
           tx,
         );
@@ -298,9 +305,9 @@ export class ApplicationService {
   }
 
   async findMyInspection(user: User): Promise<InspectionResDto> {
-    const schedule = await this.scheduleRepository.findActiveSchedule();
+    const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
     const application =
-      await this.applicationRepository.findApplicationByUserAndSchedule(
+      await this.inspectionApplicationRepository.findApplicationByUserAndSchedule(
         user.uuid,
         schedule.uuid,
       );
@@ -314,7 +321,7 @@ export class ApplicationService {
 
   async findApplication(uuid: string): Promise<ApplicationResDto> {
     const application =
-      await this.applicationRepository.findApplicationByUuid(uuid);
+      await this.inspectionApplicationRepository.findApplicationByUuid(uuid);
 
     return new ApplicationResDto({
       ...application,
@@ -359,7 +366,7 @@ export class ApplicationService {
     return await this.prismaService.$transaction(
       async (tx: PrismaTransaction) => {
         const application =
-          await this.applicationRepository.findApplicationByUuidWithXLockInTx(
+          await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
             applicationUuid,
             tx,
           );
@@ -376,7 +383,7 @@ export class ApplicationService {
           );
         }
 
-        await this.applicationRepository.updateInspectionResultInTx(
+        await this.inspectionApplicationRepository.updateInspectionResultInTx(
           applicationUuid,
           { passed, failed },
           failed.length === 0,
@@ -394,7 +401,9 @@ export class ApplicationService {
     applicationUuid: string,
   ): Promise<void> {
     const application =
-      await this.applicationRepository.findApplicationByUuid(applicationUuid);
+      await this.inspectionApplicationRepository.findApplicationByUuid(
+        applicationUuid,
+      );
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       user.email,
       user.name,
@@ -415,7 +424,7 @@ export class ApplicationService {
 
     await this.fileService.verifyFileExists(application.document);
 
-    await this.applicationRepository.updateDocumentActiveStatus(
+    await this.inspectionApplicationRepository.updateDocumentActiveStatus(
       applicationUuid,
       true,
     );

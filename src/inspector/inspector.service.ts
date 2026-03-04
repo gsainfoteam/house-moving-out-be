@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InspectorRepository } from './inspector.repository';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
@@ -7,9 +6,13 @@ import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
 import { Loggable } from '@lib/logger';
 import { User } from 'generated/prisma/client';
-import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
-import { ScheduleRepository } from 'src/schedule/schedule.repository';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
+import {
+  InspectorRepository,
+  InspectorAvailableSlotRepository,
+  InspectionApplicationRepository,
+  MoveOutScheduleRepository,
+} from '@lib/database';
 
 @Loggable()
 @Injectable()
@@ -17,7 +20,9 @@ export class InspectorService {
   constructor(
     private readonly inspectorRepository: InspectorRepository,
     private readonly prismaService: PrismaService,
-    private readonly scheduleRepository: ScheduleRepository,
+    private readonly inspectorAvailableSlotRepository: InspectorAvailableSlotRepository,
+    private readonly inspectionApplicationRepository: InspectionApplicationRepository,
+    private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
   ) {}
 
   async getInspectors(): Promise<InspectorResDto[]> {
@@ -32,7 +37,7 @@ export class InspectorService {
           inspector,
           tx,
         );
-        await this.inspectorRepository.connectInspectorAndSlotsInTx(
+        await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
           uuid,
           availableSlotUuids,
           tx,
@@ -51,11 +56,11 @@ export class InspectorService {
     { availableSlotUuids }: UpdateInspectorDto,
   ): Promise<void> {
     await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
-      await this.inspectorRepository.deleteInspectorAvailableSlotsInTx(
+      await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
         uuid,
         tx,
       );
-      await this.inspectorRepository.connectInspectorAndSlotsInTx(
+      await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
         uuid,
         availableSlotUuids,
         tx,
@@ -78,10 +83,10 @@ export class InspectorService {
       studentNumber,
     );
 
-    const schedule = await this.scheduleRepository.findActiveSchedule();
+    const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
 
-    const latestApplications: InspectorApplicationWithDetails[] =
-      await this.inspectorRepository.findLatestApplicationsByInspector(
+    const latestApplications =
+      await this.inspectionApplicationRepository.findLatestApplicationsByInspector(
         inspector.uuid,
         schedule.uuid,
       );
