@@ -49,14 +49,14 @@ export class ArticleService {
     user: User,
     { offset, limit }: FindArticlesQueryDto,
   ): Promise<FindArticlesResDto> {
-    const isAdmin = user.role === Role.ADMIN;
+    const isVisible = user.role === Role.ADMIN ? undefined : true;
 
     const [articles, totalCount] =
       await this.articleRepository.findArticlesByType(
         type,
-        isAdmin,
         offset ?? 0,
         limit ?? 20,
+        isVisible,
       );
 
     return new FindArticlesResDto(articles, totalCount);

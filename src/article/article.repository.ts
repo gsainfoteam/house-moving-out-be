@@ -8,7 +8,7 @@ import {
 import { Loggable } from '@lib/logger';
 import { PrismaService } from '@lib/prisma';
 import { CreateArticleType } from './types/create-article.type';
-import { Article, ArticleType, Prisma } from 'generated/prisma/client';
+import { Article, ArticleType } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { PrismaTransaction } from 'src/common/types';
 
@@ -59,14 +59,14 @@ export class ArticleRepository {
 
   async findArticlesByType(
     type: ArticleType,
-    isAdmin: boolean,
     offset: number,
     limit: number,
+    isVisible?: boolean,
   ): Promise<[Article[], number]> {
-    const where: Prisma.ArticleWhereInput = {
+    const where = {
       type,
       deletedAt: null,
-      ...(!isAdmin && { isVisible: true }),
+      isVisible,
     };
 
     return await Promise.all([
