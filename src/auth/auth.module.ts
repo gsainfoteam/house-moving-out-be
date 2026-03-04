@@ -10,7 +10,7 @@ import { AdminStrategy } from './guard/admin.strategy';
 import { UserGuard } from './guard/user.guard';
 import { UserStrategy } from './guard/user.strategy';
 import { HttpModule } from '@nestjs/axios';
-import { DatabaseModule } from '@lib/database';
+import { DatabaseModule } from 'libs/database';
 
 @Module({
   imports: [

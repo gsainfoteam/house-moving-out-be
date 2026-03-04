@@ -3,7 +3,7 @@ import { InspectorController } from './inspector.controller';
 import { InspectorService } from './inspector.service';
 import { PrismaModule } from '@lib/prisma';
 import { ScheduleModule } from 'src/schedule/schedule.module';
-import { DatabaseModule } from '@lib/database';
+import { DatabaseModule } from 'libs/database';
 
 @Module({
   imports: [PrismaModule, ScheduleModule, DatabaseModule],

@@ -41,7 +41,7 @@ import {
   SemesterRepository,
   InspectionApplicationRepository,
   InspectorRepository,
-} from '@lib/database';
+} from 'libs/database';
 
 @Loggable()
 @Injectable()

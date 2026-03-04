@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaTransaction } from 'src/common/types';
-import { AuditLogRepository } from '@lib/database';
+import { AuditLogRepository } from 'libs/database';
 import { Loggable } from '@lib/logger';
 
 @Loggable()

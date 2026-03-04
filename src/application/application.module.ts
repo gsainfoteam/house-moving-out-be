@@ -5,7 +5,7 @@ import { PrismaModule } from '@lib/prisma';
 import { FileModule } from '@lib/file';
 import { InspectorModule } from 'src/inspector/inspector.module';
 import { ScheduleModule } from '../schedule/schedule.module';
-import { DatabaseModule } from '@lib/database';
+import { DatabaseModule } from 'libs/database';
 
 @Module({
   imports: [

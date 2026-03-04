@@ -12,7 +12,7 @@ import {
   InspectorAvailableSlotRepository,
   InspectionApplicationRepository,
   MoveOutScheduleRepository,
-} from '@lib/database';
+} from 'libs/database';
 
 @Loggable()
 @Injectable()
