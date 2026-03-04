@@ -40,7 +40,7 @@ import { FileService } from '@lib/file';
 import * as crypto from 'crypto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationListQueryDto } from './dto/req/application-list-query.dto';
-import { InspectorRepository } from 'libs/database';
+import { InspectorRepository } from '@lib/database';
 import {
   ApplicationListResDto,
   ApplicationResDto,

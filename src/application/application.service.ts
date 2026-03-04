@@ -27,7 +27,7 @@ import {
   InspectionTargetInfoRepository,
   MoveOutScheduleRepository,
   InspectorRepository,
-} from 'libs/database';
+} from '@lib/database';
 
 @Loggable()
 @Injectable()

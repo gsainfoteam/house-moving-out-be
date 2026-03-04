@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuditLogService } from './audit-log.service';
-import { DatabaseModule } from 'libs/database';
+import { DatabaseModule } from '@lib/database';
 
 @Module({
   imports: [DatabaseModule],

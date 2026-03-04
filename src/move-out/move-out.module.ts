@@ -6,7 +6,7 @@ import { ExcelParserModule } from '@lib/excel-parser';
 import { FileModule } from '@lib/file';
 import { InspectorModule } from 'src/inspector/inspector.module';
 import { MoveOutRepository } from './move-out.repository';
-import { DatabaseModule } from 'libs/database';
+import { DatabaseModule } from '@lib/database';
 
 @Module({
   imports: [

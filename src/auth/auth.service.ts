@@ -32,7 +32,7 @@ import {
   UserRepository,
   UserRefreshTokenRepository,
   UserConsentRepository,
-} from 'libs/database';
+} from '@lib/database';
 
 @Loggable()
 @Injectable()
