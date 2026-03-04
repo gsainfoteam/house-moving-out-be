@@ -7,7 +7,7 @@ import {
 import { ArticleRepository } from './article.repository';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
 import { Language } from './dto/article.dto';
-import { Article, ArticleType, Role, User } from 'generated/prisma/client';
+import { Article, Role, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
@@ -44,10 +44,9 @@ export class ArticleService {
     return new ArticleDetailResDto(article);
   }
 
-  async findArticlesByType(
-    type: ArticleType,
+  async findArticles(
     user: User,
-    { offset, limit }: FindArticlesQueryDto,
+    { type, offset, limit }: FindArticlesQueryDto,
   ): Promise<FindArticlesResDto> {
     const isVisible = user.role === Role.ADMIN ? undefined : true;
 

@@ -31,7 +31,7 @@ import { CreateArticleResDto } from './dto/res/create-article-res.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
 import { UserGuard } from 'src/auth/guard/user.guard';
 import { GetUser } from 'src/auth/decorator/get-user.decorator';
-import { ArticleType, User } from 'generated/prisma/client';
+import { User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
@@ -67,45 +67,20 @@ export class ArticleController {
   }
 
   @ApiOperation({
-    summary: 'Find Notice Articles',
-    description: 'Get a paginated list of notice articles.',
+    summary: 'Find Articles',
+    description: 'Get a paginated list of articles (Notice/FAQ).',
   })
   @ApiOkResponse({ type: FindArticlesResDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
-  @Get('notice')
-  async findNotices(
+  @Get()
+  async findArticles(
     @GetUser() user: User,
     @Query() query: FindArticlesQueryDto,
   ): Promise<FindArticlesResDto> {
-    return await this.articleService.findArticlesByType(
-      ArticleType.NOTICE,
-      user,
-      query,
-    );
-  }
-
-  @ApiOperation({
-    summary: 'Find FAQ Articles',
-    description: 'Get a paginated list of FAQ articles.',
-  })
-  @ApiOkResponse({ type: FindArticlesResDto })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized', type: ErrorDto })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('user')
-  @UseGuards(UserGuard)
-  @Get('faq')
-  async findFaq(
-    @GetUser() user: User,
-    @Query() query: FindArticlesQueryDto,
-  ): Promise<FindArticlesResDto> {
-    return await this.articleService.findArticlesByType(
-      ArticleType.FAQ,
-      user,
-      query,
-    );
+    return await this.articleService.findArticles(user, query);
   }
 
   @ApiOperation({

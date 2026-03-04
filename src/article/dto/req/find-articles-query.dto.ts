@@ -1,8 +1,17 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ArticleType } from 'generated/prisma/client';
 
 export class FindArticlesQueryDto {
+  @ApiProperty({
+    description: 'Article type (NOTICE or FAQ)',
+    enum: ArticleType,
+    example: ArticleType.NOTICE,
+  })
+  @IsEnum(ArticleType)
+  type: ArticleType;
+
   @ApiPropertyOptional({
     description: 'Pagination offset',
     example: 0,
