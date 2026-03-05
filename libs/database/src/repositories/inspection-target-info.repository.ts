@@ -11,7 +11,7 @@ import { PrismaService } from '@lib/prisma';
 import { InspectionTargetInfo, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 import { InspectionTargetStudent } from 'src/schedule/types/inspection-target.type';
-import { InspectionTargetInfoWithApplication } from 'src/schedule/types/inspection-target-info-with-application.type';
+import { InspectionTargetInfoWithApplication } from '../types/inspection-target-info.type';
 
 @Loggable()
 @Injectable()

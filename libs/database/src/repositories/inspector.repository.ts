@@ -10,7 +10,7 @@ import {
 import { PrismaService } from '@lib/prisma';
 import { Gender, Inspector, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
-import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
+import { InspectorWithSlots } from '../types/inspector.type';
 
 @Loggable()
 @Injectable()

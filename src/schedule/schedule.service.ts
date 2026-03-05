@@ -22,7 +22,7 @@ import {
 } from '@lib/excel-parser';
 import { PrismaService } from '@lib/prisma';
 import { PrismaTransaction } from 'src/common/types';
-import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
+import { MoveOutScheduleWithSlots } from '@lib/database/types/move-out-schedule.type';
 import { User } from 'generated/prisma/client';
 import ms from 'ms';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';

@@ -12,3 +12,12 @@ export type ApplicationInfo = InspectionApplication & {
   inspectionSlot: InspectionSlot;
   inspectionTargetInfo: InspectionTargetInfo;
 };
+
+export type ApplicationWithDetails = InspectionApplication & {
+  inspectionSlot: InspectionSlot;
+  inspectionTargetInfo: InspectionTargetInfo;
+};
+
+export type InspectionApplicationWithSlot = InspectionApplication & {
+  inspectionSlot: InspectionSlot;
+};

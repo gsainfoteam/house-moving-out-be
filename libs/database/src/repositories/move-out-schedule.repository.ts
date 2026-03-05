@@ -14,7 +14,7 @@ import {
   ScheduleStatus,
 } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
-import { MoveOutScheduleWithSlots } from 'src/schedule/types/move-out-schedule-with-slots.type';
+import { MoveOutScheduleWithSlots } from '../types/move-out-schedule.type';
 
 @Loggable()
 @Injectable()

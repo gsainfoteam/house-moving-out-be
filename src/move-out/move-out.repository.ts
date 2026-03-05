@@ -25,10 +25,10 @@ import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
-import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
+import { InspectorWithSlots } from '@lib/database/types/inspector.type';
 import { ApplicationInfo } from './types/application-info.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
-import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
+import { ApplicationWithDetails } from '@lib/database/types/inspection-application.type';
 
 @Loggable()
 @Injectable()
@@ -1115,7 +1115,7 @@ export class MoveOutRepository {
   async findLatestApplicationsByInspector(
     inspectorUuid: string,
     scheduleUuid: string,
-  ): Promise<InspectorApplicationWithDetails[]> {
+  ): Promise<ApplicationWithDetails[]> {
     return await this.prismaService.inspectionApplication
       .findMany({
         where: {

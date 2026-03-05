@@ -9,9 +9,10 @@ import {
 import { PrismaService } from '@lib/prisma';
 import { InspectionApplication, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
-import { InspectionApplicationWithDetails } from 'src/inspector/types/inspection-application-with-details.type';
-import { ApplicationInfo } from 'src/application/types/application-info.type';
-import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
+import {
+  ApplicationInfo,
+  ApplicationWithDetails,
+} from '../types/inspection-application.type';
 
 @Loggable()
 @Injectable()
@@ -84,7 +85,7 @@ export class InspectionApplicationRepository {
   async findApplicationByUserAndSchedule(
     userUuid: string,
     scheduleUuid: string,
-  ): Promise<InspectionApplicationWithDetails> {
+  ): Promise<ApplicationWithDetails> {
     return await this.prismaService.inspectionApplication
       .findFirstOrThrow({
         where: {
@@ -121,7 +122,7 @@ export class InspectionApplicationRepository {
   async findApplicationByUuidInTx(
     uuid: string,
     tx: PrismaTransaction,
-  ): Promise<InspectionApplicationWithDetails> {
+  ): Promise<ApplicationWithDetails> {
     return await tx.inspectionApplication
       .findUniqueOrThrow({
         where: {
@@ -152,7 +153,7 @@ export class InspectionApplicationRepository {
   async findApplicationByUuidWithXLockInTx(
     uuid: string,
     tx: PrismaTransaction,
-  ): Promise<InspectionApplicationWithDetails> {
+  ): Promise<ApplicationWithDetails> {
     await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} AND "is_passed" IS NULL AND "deleted_at" IS NULL FOR UPDATE`;
 
     return this.findApplicationByUuidInTx(uuid, tx);
@@ -311,7 +312,7 @@ export class InspectionApplicationRepository {
   async findLatestApplicationsByInspector(
     inspectorUuid: string,
     scheduleUuid: string,
-  ): Promise<InspectorApplicationWithDetails[]> {
+  ): Promise<ApplicationWithDetails[]> {
     return await this.prismaService.inspectionApplication
       .findMany({
         where: {
