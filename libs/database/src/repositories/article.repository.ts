@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { PrismaService } from '@lib/prisma';
-import { CreateArticleType } from './types/create-article.type';
+import { CreateArticleType } from '../../../../src/article/types/create-article.type';
 import { Article, ArticleType } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { PrismaTransaction } from 'src/common/types';

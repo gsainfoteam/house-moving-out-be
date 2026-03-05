@@ -10,3 +10,4 @@ export * from './repositories/semester.repository';
 export * from './repositories/user-consent.repository';
 export * from './repositories/user-refresh-token.repository';
 export * from './repositories/user.repository';
+export * from './repositories/article.repository';

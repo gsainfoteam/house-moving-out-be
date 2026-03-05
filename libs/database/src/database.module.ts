@@ -11,6 +11,7 @@ import { UserConsentRepository } from './repositories/user-consent.repository';
 import { UserRefreshTokenRepository } from './repositories/user-refresh-token.repository';
 import { UserRepository } from './repositories/user.repository';
 import { PrismaModule } from '@lib/prisma';
+import { ArticleRepository } from './repositories/article.repository';
 
 @Module({
   imports: [PrismaModule],
@@ -26,6 +27,7 @@ import { PrismaModule } from '@lib/prisma';
     UserConsentRepository,
     UserRefreshTokenRepository,
     UserRepository,
+    ArticleRepository,
   ],
   exports: [
     AuditLogRepository,
@@ -39,6 +41,7 @@ import { PrismaModule } from '@lib/prisma';
     UserConsentRepository,
     UserRefreshTokenRepository,
     UserRepository,
+    ArticleRepository,
   ],
 })
 export class DatabaseModule {}

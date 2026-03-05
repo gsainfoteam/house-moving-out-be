@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { ArticleRepository } from './article.repository';
+import { ArticleRepository } from '@lib/database';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
 import { Language } from './dto/article.dto';
 import { Article, Role, User } from 'generated/prisma/client';
