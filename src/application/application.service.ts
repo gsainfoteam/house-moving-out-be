@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Gender } from 'generated/prisma/client';
 import { Loggable } from '@lib/logger';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '@lib/database';
 import { PrismaTransaction } from 'src/common/types';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
@@ -36,7 +36,7 @@ export class ApplicationService {
   private readonly INSPECTION_COUNT_LIMIT = 3;
   constructor(
     private readonly scheduleService: ScheduleService,
-    private readonly prismaService: PrismaService,
+    private readonly databaseService: DatabaseService,
     private readonly fileService: FileService,
     private readonly inspectorRepository: InspectorRepository,
     private readonly inspectionApplicationRepository: InspectionApplicationRepository,
@@ -53,7 +53,7 @@ export class ApplicationService {
       user.studentNumber,
     );
 
-    return await this.prismaService.$transaction(
+    return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
         const { schedule } =
           await this.inspectionSlotRepository.findInspectionSlotByUuidInTx(
@@ -159,7 +159,7 @@ export class ApplicationService {
     applicationUuid: string,
     { inspectionSlotUuid }: UpdateApplicationDto,
   ): Promise<ApplicationUuidResDto> {
-    return this.prismaService.$transaction(async (tx: PrismaTransaction) => {
+    return this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       const application =
         await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
           applicationUuid,
@@ -255,7 +255,7 @@ export class ApplicationService {
   }
 
   async cancelInspection(user: User, applicationUuid: string): Promise<void> {
-    return await this.prismaService.$transaction(
+    return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
         const application =
           await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
@@ -363,7 +363,7 @@ export class ApplicationService {
       studentNumber,
     );
 
-    return await this.prismaService.$transaction(
+    return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
         const application =
           await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(

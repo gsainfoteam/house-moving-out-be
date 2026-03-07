@@ -6,7 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import {
   InspectionSlot,
   MoveOutSchedule,
@@ -20,10 +20,10 @@ import { MoveOutScheduleWithSlots } from '../types/move-out-schedule.type';
 @Injectable()
 export class MoveOutScheduleRepository {
   private readonly logger = new Logger(MoveOutScheduleRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findMany()
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -82,7 +82,7 @@ export class MoveOutScheduleRepository {
       nextSemester: any;
     }
   > {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findUniqueOrThrow({
         where: { uuid },
         include: {
@@ -139,7 +139,7 @@ export class MoveOutScheduleRepository {
   }
 
   async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findFirstOrThrow({
         where: { status: ScheduleStatus.ACTIVE },
         include: {
@@ -166,7 +166,7 @@ export class MoveOutScheduleRepository {
   }
 
   async findActiveSchedule(): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findFirstOrThrow({
         where: { status: ScheduleStatus.ACTIVE },
         orderBy: { createdAt: 'desc' },
@@ -191,7 +191,7 @@ export class MoveOutScheduleRepository {
     uuid: string,
     data: Prisma.MoveOutScheduleUpdateInput,
   ): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .update({
         where: { uuid },
         data,

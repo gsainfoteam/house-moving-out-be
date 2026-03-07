@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import {
   InspectionSlot,
   MoveOutSchedule,
@@ -17,7 +17,7 @@ import { PrismaTransaction } from 'src/common/types';
 @Injectable()
 export class InspectionSlotRepository {
   private readonly logger = new Logger(InspectionSlotRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async findInspectionSlotByUuidInTx(
     slotUuid: string,
@@ -45,7 +45,7 @@ export class InspectionSlotRepository {
   }
 
   async findInspectionSlotWithScheduleByUuid(slotUuid: string): Promise<any> {
-    return await this.prismaService.inspectionSlot
+    return await this.databaseService.inspectionSlot
       .findUniqueOrThrow({
         where: { uuid: slotUuid },
         include: { schedule: true },

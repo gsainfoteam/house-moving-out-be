@@ -4,14 +4,13 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { ArticleRepository } from '@lib/database';
 import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
 import { Language } from './dto/article.dto';
 import { Article, Role, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService, ArticleRepository } from '@lib/database';
 import { PrismaTransaction } from 'src/common/types';
 import { CreateArticleType } from './types/create-article.type';
 
@@ -20,7 +19,7 @@ import { CreateArticleType } from './types/create-article.type';
 export class ArticleService {
   constructor(
     private readonly articleRepository: ArticleRepository,
-    private readonly prismaService: PrismaService,
+    private readonly databaseService: DatabaseService,
   ) {}
 
   async createArticle(
@@ -68,7 +67,7 @@ export class ArticleService {
     const createArticleType =
       this.extractMultilingualContent(createArticleReqDto);
 
-    return await this.prismaService.$transaction(
+    return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
         await this.articleRepository.deleteArticleInTx(uuid, tx);
 

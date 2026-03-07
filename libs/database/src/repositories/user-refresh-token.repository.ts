@@ -5,7 +5,7 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import { Prisma, UserRefreshToken } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 
@@ -13,10 +13,10 @@ import { PrismaTransaction } from 'src/common/types';
 @Injectable()
 export class UserRefreshTokenRepository {
   private readonly logger = new Logger(UserRefreshTokenRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async deleteUserRefreshToken(hashedRefreshToken: string): Promise<void> {
-    await this.prismaService.userRefreshToken
+    await this.databaseService.userRefreshToken
       .deleteMany({
         where: {
           refreshToken: hashedRefreshToken,
@@ -40,7 +40,7 @@ export class UserRefreshTokenRepository {
     sessionId: string,
     expiredAt: Date,
   ): Promise<void> {
-    await this.prismaService.userRefreshToken
+    await this.databaseService.userRefreshToken
       .create({
         data: {
           userUuid,
@@ -62,7 +62,7 @@ export class UserRefreshTokenRepository {
   }
 
   async deleteAllUserRefreshTokens(userUuid: string): Promise<void> {
-    await this.prismaService.userRefreshToken
+    await this.databaseService.userRefreshToken
       .deleteMany({
         where: {
           userUuid,
@@ -133,7 +133,7 @@ export class UserRefreshTokenRepository {
   async findUserByRefreshToken(
     hashedRefreshToken: string,
   ): Promise<Pick<UserRefreshToken, 'userUuid' | 'sessionId' | 'expiredAt'>> {
-    return await this.prismaService.userRefreshToken
+    return await this.databaseService.userRefreshToken
       .findUniqueOrThrow({
         where: {
           refreshToken: hashedRefreshToken,
@@ -165,7 +165,7 @@ export class UserRefreshTokenRepository {
     userUuid: string,
     sessionId: string,
   ): Promise<UserRefreshToken | null> {
-    return await this.prismaService.userRefreshToken
+    return await this.databaseService.userRefreshToken
       .findFirst({
         where: {
           userUuid,

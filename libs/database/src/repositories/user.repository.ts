@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import { Prisma, User } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 
@@ -13,10 +13,10 @@ import { PrismaTransaction } from 'src/common/types';
 @Injectable()
 export class UserRepository {
   private readonly logger = new Logger(UserRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async findUser(uuid: string): Promise<User> {
-    return await this.prismaService.user
+    return await this.databaseService.user
       .findFirstOrThrow({
         where: {
           uuid,

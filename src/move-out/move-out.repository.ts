@@ -6,7 +6,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import {
+  DatabaseService,
+  InspectorWithSlots,
+  ApplicationWithDetails,
+} from '@lib/database';
 import {
   MoveOutSchedule,
   Semester,
@@ -25,20 +29,18 @@ import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
-import { InspectorWithSlots } from '@lib/database/types/inspector.type';
 import { ApplicationInfo } from './types/application-info.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
-import { ApplicationWithDetails } from '@lib/database/types/inspection-application.type';
 
 @Loggable()
 @Injectable()
 export class MoveOutRepository {
   private readonly logger = new Logger(MoveOutRepository.name);
   private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findMany()
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -93,7 +95,7 @@ export class MoveOutRepository {
   async findMoveOutScheduleWithSlotsByUuid(
     uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findUniqueOrThrow({
         where: { uuid },
         include: {
@@ -150,7 +152,7 @@ export class MoveOutRepository {
   }
 
   async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findFirstOrThrow({
         where: { status: ScheduleStatus.ACTIVE },
         include: {
@@ -179,7 +181,7 @@ export class MoveOutRepository {
   async findInspectorByScheduleUuid(
     uuid: string,
   ): Promise<InspectorWithSlots[]> {
-    return await this.prismaService.inspector
+    return await this.databaseService.inspector
       .findMany({
         where: {
           availableSlots: {
@@ -212,7 +214,7 @@ export class MoveOutRepository {
     uuid: string,
     moveOutSchedule: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .update({
         where: { uuid },
         data: moveOutSchedule,
@@ -234,7 +236,7 @@ export class MoveOutRepository {
   }
 
   async findOrCreateSemester(year: number, season: Season): Promise<Semester> {
-    return await this.prismaService.semester
+    return await this.databaseService.semester
       .upsert({
         where: {
           year_season: {
@@ -264,7 +266,7 @@ export class MoveOutRepository {
     scheduleUuid: string,
     targetUuids: string[],
   ): Promise<number> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .count({
         where: {
           scheduleUuid,
@@ -375,7 +377,7 @@ export class MoveOutRepository {
     targetUuids: string[],
     applyCleaningService: boolean,
   ): Promise<{ count: number }> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .updateMany({
         where: {
           scheduleUuid,
@@ -402,7 +404,7 @@ export class MoveOutRepository {
     studentName: string,
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .findFirstOrThrow({
         where: {
           scheduleUuid,
@@ -564,7 +566,7 @@ export class MoveOutRepository {
   async findInspectionSlotWithScheduleByUuid(
     slotUuid: string,
   ): Promise<InspectionSlot & { schedule: MoveOutSchedule }> {
-    return await this.prismaService.inspectionSlot
+    return await this.databaseService.inspectionSlot
       .findUniqueOrThrow({
         where: { uuid: slotUuid },
         include: { schedule: true },
@@ -833,7 +835,7 @@ export class MoveOutRepository {
     userUuid: string,
     scheduleUuid: string,
   ): Promise<InspectionApplicationWithDetails> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findFirstOrThrow({
         where: {
           userUuid,
@@ -907,7 +909,7 @@ export class MoveOutRepository {
   }
 
   async findActiveSchedule(): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findFirstOrThrow({
         where: { status: ScheduleStatus.ACTIVE },
         orderBy: { createdAt: 'desc' },
@@ -968,7 +970,7 @@ export class MoveOutRepository {
     applicationUuid: string,
     isDocumentActive: boolean,
   ): Promise<InspectionApplication> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .update({
         where: { uuid: applicationUuid },
         data: { isDocumentActive },
@@ -996,7 +998,7 @@ export class MoveOutRepository {
     limit: number,
     scheduleUuid: string,
   ): Promise<ApplicationInfo[]> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           inspectionSlot: {
@@ -1029,7 +1031,7 @@ export class MoveOutRepository {
   }
 
   async findApplicationByUuid(uuid: string): Promise<ApplicationInfo> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findUniqueOrThrow({
         where: {
           uuid,
@@ -1059,7 +1061,7 @@ export class MoveOutRepository {
   }
 
   async countApplications(scheduleUuid: string): Promise<number> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .count({
         where: {
           inspectionSlot: {
@@ -1081,7 +1083,7 @@ export class MoveOutRepository {
   async findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
     scheduleUuid: string,
   ): Promise<InspectionTargetInfoWithApplication[]> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .findMany({
         where: {
           scheduleUuid,
@@ -1116,7 +1118,7 @@ export class MoveOutRepository {
     inspectorUuid: string,
     scheduleUuid: string,
   ): Promise<ApplicationWithDetails[]> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           deletedAt: null,

@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import { CreateArticleType } from '../../../../src/article/types/create-article.type';
 import { Article, ArticleType } from 'generated/prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
@@ -16,10 +16,10 @@ import { PrismaTransaction } from 'src/common/types';
 @Injectable()
 export class ArticleRepository {
   private readonly logger = new Logger(ArticleRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async createArticle(data: CreateArticleType): Promise<Article> {
-    return await this.prismaService.article
+    return await this.databaseService.article
       .create({
         data,
       })
@@ -70,13 +70,13 @@ export class ArticleRepository {
     };
 
     return await Promise.all([
-      this.prismaService.article.findMany({
+      this.databaseService.article.findMany({
         where,
         skip: offset,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prismaService.article.count({ where }),
+      this.databaseService.article.count({ where }),
     ]).catch((error) => {
       if (error instanceof PrismaClientKnownRequestError) {
         this.logger.error(`findArticlesByType prisma error: ${error.message}`);
@@ -88,7 +88,7 @@ export class ArticleRepository {
   }
 
   async findArticleByUuid(uuid: string): Promise<Article> {
-    return await this.prismaService.article
+    return await this.databaseService.article
       .findUniqueOrThrow({
         where: { uuid, deletedAt: null },
       })
@@ -109,7 +109,7 @@ export class ArticleRepository {
     uuid: string,
     isVisible: boolean,
   ): Promise<Article> {
-    return await this.prismaService.article
+    return await this.databaseService.article
       .update({
         where: { uuid, deletedAt: null },
         data: { isVisible },
@@ -130,7 +130,7 @@ export class ArticleRepository {
   }
 
   async deleteArticle(uuid: string): Promise<Article> {
-    return await this.prismaService.article
+    return await this.databaseService.article
       .update({
         where: { uuid, deletedAt: null },
         data: { deletedAt: new Date() },

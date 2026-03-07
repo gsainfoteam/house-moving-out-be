@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from '@lib/prisma';
 import { InfoteamAccountModule } from '@lib/infoteam-account';
 import { JwtModule } from '@nestjs/jwt';
 import { AdminGuard } from './guard/admin.guard';
@@ -15,7 +14,6 @@ import { DatabaseModule } from '@lib/database';
 @Module({
   imports: [
     ConfigModule,
-    PrismaModule,
     InfoteamAccountModule,
     JwtModule.register({}),
     HttpModule,

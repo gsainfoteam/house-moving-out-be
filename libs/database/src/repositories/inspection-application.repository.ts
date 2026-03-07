@@ -6,7 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import { InspectionApplication, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 import {
@@ -18,7 +18,7 @@ import {
 @Injectable()
 export class InspectionApplicationRepository {
   private readonly logger = new Logger(InspectionApplicationRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async createInspectionApplicationInTx(
     userUuid: string,
@@ -86,7 +86,7 @@ export class InspectionApplicationRepository {
     userUuid: string,
     scheduleUuid: string,
   ): Promise<ApplicationWithDetails> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findFirstOrThrow({
         where: {
           userUuid,
@@ -199,7 +199,7 @@ export class InspectionApplicationRepository {
     applicationUuid: string,
     isDocumentActive: boolean,
   ): Promise<InspectionApplication> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .update({
         where: { uuid: applicationUuid },
         data: { isDocumentActive },
@@ -223,7 +223,7 @@ export class InspectionApplicationRepository {
   }
 
   async findApplicationByUuid(uuid: string): Promise<ApplicationInfo> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findUniqueOrThrow({
         where: {
           uuid,
@@ -257,7 +257,7 @@ export class InspectionApplicationRepository {
     limit: number,
     scheduleUuid: string,
   ): Promise<ApplicationInfo[]> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           inspectionSlot: {
@@ -290,7 +290,7 @@ export class InspectionApplicationRepository {
   }
 
   async countApplications(scheduleUuid: string): Promise<number> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .count({
         where: {
           inspectionSlot: {
@@ -313,7 +313,7 @@ export class InspectionApplicationRepository {
     inspectorUuid: string,
     scheduleUuid: string,
   ): Promise<ApplicationWithDetails[]> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           deletedAt: null,

@@ -10,12 +10,14 @@ import { SemesterRepository } from './repositories/semester.repository';
 import { UserConsentRepository } from './repositories/user-consent.repository';
 import { UserRefreshTokenRepository } from './repositories/user-refresh-token.repository';
 import { UserRepository } from './repositories/user.repository';
-import { PrismaModule } from '@lib/prisma';
 import { ArticleRepository } from './repositories/article.repository';
+import { DatabaseService } from './database.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [ConfigModule],
   providers: [
+    DatabaseService,
     AuditLogRepository,
     InspectionApplicationRepository,
     InspectionSlotRepository,
@@ -30,6 +32,7 @@ import { ArticleRepository } from './repositories/article.repository';
     ArticleRepository,
   ],
   exports: [
+    DatabaseService,
     AuditLogRepository,
     InspectionApplicationRepository,
     InspectionSlotRepository,

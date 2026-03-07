@@ -5,7 +5,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
 import { Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 
@@ -13,7 +12,6 @@ import { PrismaTransaction } from 'src/common/types';
 @Injectable()
 export class InspectorAvailableSlotRepository {
   private readonly logger = new Logger(InspectorAvailableSlotRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
 
   async connectInspectorAndSlotsInTx(
     inspectorUuid: string,

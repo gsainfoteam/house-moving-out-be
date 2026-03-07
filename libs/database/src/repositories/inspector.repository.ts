@@ -7,7 +7,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import { Gender, Inspector, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 import { InspectorWithSlots } from '../types/inspector.type';
@@ -17,10 +17,10 @@ import { InspectorWithSlots } from '../types/inspector.type';
 export class InspectorRepository {
   private readonly logger = new Logger(InspectorRepository.name);
   private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async findAllInspectors(): Promise<InspectorWithSlots[]> {
-    return await this.prismaService.inspector
+    return await this.databaseService.inspector
       .findMany({
         include: {
           availableSlots: {
@@ -59,7 +59,7 @@ export class InspectorRepository {
   }
 
   async findInspector(uuid: string): Promise<InspectorWithSlots> {
-    return await this.prismaService.inspector
+    return await this.databaseService.inspector
       .findUniqueOrThrow({
         where: { uuid },
         include: {
@@ -85,7 +85,7 @@ export class InspectorRepository {
   }
 
   async deleteInspector(uuid: string): Promise<void> {
-    await this.prismaService.inspector
+    await this.databaseService.inspector
       .delete({
         where: { uuid },
       })
@@ -108,7 +108,7 @@ export class InspectorRepository {
     name: string,
     studentNumber: string,
   ): Promise<Inspector> {
-    return await this.prismaService.inspector
+    return await this.databaseService.inspector
       .findUniqueOrThrow({
         where: {
           email,
@@ -181,7 +181,7 @@ export class InspectorRepository {
   async findInspectorByScheduleUuid(
     uuid: string,
   ): Promise<InspectorWithSlots[]> {
-    return await this.prismaService.inspector
+    return await this.databaseService.inspector
       .findMany({
         where: {
           availableSlots: {

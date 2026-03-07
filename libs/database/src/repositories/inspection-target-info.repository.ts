@@ -7,7 +7,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import { InspectionTargetInfo, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from 'src/common/types';
 import { InspectionTargetStudent } from 'src/schedule/types/inspection-target.type';
@@ -17,13 +17,13 @@ import { InspectionTargetInfoWithApplication } from '../types/inspection-target-
 @Injectable()
 export class InspectionTargetInfoRepository {
   private readonly logger = new Logger(InspectionTargetInfoRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async countInspectionTargetsByScheduleAndUuids(
     scheduleUuid: string,
     targetUuids: string[],
   ): Promise<number> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .count({
         where: {
           scheduleUuid,
@@ -135,7 +135,7 @@ export class InspectionTargetInfoRepository {
     targetUuids: string[],
     applyCleaningService: boolean,
   ): Promise<{ count: number }> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .updateMany({
         where: {
           scheduleUuid,
@@ -190,7 +190,7 @@ export class InspectionTargetInfoRepository {
     studentName: string,
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .findFirstOrThrow({
         where: {
           scheduleUuid,
@@ -325,7 +325,7 @@ export class InspectionTargetInfoRepository {
   async findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
     scheduleUuid: string,
   ): Promise<InspectionTargetInfoWithApplication[]> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .findMany({
         where: {
           scheduleUuid,

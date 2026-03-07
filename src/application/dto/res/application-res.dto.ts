@@ -8,7 +8,7 @@ import {
   InspectionTargetInfo,
   RoomInspectionType,
 } from 'generated/prisma/client';
-import { ApplicationInfo } from '@lib/database/types/inspection-application.type';
+import { ApplicationInfo } from '@lib/database';
 
 class UserInfoResDto {
   @ApiProperty({ description: 'User Name', example: 'Jane Doe' })

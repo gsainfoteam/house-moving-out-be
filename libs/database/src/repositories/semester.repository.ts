@@ -4,17 +4,17 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '../database.service';
 import { Prisma, Season, Semester } from 'generated/prisma/client';
 
 @Loggable()
 @Injectable()
 export class SemesterRepository {
   private readonly logger = new Logger(SemesterRepository.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async findOrCreateSemester(year: number, season: Season): Promise<Semester> {
-    return await this.prismaService.semester
+    return await this.databaseService.semester
       .upsert({
         where: {
           year_season: {

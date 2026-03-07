@@ -20,9 +20,17 @@ import {
   ExcelParserService,
   ExcelValidatorService,
 } from '@lib/excel-parser';
-import { PrismaService } from '@lib/prisma';
+import {
+  DatabaseService,
+  MoveOutScheduleWithSlots,
+  MoveOutScheduleRepository,
+  InspectionSlotRepository,
+  InspectionTargetInfoRepository,
+  SemesterRepository,
+  InspectionApplicationRepository,
+  InspectorRepository,
+} from '@lib/database';
 import { PrismaTransaction } from 'src/common/types';
-import { MoveOutScheduleWithSlots } from '@lib/database/types/move-out-schedule.type';
 import { User } from 'generated/prisma/client';
 import ms from 'ms';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
@@ -34,14 +42,6 @@ import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspect
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { FileService } from '@lib/file';
-import {
-  MoveOutScheduleRepository,
-  InspectionSlotRepository,
-  InspectionTargetInfoRepository,
-  SemesterRepository,
-  InspectionApplicationRepository,
-  InspectorRepository,
-} from '@lib/database';
 
 @Loggable()
 @Injectable()
@@ -49,7 +49,7 @@ export class ScheduleService {
   private readonly SLOT_DURATION = ms('30m');
   private readonly WEIGHT_FACTOR = 1.5;
   constructor(
-    private readonly prismaService: PrismaService,
+    private readonly databaseService: DatabaseService,
     private readonly excelParserService: ExcelParserService,
     private readonly excelValidatorService: ExcelValidatorService,
     private readonly fileService: FileService,
@@ -173,7 +173,7 @@ export class ScheduleService {
       nextSemesterUuid: nextSemesterEntity.uuid,
     };
 
-    return await this.prismaService.$transaction(
+    return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
         const schedule =
           await this.moveOutScheduleRepository.createMoveOutScheduleInTx(
@@ -302,7 +302,7 @@ export class ScheduleService {
     const targetCounts =
       this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
-    return await this.prismaService.$transaction(
+    return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
         const schedule =
           await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
@@ -360,7 +360,7 @@ export class ScheduleService {
   ): Promise<void> {
     const uniqueTargetUuids = [...new Set(targetUuids)];
 
-    await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       const schedule =
         await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
           scheduleUuid,

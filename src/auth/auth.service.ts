@@ -21,18 +21,18 @@ import {
   LatestPolicyVersions,
 } from './types/consent.type';
 import { PrismaTransaction } from '../common/types';
-import { PrismaService } from '@lib/prisma';
+import {
+  DatabaseService,
+  UserRepository,
+  UserRefreshTokenRepository,
+  UserConsentRepository,
+} from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, TimeoutError, throwError } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
 import { AxiosError } from 'axios';
 import { UserLoginDto } from './dto/req/user-login.dto';
-import {
-  UserRepository,
-  UserRefreshTokenRepository,
-  UserConsentRepository,
-} from '@lib/database';
 
 @Loggable()
 @Injectable()
@@ -51,7 +51,7 @@ export class AuthService {
     private readonly infoteamAccountService: InfoteamAccountService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly prismaService: PrismaService,
+    private readonly databaseService: DatabaseService,
     private readonly httpService: HttpService,
     private readonly userRepository: UserRepository,
     private readonly userRefreshTokenRepository: UserRefreshTokenRepository,
@@ -137,7 +137,7 @@ export class AuthService {
     const latestPolicyVersions = await this.getLatestPolicyVersions();
 
     const { refreshToken, sessionId, expiredAt } =
-      await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
+      await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
         const user = await this.userRepository.upsertUserInTx(userinfo, tx);
 
         await this.validateAndHandleConsentsInTransaction(
