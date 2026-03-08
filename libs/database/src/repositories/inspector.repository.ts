@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import { Gender, Inspector, Prisma } from 'generated/prisma/client';
-import { PrismaTransaction } from 'src/common/types';
+import { PrismaTransaction } from '../types';
 import { InspectorWithSlots } from '../types/inspector.type';
 
 @Loggable()

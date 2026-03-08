@@ -10,8 +10,11 @@ import { Article, Role, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
-import { DatabaseService, ArticleRepository } from '@lib/database';
-import { PrismaTransaction } from 'src/common/types';
+import {
+  DatabaseService,
+  ArticleRepository,
+  PrismaTransaction,
+} from '@lib/database';
 import { CreateArticleType } from './types/create-article.type';
 
 @Loggable()

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import { Prisma, UserRefreshToken } from 'generated/prisma/client';
-import { PrismaTransaction } from 'src/common/types';
+import { PrismaTransaction } from '../types';
 
 @Loggable()
 @Injectable()

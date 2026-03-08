@@ -6,8 +6,7 @@ import {
 } from '@nestjs/common';
 import { Gender } from 'generated/prisma/client';
 import { Loggable } from '@lib/logger';
-import { DatabaseService } from '@lib/database';
-import { PrismaTransaction } from 'src/common/types';
+import { DatabaseService, PrismaTransaction } from '@lib/database';
 import { User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateApplicationDto } from './dto/req/update-inspection.dto';

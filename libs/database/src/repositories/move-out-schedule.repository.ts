@@ -13,7 +13,7 @@ import {
   Prisma,
   ScheduleStatus,
 } from 'generated/prisma/client';
-import { PrismaTransaction } from 'src/common/types';
+import { PrismaTransaction } from '../types';
 import { MoveOutScheduleWithSlots } from '../types/move-out-schedule.type';
 
 @Loggable()

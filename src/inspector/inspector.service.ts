@@ -8,8 +8,8 @@ import {
   InspectorAvailableSlotRepository,
   InspectionApplicationRepository,
   MoveOutScheduleRepository,
+  PrismaTransaction,
 } from '@lib/database';
-import { PrismaTransaction } from 'src/common/types';
 import { Loggable } from '@lib/logger';
 import { User } from 'generated/prisma/client';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';

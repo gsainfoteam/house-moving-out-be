@@ -11,7 +11,7 @@ import {
   MoveOutSchedule,
   Prisma,
 } from 'generated/prisma/client';
-import { PrismaTransaction } from 'src/common/types';
+import { PrismaTransaction } from '../types';
 
 @Loggable()
 @Injectable()

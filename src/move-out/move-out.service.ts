@@ -23,8 +23,11 @@ import {
   ExcelValidatorService,
 } from '@lib/excel-parser';
 import { InspectionTargetStudent } from './types/inspection-target.type';
-import { DatabaseService, InspectorRepository } from '@lib/database';
-import { PrismaTransaction } from 'src/common/types';
+import {
+  DatabaseService,
+  InspectorRepository,
+  PrismaTransaction,
+} from '@lib/database';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { User } from 'generated/prisma/client';

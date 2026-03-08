@@ -10,6 +10,7 @@ import {
   DatabaseService,
   InspectorWithSlots,
   ApplicationWithDetails,
+  PrismaTransaction,
 } from '@lib/database';
 import {
   MoveOutSchedule,
@@ -25,7 +26,6 @@ import {
 } from 'generated/prisma/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { InspectionTargetStudent } from './types/inspection-target.type';
-import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';

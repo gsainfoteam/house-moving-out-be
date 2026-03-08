@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConsentType, Prisma } from 'generated/prisma/client';
-import { PrismaTransaction } from 'src/common/types';
+import { PrismaTransaction } from '../types';
 
 @Loggable()
 @Injectable()

@@ -29,8 +29,8 @@ import {
   SemesterRepository,
   InspectionApplicationRepository,
   InspectorRepository,
+  PrismaTransaction,
 } from '@lib/database';
-import { PrismaTransaction } from 'src/common/types';
 import { User } from 'generated/prisma/client';
 import ms from 'ms';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';

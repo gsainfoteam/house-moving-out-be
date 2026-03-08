@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import { InspectionApplication, Prisma } from 'generated/prisma/client';
-import { PrismaTransaction } from 'src/common/types';
+import { PrismaTransaction } from '../types';
 import {
   ApplicationInfo,
   ApplicationWithDetails,

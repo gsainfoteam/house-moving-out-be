@@ -7,10 +7,9 @@ import {
 } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { DatabaseService } from '../database.service';
-import { CreateArticleType } from '../../../../src/article/types/create-article.type';
-import { Article, ArticleType } from 'generated/prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { PrismaTransaction } from 'src/common/types';
+import { CreateArticleType } from 'src/article/types/create-article.type';
+import { Article, ArticleType, Prisma } from 'generated/prisma/client';
+import { PrismaTransaction } from '../types';
 
 @Loggable()
 @Injectable()
@@ -24,7 +23,7 @@ export class ArticleRepository {
         data,
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException('Article already exists.');
           }
@@ -45,7 +44,7 @@ export class ArticleRepository {
         data,
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException('Article already exists.');
           }
@@ -78,7 +77,7 @@ export class ArticleRepository {
       }),
       this.databaseService.article.count({ where }),
     ]).catch((error) => {
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.error(`findArticlesByType prisma error: ${error.message}`);
         throw new InternalServerErrorException('Database Error');
       }
@@ -93,7 +92,7 @@ export class ArticleRepository {
         where: { uuid, deletedAt: null },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             throw new NotFoundException('Article not found.');
           }
@@ -115,7 +114,7 @@ export class ArticleRepository {
         data: { isVisible },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             throw new NotFoundException('Article not found.');
           }
@@ -136,7 +135,7 @@ export class ArticleRepository {
         data: { deletedAt: new Date() },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             throw new NotFoundException('Article not found.');
           }
@@ -158,7 +157,7 @@ export class ArticleRepository {
         data: { deletedAt: new Date() },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             throw new NotFoundException('Article not found.');
           }

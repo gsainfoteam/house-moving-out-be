@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import { InspectionTargetInfo, Prisma } from 'generated/prisma/client';
-import { PrismaTransaction } from 'src/common/types';
+import { PrismaTransaction } from '../types';
 import { InspectionTargetStudent } from 'src/schedule/types/inspection-target.type';
 import { InspectionTargetInfoWithApplication } from '../types/inspection-target-info.type';
 

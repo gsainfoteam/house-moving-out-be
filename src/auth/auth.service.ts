@@ -20,12 +20,12 @@ import {
   LatestPolicyVersionResponse,
   LatestPolicyVersions,
 } from './types/consent.type';
-import { PrismaTransaction } from '../common/types';
 import {
   DatabaseService,
   UserRepository,
   UserRefreshTokenRepository,
   UserConsentRepository,
+  PrismaTransaction,
 } from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { HttpService } from '@nestjs/axios';
