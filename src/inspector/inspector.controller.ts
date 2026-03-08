@@ -31,8 +31,8 @@ import { InspectorService } from './inspector.service';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
-import { InspectorTargetsResDto } from 'src/inspector/dto/res/inspector-targets-res.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
+import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -59,11 +59,12 @@ export class InspectorController {
   @ApiOperation({
     summary: 'Get My Inspection Targets (Inspector)',
     description:
-      'Get inspection targets assigned to the inspector in the active schedule',
+      'Get inspection targets assigned to the inspector in the active schedule. [Moved to GET /inspector/me/assigned-targets]',
+    deprecated: true,
   })
   @ApiOkResponse({
     description: 'The inspection targets have been successfully retrieved.',
-    type: InspectorTargetsResDto,
+    type: AssignedTargetsResDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
@@ -79,8 +80,35 @@ export class InspectorController {
   @Get('targets')
   async getMyInspectionTargets(
     @GetUser() user: User,
-  ): Promise<InspectorTargetsResDto> {
-    return await this.inspectorService.getMyInspectionTargets(user);
+  ): Promise<AssignedTargetsResDto> {
+    return await this.inspectorService.getMyAssignedTargets(user);
+  }
+
+  @ApiOperation({
+    summary: 'Get My Assigned Inspection Targets (Inspector)',
+    description:
+      'Get inspection targets assigned to the inspector in the active schedule',
+  })
+  @ApiOkResponse({
+    description: 'The inspection targets have been successfully retrieved.',
+    type: AssignedTargetsResDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - User is not an inspector',
+  })
+  @ApiNotFoundResponse({
+    description: 'Not Found - No active schedule or inspector not found',
+    type: ErrorDto,
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Get('me/assigned-targets')
+  async getMyAssignedTargets(
+    @GetUser() user: User,
+  ): Promise<AssignedTargetsResDto> {
+    return await this.inspectorService.getMyAssignedTargets(user);
   }
 
   @ApiOperation({

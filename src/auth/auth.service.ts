@@ -6,7 +6,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AuthRepository } from './auth.repository';
 import { ConsentType, User } from 'generated/prisma/client';
 import * as crypto from 'crypto';
 import { IssueTokenType } from './types/jwt-token.type';
@@ -21,8 +20,13 @@ import {
   LatestPolicyVersionResponse,
   LatestPolicyVersions,
 } from './types/consent.type';
-import { PrismaTransaction } from '../common/types';
-import { PrismaService } from '@lib/prisma';
+import {
+  DatabaseService,
+  UserRepository,
+  UserRefreshTokenRepository,
+  UserConsentRepository,
+  PrismaTransaction,
+} from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, TimeoutError, throwError } from 'rxjs';
@@ -45,11 +49,13 @@ export class AuthService {
 
   constructor(
     private readonly infoteamAccountService: InfoteamAccountService,
-    private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly prismaService: PrismaService,
+    private readonly databaseService: DatabaseService,
     private readonly httpService: HttpService,
+    private readonly userRepository: UserRepository,
+    private readonly userRefreshTokenRepository: UserRefreshTokenRepository,
+    private readonly userConsentRepository: UserConsentRepository,
   ) {
     this.userJwtSecret =
       this.configService.getOrThrow<string>('USER_JWT_SECRET');
@@ -131,8 +137,8 @@ export class AuthService {
     const latestPolicyVersions = await this.getLatestPolicyVersions();
 
     const { refreshToken, sessionId, expiredAt } =
-      await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
-        const user = await this.authRepository.upsertUserInTx(userinfo, tx);
+      await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+        const user = await this.userRepository.upsertUserInTx(userinfo, tx);
 
         await this.validateAndHandleConsentsInTransaction(
           user,
@@ -141,7 +147,10 @@ export class AuthService {
           tx,
         );
 
-        await this.authRepository.deleteAllUserRefreshTokensInTx(user.uuid, tx);
+        await this.userRefreshTokenRepository.deleteAllUserRefreshTokensInTx(
+          user.uuid,
+          tx,
+        );
 
         const token = this.generateOpaqueToken();
         const sessionId = this.generateSessionId();
@@ -149,7 +158,7 @@ export class AuthService {
         const expiredAt = new Date(
           Date.now() + ms(this.userRefreshTokenExpire),
         );
-        await this.authRepository.setUserRefreshTokenInTx(
+        await this.userRefreshTokenRepository.setUserRefreshTokenInTx(
           user.uuid,
           hashedToken,
           sessionId,
@@ -191,12 +200,12 @@ export class AuthService {
   ): Promise<void> {
     const [latestTermsUserConsent, latestPrivacyUserConsent] =
       await Promise.all([
-        this.authRepository.getLatestUserConsentInTx(
+        this.userConsentRepository.getLatestUserConsentInTx(
           user.uuid,
           ConsentType.TERMS_OF_SERVICE,
           tx,
         ),
-        this.authRepository.getLatestUserConsentInTx(
+        this.userConsentRepository.getLatestUserConsentInTx(
           user.uuid,
           ConsentType.PRIVACY_POLICY,
           tx,
@@ -377,7 +386,7 @@ export class AuthService {
     }
 
     if (consentsToCreate.length > 0) {
-      await this.authRepository.createUserConsentsInTx(
+      await this.userConsentRepository.createUserConsentsInTx(
         user.uuid,
         consentsToCreate,
         tx,
@@ -401,11 +410,11 @@ export class AuthService {
   }
 
   async findUser(uuid: string): Promise<User> {
-    return this.authRepository.findUser(uuid);
+    return this.userRepository.findUser(uuid);
   }
 
   async findUserRefreshTokenBySessionId(userUuid: string, sessionId: string) {
-    return this.authRepository.findUserRefreshTokenBySessionId(
+    return this.userRefreshTokenRepository.findUserRefreshTokenBySessionId(
       userUuid,
       sessionId,
     );
@@ -414,13 +423,13 @@ export class AuthService {
   async userRefresh(refreshToken: string): Promise<IssueTokenType> {
     const hashedToken = this.hashRefreshToken(refreshToken);
     const { userUuid, sessionId, expiredAt } =
-      await this.authRepository.findUserByRefreshToken(hashedToken);
+      await this.userRefreshTokenRepository.findUserByRefreshToken(hashedToken);
 
-    await this.authRepository.deleteUserRefreshToken(hashedToken);
+    await this.userRefreshTokenRepository.deleteUserRefreshToken(hashedToken);
 
     const newRefreshToken = this.generateOpaqueToken();
     const newHashedToken = this.hashRefreshToken(newRefreshToken);
-    await this.authRepository.setUserRefreshToken(
+    await this.userRefreshTokenRepository.setUserRefreshToken(
       userUuid,
       newHashedToken,
       sessionId,
@@ -444,6 +453,6 @@ export class AuthService {
   }
 
   async userLogout(userUuid: string): Promise<void> {
-    await this.authRepository.deleteAllUserRefreshTokens(userUuid);
+    await this.userRefreshTokenRepository.deleteAllUserRefreshTokens(userUuid);
   }
 }

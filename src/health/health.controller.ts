@@ -1,4 +1,4 @@
-import { PrismaService } from '@lib/prisma';
+import { DatabaseService } from '@lib/database';
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
@@ -12,7 +12,7 @@ import {
 @Controller('health')
 export class HealthController {
   constructor(
-    private readonly prismaService: PrismaService,
+    private readonly databaseService: DatabaseService,
     private readonly health: HealthCheckService,
     private readonly prisma: PrismaHealthIndicator,
     private readonly memory: MemoryHealthIndicator,
@@ -26,7 +26,7 @@ export class HealthController {
   @HealthCheck()
   async check() {
     return await this.health.check([
-      () => this.prisma.pingCheck('database', this.prismaService),
+      () => this.prisma.pingCheck('database', this.databaseService),
       () => this.memory.checkRSS('memory_rss', 1024 * 1024 * 200),
     ]);
   }

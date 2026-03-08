@@ -1,23 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { InspectorRepository } from './inspector.repository';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
-import { PrismaService } from '@lib/prisma';
-import { PrismaTransaction } from 'src/common/types';
+import {
+  DatabaseService,
+  InspectorRepository,
+  InspectorAvailableSlotRepository,
+  InspectionApplicationRepository,
+  MoveOutScheduleRepository,
+  PrismaTransaction,
+} from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { User } from 'generated/prisma/client';
-import { InspectorTargetsResDto } from 'src/inspector/dto/res/inspector-targets-res.dto';
-import { MoveOutRepository } from 'src/move-out/move-out.repository';
-import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
+import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 
 @Loggable()
 @Injectable()
 export class InspectorService {
   constructor(
     private readonly inspectorRepository: InspectorRepository,
-    private readonly prismaService: PrismaService,
-    private readonly moveOutRepository: MoveOutRepository,
+    private readonly databaseService: DatabaseService,
+    private readonly inspectorAvailableSlotRepository: InspectorAvailableSlotRepository,
+    private readonly inspectionApplicationRepository: InspectionApplicationRepository,
+    private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
   ) {}
 
   async getInspectors(): Promise<InspectorResDto[]> {
@@ -26,13 +31,13 @@ export class InspectorService {
   }
 
   async createInspectors({ inspectors }: CreateInspectorsDto): Promise<void> {
-    await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       for (const { availableSlotUuids, ...inspector } of inspectors) {
         const { uuid } = await this.inspectorRepository.createInspectorsInTx(
           inspector,
           tx,
         );
-        await this.inspectorRepository.connectInspectorAndSlotsInTx(
+        await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
           uuid,
           availableSlotUuids,
           tx,
@@ -50,12 +55,12 @@ export class InspectorService {
     uuid: string,
     { availableSlotUuids }: UpdateInspectorDto,
   ): Promise<void> {
-    await this.prismaService.$transaction(async (tx: PrismaTransaction) => {
-      await this.inspectorRepository.deleteInspectorAvailableSlotsInTx(
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
         uuid,
         tx,
       );
-      await this.inspectorRepository.connectInspectorAndSlotsInTx(
+      await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
         uuid,
         availableSlotUuids,
         tx,
@@ -67,21 +72,21 @@ export class InspectorService {
     await this.inspectorRepository.deleteInspector(uuid);
   }
 
-  async getMyInspectionTargets({
+  async getMyAssignedTargets({
     email,
     name,
     studentNumber,
-  }: User): Promise<InspectorTargetsResDto> {
+  }: User): Promise<AssignedTargetsResDto> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       email,
       name,
       studentNumber,
     );
 
-    const schedule = await this.moveOutRepository.findActiveSchedule();
+    const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
 
-    const latestApplications: InspectorApplicationWithDetails[] =
-      await this.moveOutRepository.findLatestApplicationsByInspector(
+    const latestApplications =
+      await this.inspectionApplicationRepository.findLatestApplicationsByInspector(
         inspector.uuid,
         schedule.uuid,
       );

@@ -6,7 +6,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@lib/prisma';
+import {
+  DatabaseService,
+  InspectorWithSlots,
+  ApplicationWithDetails,
+  PrismaTransaction,
+} from '@lib/database';
 import {
   MoveOutSchedule,
   Semester,
@@ -19,30 +24,26 @@ import {
   InspectionApplication,
   Inspector,
 } from 'generated/prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateMoveOutScheduleDto } from './dto/req/update-move-out-schedule.dto';
 import { InspectionTargetStudent } from './types/inspection-target.type';
-import { PrismaTransaction } from 'src/common/types';
 import { MoveOutScheduleWithSlots } from './types/move-out-schedule-with-slots.type';
 import { InspectionApplicationWithDetails } from './types/inspection-application-with-details.type';
 import { Loggable } from '@lib/logger';
-import { InspectorWithSlots } from 'src/inspector/types/inspector-with-slots.type';
 import { ApplicationInfo } from './types/application-info.type';
 import { InspectionTargetInfoWithApplication } from './types/inspection-target-info-with-application.type';
-import { InspectorApplicationWithDetails } from 'src/inspector/types/inspector-application-with-details.type';
 
 @Loggable()
 @Injectable()
 export class MoveOutRepository {
   private readonly logger = new Logger(MoveOutRepository.name);
   private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findMany()
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findAllMoveOutSchedules prisma error: ${error.message}`,
           );
@@ -77,7 +78,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException('Move out schedule already exists.');
           }
@@ -94,7 +95,7 @@ export class MoveOutRepository {
   async findMoveOutScheduleWithSlotsByUuid(
     uuid: string,
   ): Promise<MoveOutScheduleWithSlots> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findUniqueOrThrow({
         where: { uuid },
         include: {
@@ -104,7 +105,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
@@ -133,7 +134,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
@@ -151,7 +152,7 @@ export class MoveOutRepository {
   }
 
   async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findFirstOrThrow({
         where: { status: ScheduleStatus.ACTIVE },
         include: {
@@ -162,7 +163,7 @@ export class MoveOutRepository {
         orderBy: { createdAt: 'desc' },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`Active MoveOutSchedule not found`);
             throw new NotFoundException(`Not Found Error`);
@@ -180,7 +181,7 @@ export class MoveOutRepository {
   async findInspectorByScheduleUuid(
     uuid: string,
   ): Promise<InspectorWithSlots[]> {
-    return await this.prismaService.inspector
+    return await this.databaseService.inspector
       .findMany({
         where: {
           availableSlots: {
@@ -198,7 +199,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findInspectorByScheduleUuid prisma error: ${error.message}`,
           );
@@ -213,13 +214,13 @@ export class MoveOutRepository {
     uuid: string,
     moveOutSchedule: UpdateMoveOutScheduleDto,
   ): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .update({
         where: { uuid },
         data: moveOutSchedule,
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
             throw new NotFoundException(`Not Found Error`);
@@ -235,7 +236,7 @@ export class MoveOutRepository {
   }
 
   async findOrCreateSemester(year: number, season: Season): Promise<Semester> {
-    return await this.prismaService.semester
+    return await this.databaseService.semester
       .upsert({
         where: {
           year_season: {
@@ -250,7 +251,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findOrCreateSemester prisma error: ${error.message}`,
           );
@@ -265,7 +266,7 @@ export class MoveOutRepository {
     scheduleUuid: string,
     targetUuids: string[],
   ): Promise<number> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .count({
         where: {
           scheduleUuid,
@@ -273,7 +274,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `countInspectionTargetsByScheduleAndUuids prisma error: ${error.message}`,
           );
@@ -295,7 +296,7 @@ export class MoveOutRepository {
         where: { scheduleUuid },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `deleteInspectionTargetsByScheduleUuidInTx prisma error: ${error.message}`,
           );
@@ -320,7 +321,7 @@ export class MoveOutRepository {
         data: { maleCapacity, femaleCapacity },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `updateSlotCapacitiesByScheduleUuidInTx prisma error: ${error.message}`,
           );
@@ -355,7 +356,7 @@ export class MoveOutRepository {
         })),
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException(
               'Duplicate inspection target room exists in the given schedule.',
@@ -376,7 +377,7 @@ export class MoveOutRepository {
     targetUuids: string[],
     applyCleaningService: boolean,
   ): Promise<{ count: number }> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .updateMany({
         where: {
           scheduleUuid,
@@ -385,7 +386,7 @@ export class MoveOutRepository {
         data: { applyCleaningService },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `updateApplyCleaningServiceByScheduleAndUuids prisma error: ${error.message}`,
           );
@@ -403,7 +404,7 @@ export class MoveOutRepository {
     studentName: string,
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .findFirstOrThrow({
         where: {
           scheduleUuid,
@@ -424,7 +425,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             // 비즈니스 요구사항에 따라, 검사 대상이 아닌 경우 404(NotFound)가 아닌 403(Forbidden)으로 응답
             throw new ForbiddenException('User is not an inspection target.');
@@ -466,7 +467,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             // 비즈니스 요구사항에 따라, 검사 대상이 아닌 경우 404(NotFound)가 아닌 403(Forbidden)으로 응답
             throw new ForbiddenException('User is not an inspection target.');
@@ -495,7 +496,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
             throw new NotFoundException('Inspection target info not found.');
@@ -522,7 +523,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionTargetInfo not found: ${targetUuid}`);
             throw new NotFoundException('Inspection target info not found.');
@@ -547,7 +548,7 @@ export class MoveOutRepository {
         include: { schedule: true },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -565,13 +566,13 @@ export class MoveOutRepository {
   async findInspectionSlotWithScheduleByUuid(
     slotUuid: string,
   ): Promise<InspectionSlot & { schedule: MoveOutSchedule }> {
-    return await this.prismaService.inspectionSlot
+    return await this.databaseService.inspectionSlot
       .findUniqueOrThrow({
         where: { uuid: slotUuid },
         include: { schedule: true },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -597,7 +598,7 @@ export class MoveOutRepository {
         where: { uuid: slotUuid },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -634,7 +635,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -671,7 +672,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionSlot not found: ${slotUuid}`);
             throw new NotFoundException('Inspection slot not found.');
@@ -707,7 +708,7 @@ export class MoveOutRepository {
         END
       WHERE uuid IN (${currentSlotUuid}, ${updatedSlotUuid});
     `.catch((error) => {
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.error(
           `swapSlotReservedCountsInTx prisma error: ${error.message}`,
         );
@@ -741,7 +742,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2002') {
             throw new ConflictException(
               'Inspection application already exists.',
@@ -767,7 +768,7 @@ export class MoveOutRepository {
         data: { deletedAt: new Date() },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(
               `InspectionApplication not found: ${applicationUuid}`,
@@ -813,7 +814,7 @@ export class MoveOutRepository {
       LIMIT 1
       FOR UPDATE
     `.catch((error) => {
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.error(
           `findAvailableInspectorBySlotUuidInTx prisma error: ${error.message}`,
         );
@@ -834,7 +835,7 @@ export class MoveOutRepository {
     userUuid: string,
     scheduleUuid: string,
   ): Promise<InspectionApplicationWithDetails> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findFirstOrThrow({
         where: {
           userUuid,
@@ -852,7 +853,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('Application not found');
             throw new NotFoundException('Not Found Error');
@@ -883,7 +884,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('Application not found');
             throw new NotFoundException('Not Found Error');
@@ -908,13 +909,13 @@ export class MoveOutRepository {
   }
 
   async findActiveSchedule(): Promise<MoveOutSchedule> {
-    return await this.prismaService.moveOutSchedule
+    return await this.databaseService.moveOutSchedule
       .findFirstOrThrow({
         where: { status: ScheduleStatus.ACTIVE },
         orderBy: { createdAt: 'desc' },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug('Activated MoveOut-Schedule not found');
             throw new NotFoundException('Not Found Error');
@@ -948,7 +949,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(
               `InspectionApplication not found for update result: ${applicationUuid}`,
@@ -969,13 +970,13 @@ export class MoveOutRepository {
     applicationUuid: string,
     isDocumentActive: boolean,
   ): Promise<InspectionApplication> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .update({
         where: { uuid: applicationUuid },
         data: { isDocumentActive },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(
               `InspectionApplication not found for update status: ${applicationUuid}`,
@@ -997,7 +998,7 @@ export class MoveOutRepository {
     limit: number,
     scheduleUuid: string,
   ): Promise<ApplicationInfo[]> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           inspectionSlot: {
@@ -1018,7 +1019,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findApplicationsByScheduleUuid prisma error: ${error.message}`,
           );
@@ -1030,7 +1031,7 @@ export class MoveOutRepository {
   }
 
   async findApplicationByUuid(uuid: string): Promise<ApplicationInfo> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .findUniqueOrThrow({
         where: {
           uuid,
@@ -1044,7 +1045,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
             this.logger.debug(`InspectionApplication not found: ${uuid}`);
             throw new NotFoundException('Inspection application not found.');
@@ -1060,7 +1061,7 @@ export class MoveOutRepository {
   }
 
   async countApplications(scheduleUuid: string): Promise<number> {
-    return await this.prismaService.inspectionApplication
+    return await this.databaseService.inspectionApplication
       .count({
         where: {
           inspectionSlot: {
@@ -1070,7 +1071,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`countApplications prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
@@ -1082,7 +1083,7 @@ export class MoveOutRepository {
   async findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid(
     scheduleUuid: string,
   ): Promise<InspectionTargetInfoWithApplication[]> {
-    return await this.prismaService.inspectionTargetInfo
+    return await this.databaseService.inspectionTargetInfo
       .findMany({
         where: {
           scheduleUuid,
@@ -1100,7 +1101,7 @@ export class MoveOutRepository {
         orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findAllInspectionTargetInfoWithApplicationAndSlotByScheduleUuid prisma error: ${error.message}`,
           );
@@ -1116,8 +1117,8 @@ export class MoveOutRepository {
   async findLatestApplicationsByInspector(
     inspectorUuid: string,
     scheduleUuid: string,
-  ): Promise<InspectorApplicationWithDetails[]> {
-    return await this.prismaService.inspectionApplication
+  ): Promise<ApplicationWithDetails[]> {
+    return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           deletedAt: null,
@@ -1132,7 +1133,7 @@ export class MoveOutRepository {
         },
       })
       .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
             `findLatestApplicationsByInspector prisma error: ${error.message}`,
           );
