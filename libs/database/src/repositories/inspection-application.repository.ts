@@ -169,7 +169,7 @@ export class InspectionApplicationRepository {
   ): Promise<InspectionApplication> {
     return await tx.inspectionApplication
       .update({
-        where: { uuid: applicationUuid },
+        where: { uuid: applicationUuid, deletedAt: null },
         data: {
           itemResults,
           isPassed,
