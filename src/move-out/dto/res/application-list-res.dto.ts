@@ -8,7 +8,7 @@ import {
   InspectionTargetInfo,
   RoomInspectionType,
 } from 'generated/prisma/client';
-import { ApplicationInfo } from 'src/move-out/types/application-info.type';
+import { ApplicationInfo } from '@lib/database';
 
 class UserInfoResDto {
   @ApiProperty({ description: 'User Name', example: 'Jane Doe' })
@@ -171,22 +171,25 @@ export class ApplicationResDto {
   @Type(() => TargetInfoResDto)
   targetInfo: TargetInfoResDto;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Whether inspection is passed',
     type: Boolean,
+    nullable: true,
   })
-  isPassed?: boolean | null;
+  isPassed: boolean | null;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Inspection item results',
     type: ItemResultsResDto,
+    nullable: true,
   })
   @Type(() => ItemResultsResDto)
-  itemResults?: ItemResultsResDto | JsonValue;
+  itemResults: ItemResultsResDto | JsonValue;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Inspection document URL (Expires in 10 minutes)',
     type: String,
+    nullable: true,
   })
   document?: string | null;
 
