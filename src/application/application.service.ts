@@ -20,6 +20,7 @@ import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationResDto } from './dto/res/application-res.dto';
 import { ScheduleService } from '../schedule/schedule.service';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
+import { GetDocumentUploadUrlReqDto } from './dto/req/get-document-upload-url.dto';
 import {
   InspectionApplicationRepository,
   InspectionSlotRepository,
@@ -393,6 +394,54 @@ export class ApplicationService {
         return { presignedUrl };
       },
     );
+  }
+
+  async getDocumentUploadUrl(
+    { email, name, studentNumber }: User,
+    applicationUuid: string,
+    { contentLength }: GetDocumentUploadUrlReqDto,
+  ): Promise<RegisterResultResDto> {
+    const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+      email,
+      name,
+      studentNumber,
+    );
+
+    const application =
+      await this.inspectionApplicationRepository.findApplicationByUuid(
+        applicationUuid,
+      );
+
+    if (application.inspectorUuid !== inspector.uuid) {
+      throw new ForbiddenException(
+        'The inspector is not assigned to this application.',
+      );
+    }
+
+    if (application.isPassed === null) {
+      throw new BadRequestException(
+        'Inspection result must be submitted before requesting document upload URL.',
+      );
+    }
+
+    if (!application.document) {
+      throw new BadRequestException(
+        'No document associated with this application.',
+      );
+    }
+
+    if (application.isDocumentActive) {
+      throw new ConflictException(
+        'Inspection document has already been verified and cannot be re-uploaded.',
+      );
+    }
+
+    const presignedUrl = await this.fileService.createPresignedUrl(
+      application.document,
+      contentLength,
+    );
+
+    return { presignedUrl };
   }
 
   async verifyInspectionDocument(

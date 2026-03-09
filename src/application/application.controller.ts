@@ -39,6 +39,7 @@ import { SubmitInspectionResultDto } from './dto/req/submit-inspection-result.dt
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationResDto } from './dto/res/application-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
+import { GetDocumentUploadUrlReqDto } from './dto/req/get-document-upload-url.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('application')
@@ -252,6 +253,46 @@ export class ApplicationController {
       user,
       uuid,
       submitInspectionResultDto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Get document upload URL for inspection result',
+    description:
+      'Generate a presigned URL to upload the inspection result document for the given application. Can be called again if the previous URL expired or upload failed, as long as the document has not been verified.',
+  })
+  @ApiOkResponse({
+    description:
+      'The presigned URL for uploading the inspection document has been successfully generated.',
+    type: RegisterResultResDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Bad Request - Inspection result not submitted, or no document associated with this application.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - User is not an inspector or not assigned to this application.',
+  })
+  @ApiConflictResponse({
+    description:
+      'Conflict - Inspection document has already been verified and cannot be re-uploaded.',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Post(':uuid/document/upload-url')
+  async getDocumentUploadUrl(
+    @GetUser() user: User,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() getDocumentUploadUrlReqDto: GetDocumentUploadUrlReqDto,
+  ): Promise<RegisterResultResDto> {
+    return this.applicationService.getDocumentUploadUrl(
+      user,
+      uuid,
+      getDocumentUploadUrlReqDto,
     );
   }
 
