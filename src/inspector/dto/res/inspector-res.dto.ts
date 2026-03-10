@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { Gender, InspectionSlot } from 'generated/prisma/client';
 import { InspectorWithSlots } from '@lib/database';
-import { InspectionSlotResDto } from 'src/move-out/dto/res/move-out-schedule-with-slots-res.dto';
+import { InspectionSlotResDto } from 'src/schedule/dto/res/move-out-schedule-with-slots-res.dto';
 
 export class InspectorResDto {
   @ApiProperty({
