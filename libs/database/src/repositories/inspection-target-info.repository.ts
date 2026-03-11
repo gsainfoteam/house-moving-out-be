@@ -103,6 +103,7 @@ export class InspectionTargetInfoRepository {
           scheduleUuid,
           houseName: target.houseName,
           roomNumber: target.roomNumber,
+          roomCapacity: target.roomCapacity,
           student1Name: target.students[0]?.studentName,
           student1AdmissionYear: target.students[0]?.admissionYear,
           student2Name: target.students[1]?.studentName,

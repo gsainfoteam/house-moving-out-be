@@ -12,7 +12,6 @@ import {
   Season,
 } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
-import { InspectionTimeRange } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
 import {
@@ -34,7 +33,10 @@ import {
 import { User } from 'generated/prisma/client';
 import ms from 'ms';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
-import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
+import {
+  CreateMoveOutScheduleWithTargetsDto,
+  InspectionTimeRange,
+} from './dto/req/create-move-out-schedule-with-targets.dto';
 import { InspectionTargetStudent } from './types/inspection-target.type';
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
@@ -66,7 +68,8 @@ export class ScheduleService {
   }
 
   async createMoveOutScheduleWithTargets(
-    file: Express.Multer.File,
+    currentSemesterFile: Express.Multer.File,
+    nextSemesterFile: Express.Multer.File,
     {
       title,
       applicationStartTime,
@@ -76,6 +79,7 @@ export class ScheduleService {
       nextYear,
       nextSeason,
       inspectionTimeRange,
+      residentGenderByHouseFloorKey,
     }: CreateMoveOutScheduleWithTargetsDto,
   ): Promise<MoveOutSchedule> {
     this.validateScheduleAndRanges(
@@ -95,33 +99,36 @@ export class ScheduleService {
 
     this.validateSemesterOrder(currentSemester, nextSemester);
 
-    await this.excelValidatorService.validateExcelFile(file);
+    await this.excelValidatorService.validateExcelFile(currentSemesterFile);
+    await this.excelValidatorService.validateExcelFile(nextSemesterFile);
 
-    if (!file?.buffer) {
+    if (!currentSemesterFile.buffer || !nextSemesterFile.buffer) {
       throw new BadRequestException('File buffer is missing');
     }
 
-    const workbook = new ExcelJS.Workbook();
+    const currentWorkbook = new ExcelJS.Workbook();
+    const nextWorkbook = new ExcelJS.Workbook();
     // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await workbook.xlsx.load(file.buffer);
+    await currentWorkbook.xlsx.load(currentSemesterFile.buffer);
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await nextWorkbook.xlsx.load(nextSemesterFile.buffer);
 
-    if (workbook.worksheets.length < 2) {
-      throw new BadRequestException(
-        'Excel file must have at least 2 sheets for comparison',
-      );
-    }
-
-    const currentSemesterSheet = workbook.worksheets[0];
-    const nextSemesterSheet = workbook.worksheets[1];
+    const currentSemesterSheet = currentWorkbook.worksheets[0];
+    const nextSemesterSheet = nextWorkbook.worksheets[0];
 
     if (!currentSemesterSheet || !nextSemesterSheet) {
       throw new BadRequestException('Excel file has invalid sheets');
     }
 
     const currentSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(currentSemesterSheet);
-    const nextSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(nextSemesterSheet);
+      this.excelParserService.parseSheetToRoomInfoMap(
+        currentSemesterSheet,
+        residentGenderByHouseFloorKey,
+      );
+    const nextSemesterRooms = this.excelParserService.parseSheetToRoomInfoMap(
+      nextSemesterSheet,
+      residentGenderByHouseFloorKey,
+    );
 
     const inspectionTargets = this.findInspectionTargetRooms(
       currentSemesterRooms,
@@ -263,36 +270,41 @@ export class ScheduleService {
   }
 
   async updateInspectionTargetsAndUpdateSlotCapacities(
-    file: Express.Multer.File,
+    currentSemesterFile: Express.Multer.File,
+    nextSemesterFile: Express.Multer.File,
+    residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
     scheduleUuid: string,
   ): Promise<{ count: number }> {
-    await this.excelValidatorService.validateExcelFile(file);
+    await this.excelValidatorService.validateExcelFile(currentSemesterFile);
+    await this.excelValidatorService.validateExcelFile(nextSemesterFile);
 
-    if (!file?.buffer) {
+    if (!currentSemesterFile.buffer || !nextSemesterFile.buffer) {
       throw new BadRequestException('File buffer is missing');
     }
 
-    const workbook = new ExcelJS.Workbook();
+    const currentWorkbook = new ExcelJS.Workbook();
+    const nextWorkbook = new ExcelJS.Workbook();
     // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await workbook.xlsx.load(file.buffer);
+    await currentWorkbook.xlsx.load(currentSemesterFile.buffer);
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await nextWorkbook.xlsx.load(nextSemesterFile.buffer);
 
-    if (workbook.worksheets.length < 2) {
-      throw new BadRequestException(
-        'Excel file must have at least 2 sheets for comparison',
-      );
-    }
-
-    const currentSemesterSheet = workbook.worksheets[0];
-    const nextSemesterSheet = workbook.worksheets[1];
+    const currentSemesterSheet = currentWorkbook.worksheets[0];
+    const nextSemesterSheet = nextWorkbook.worksheets[0];
 
     if (!currentSemesterSheet || !nextSemesterSheet) {
       throw new BadRequestException('Excel file has invalid sheets');
     }
 
     const currentSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(currentSemesterSheet);
-    const nextSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(nextSemesterSheet);
+      this.excelParserService.parseSheetToRoomInfoMap(
+        currentSemesterSheet,
+        residentGenderByHouseFloorKey,
+      );
+    const nextSemesterRooms = this.excelParserService.parseSheetToRoomInfoMap(
+      nextSemesterSheet,
+      residentGenderByHouseFloorKey,
+    );
 
     const inspectionTargets = this.findInspectionTargetRooms(
       currentSemesterRooms,
@@ -523,15 +535,26 @@ export class ScheduleService {
       const originalCount = originalStudents.length;
       const leavingCount = leavingStudents.length;
 
+      const roomCapacity =
+        currentSemesterRoom.roomCapacity && currentSemesterRoom.roomCapacity > 0
+          ? currentSemesterRoom.roomCapacity
+          : originalCount;
+
       let inspectionType: RoomInspectionType;
-      if (originalCount === 0) {
+
+      if (currentSemesterRoom.limitType === '기타') {
+        inspectionType = RoomInspectionType.EMPTY;
+      } else if (originalCount === 0) {
         inspectionType = RoomInspectionType.EMPTY;
       } else if (originalCount === leavingCount) {
         inspectionType = RoomInspectionType.FULL;
-      } else if (originalCount >= 1 && leavingCount === 1) {
-        inspectionType = RoomInspectionType.SOLO;
-      } else if (originalCount === 3 && leavingCount === 2) {
+      } else if (roomCapacity === 3 && leavingCount === 2) {
         inspectionType = RoomInspectionType.DUO;
+      } else if (
+        (roomCapacity === 3 || roomCapacity === 2) &&
+        leavingCount === 1
+      ) {
+        inspectionType = RoomInspectionType.SOLO;
       } else {
         inspectionType = RoomInspectionType.FULL;
       }
@@ -543,6 +566,7 @@ export class ScheduleService {
       inspectionTargets.push({
         houseName: currentSemesterRoom.houseName,
         roomNumber: currentSemesterRoom.roomNumber,
+        roomCapacity,
         students: leavingStudents.slice(0, 3),
         inspectionType,
         applyCleaningService: false,
@@ -623,10 +647,10 @@ export class ScheduleService {
   }
 
   extractAdmissionYear(studentNumber: string): string {
-    if (!studentNumber || studentNumber.length < 4) {
+    if (!studentNumber || studentNumber.length < 8) {
       throw new BadRequestException('Invalid student number format');
     }
-    return studentNumber.substring(2, 4);
+    return studentNumber;
   }
 
   private generateSlots(
