@@ -400,7 +400,7 @@ export class ScheduleService {
   ): Promise<{ gender: Gender; roomNumber: string } | null> {
     try {
       const schedule =
-        await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
+        await this.moveOutScheduleRepository.findActiveSchedule();
 
       const admissionYear = this.extractAdmissionYear(user.studentNumber);
 
