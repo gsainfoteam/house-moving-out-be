@@ -36,7 +36,12 @@ export class ExcelParserService {
       }
 
       const roomMatch = roomNumber.match(/^([A-Za-z])(\d)/);
-      const houseGenderKey = `${roomMatch![1].toUpperCase()}${roomMatch![2]}`;
+      if (!roomMatch) {
+        throw new BadRequestException(
+          `Invalid room number format. roomNumber=${roomNumber}`,
+        );
+      }
+      const houseGenderKey = `${roomMatch[1].toUpperCase()}${roomMatch[2]}`;
 
       if (!HOUSE_GENDER_KEYS.includes(houseGenderKey as HouseGenderKey)) {
         throw new BadRequestException(
