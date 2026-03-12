@@ -99,41 +99,12 @@ export class ScheduleService {
 
     this.validateSemesterOrder(currentSemester, nextSemester);
 
-    await this.excelValidatorService.validateExcelFile(currentSemesterFile);
-    await this.excelValidatorService.validateExcelFile(nextSemesterFile);
-
-    if (!currentSemesterFile.buffer || !nextSemesterFile.buffer) {
-      throw new BadRequestException('File buffer is missing');
-    }
-
-    const currentWorkbook = new ExcelJS.Workbook();
-    const nextWorkbook = new ExcelJS.Workbook();
-    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await currentWorkbook.xlsx.load(currentSemesterFile.buffer);
-    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await nextWorkbook.xlsx.load(nextSemesterFile.buffer);
-
-    const currentSemesterSheet = currentWorkbook.worksheets[0];
-    const nextSemesterSheet = nextWorkbook.worksheets[0];
-
-    if (!currentSemesterSheet || !nextSemesterSheet) {
-      throw new BadRequestException('Excel file has invalid sheets');
-    }
-
-    const currentSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(
-        currentSemesterSheet,
+    const { inspectionTargets, targetCounts } =
+      await this.generateInspectionTargetsAndCounts(
+        currentSemesterFile,
+        nextSemesterFile,
         residentGenderByHouseFloorKey,
       );
-    const nextSemesterRooms = this.excelParserService.parseSheetToRoomInfoMap(
-      nextSemesterSheet,
-      residentGenderByHouseFloorKey,
-    );
-
-    const inspectionTargets = this.findInspectionTargetRooms(
-      currentSemesterRooms,
-      nextSemesterRooms,
-    );
 
     const currentSemesterEntity =
       await this.semesterRepository.findOrCreateSemester(
@@ -145,9 +116,6 @@ export class ScheduleService {
         nextSemester.year,
         nextSemester.season,
       );
-
-    const targetCounts =
-      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
     const generatedSlots = this.generateSlots(
       inspectionTimeRange,
@@ -273,44 +241,12 @@ export class ScheduleService {
     residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
     scheduleUuid: string,
   ): Promise<{ count: number }> {
-    await this.excelValidatorService.validateExcelFile(currentSemesterFile);
-    await this.excelValidatorService.validateExcelFile(nextSemesterFile);
-
-    if (!currentSemesterFile.buffer || !nextSemesterFile.buffer) {
-      throw new BadRequestException('File buffer is missing');
-    }
-
-    const currentWorkbook = new ExcelJS.Workbook();
-    const nextWorkbook = new ExcelJS.Workbook();
-    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await currentWorkbook.xlsx.load(currentSemesterFile.buffer);
-    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await nextWorkbook.xlsx.load(nextSemesterFile.buffer);
-
-    const currentSemesterSheet = currentWorkbook.worksheets[0];
-    const nextSemesterSheet = nextWorkbook.worksheets[0];
-
-    if (!currentSemesterSheet || !nextSemesterSheet) {
-      throw new BadRequestException('Excel file has invalid sheets');
-    }
-
-    const currentSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(
-        currentSemesterSheet,
+    const { inspectionTargets, targetCounts } =
+      await this.generateInspectionTargetsAndCounts(
+        currentSemesterFile,
+        nextSemesterFile,
         residentGenderByHouseFloorKey,
       );
-    const nextSemesterRooms = this.excelParserService.parseSheetToRoomInfoMap(
-      nextSemesterSheet,
-      residentGenderByHouseFloorKey,
-    );
-
-    const inspectionTargets = this.findInspectionTargetRooms(
-      currentSemesterRooms,
-      nextSemesterRooms,
-    );
-
-    const targetCounts =
-      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
     return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
@@ -618,6 +554,59 @@ export class ScheduleService {
     }
 
     return inspectionTargets;
+  }
+
+  private async generateInspectionTargetsAndCounts(
+    currentSemesterFile: Express.Multer.File,
+    nextSemesterFile: Express.Multer.File,
+    residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
+  ): Promise<{
+    inspectionTargets: InspectionTargetStudent[];
+    targetCounts: InspectionTargetCount;
+  }> {
+    await this.excelValidatorService.validateExcelFile(currentSemesterFile);
+    await this.excelValidatorService.validateExcelFile(nextSemesterFile);
+
+    if (!currentSemesterFile.buffer || !nextSemesterFile.buffer) {
+      throw new BadRequestException('File buffer is missing');
+    }
+
+    const currentWorkbook = new ExcelJS.Workbook();
+    const nextWorkbook = new ExcelJS.Workbook();
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await currentWorkbook.xlsx.load(currentSemesterFile.buffer);
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await nextWorkbook.xlsx.load(nextSemesterFile.buffer);
+
+    const currentSemesterSheet = currentWorkbook.worksheets[0];
+    const nextSemesterSheet = nextWorkbook.worksheets[0];
+
+    if (!currentSemesterSheet || !nextSemesterSheet) {
+      throw new BadRequestException('Excel file has invalid sheets');
+    }
+
+    const currentSemesterRooms =
+      this.excelParserService.parseSheetToRoomInfoMap(
+        currentSemesterSheet,
+        residentGenderByHouseFloorKey,
+      );
+    const nextSemesterRooms = this.excelParserService.parseSheetToRoomInfoMap(
+      nextSemesterSheet,
+      residentGenderByHouseFloorKey,
+    );
+
+    const inspectionTargets = this.findInspectionTargetRooms(
+      currentSemesterRooms,
+      nextSemesterRooms,
+    );
+
+    const targetCounts =
+      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
+
+    return {
+      inspectionTargets,
+      targetCounts,
+    };
   }
 
   private calculateCapacity(
