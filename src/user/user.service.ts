@@ -14,10 +14,10 @@ export class UserService {
   ) {}
 
   async getMe(user: User): Promise<UserDto> {
-    const targetInfo =
-      await this.scheduleService.findTargetInfoByUserInfo(user);
-    const isInspector =
-      await this.inspectorService.checkInspectorByUserInfo(user);
+    const [targetInfo, isInspector] = await Promise.all([
+      this.scheduleService.findTargetInfoByUserInfo(user),
+      this.inspectorService.checkInspectorByUserInfo(user),
+    ]);
     return new UserDto(user, targetInfo, isInspector);
   }
 }
