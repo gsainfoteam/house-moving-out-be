@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { RoomInfo } from './types/room-assignment.type';
+import {
+  HOUSE_GENDER_KEYS,
+  HouseGenderKey,
+} from './constants/room-assignment-parser.constants';
 
 @Injectable()
 export class ExcelParserService {
@@ -32,14 +36,18 @@ export class ExcelParserService {
       }
 
       const roomMatch = roomNumber.match(/^([A-Za-z])(\d)/);
-      const houseGenderKey =
-        roomMatch && roomMatch[1] && roomMatch[2]
-          ? `${roomMatch[1].toUpperCase()}${roomMatch[2]}`
-          : roomNumber;
+      const houseGenderKey = `${roomMatch![1].toUpperCase()}${roomMatch![2]}`;
 
+      if (!HOUSE_GENDER_KEYS.includes(houseGenderKey as HouseGenderKey)) {
+        throw new BadRequestException(
+          `Invalid house gender key. roomNumber=${roomNumber}, key=${houseGenderKey}`,
+        );
+      }
       const houseGender = residentGenderByHouseFloorKey[houseGenderKey];
       if (!houseGender) {
-        continue;
+        throw new BadRequestException(
+          `Missing gender mapping for key. roomNumber=${roomNumber}, key=${houseGenderKey}`,
+        );
       }
 
       const genderKor = houseGender === 'male' ? '남' : '여';
