@@ -1,3 +1,4 @@
+import { ApplicationWithDetails } from '@lib/database';
 import { ApiProperty } from '@nestjs/swagger';
 import { RoomInspectionType } from 'generated/prisma/client';
 
@@ -68,4 +69,37 @@ export class AssignedTargetsResDto {
     nullable: true,
   })
   isDocumentActive: boolean | null;
+
+  constructor(app: ApplicationWithDetails) {
+    this.uuid = app.uuid;
+    this.roomNumber = app.inspectionTargetInfo.roomNumber;
+    this.residents = [
+      app.inspectionTargetInfo.student1Name &&
+      app.inspectionTargetInfo.student1AdmissionYear
+        ? {
+            admissionYear: app.inspectionTargetInfo.student1AdmissionYear,
+            name: app.inspectionTargetInfo.student1Name,
+          }
+        : null,
+      app.inspectionTargetInfo.student2Name &&
+      app.inspectionTargetInfo.student2AdmissionYear
+        ? {
+            admissionYear: app.inspectionTargetInfo.student2AdmissionYear,
+            name: app.inspectionTargetInfo.student2Name,
+          }
+        : null,
+      app.inspectionTargetInfo.student3Name &&
+      app.inspectionTargetInfo.student3AdmissionYear
+        ? {
+            admissionYear: app.inspectionTargetInfo.student3AdmissionYear,
+            name: app.inspectionTargetInfo.student3Name,
+          }
+        : null,
+    ].filter((v): v is { admissionYear: string; name: string } => v !== null);
+    this.inspectionTime = app.inspectionSlot.startTime;
+    this.inspectionType = app.inspectionTargetInfo.inspectionType;
+    this.isPassed = app.isPassed;
+    this.inspectionCount = app.inspectionTargetInfo.inspectionCount;
+    this.isDocumentActive = app.isDocumentActive;
+  }
 }

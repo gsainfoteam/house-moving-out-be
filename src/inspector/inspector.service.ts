@@ -92,38 +92,7 @@ export class InspectorService {
       );
 
     return applications.map((application) => {
-      const targetInfo = application.inspectionTargetInfo;
-      const residents = [
-        targetInfo.student1Name && targetInfo.student1AdmissionYear
-          ? {
-              admissionYear: targetInfo.student1AdmissionYear,
-              name: targetInfo.student1Name,
-            }
-          : null,
-        targetInfo.student2Name && targetInfo.student2AdmissionYear
-          ? {
-              admissionYear: targetInfo.student2AdmissionYear,
-              name: targetInfo.student2Name,
-            }
-          : null,
-        targetInfo.student3Name && targetInfo.student3AdmissionYear
-          ? {
-              admissionYear: targetInfo.student3AdmissionYear,
-              name: targetInfo.student3Name,
-            }
-          : null,
-      ].filter((v): v is { admissionYear: string; name: string } => v !== null);
-
-      return {
-        uuid: application.uuid,
-        roomNumber: targetInfo.roomNumber,
-        residents,
-        inspectionType: targetInfo.inspectionType,
-        inspectionTime: application.inspectionSlot.startTime,
-        isPassed: application.isPassed ?? null,
-        inspectionCount: targetInfo.inspectionCount,
-        isDocumentActive: application.isDocumentActive,
-      };
+      return new AssignedTargetsResDto(application);
     });
   }
 }
