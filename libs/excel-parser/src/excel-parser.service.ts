@@ -159,7 +159,12 @@ export class ExcelParserService {
     const studentNumber = idMatch[1];
 
     const namePart = trimmed.replace(studentNumber, '').replace(/[()\s]/g, '');
-    const name = namePart || trimmed;
+    if (!namePart) {
+      throw new BadRequestException(
+        `Invalid student cell value (missing name). value=${trimmed}`,
+      );
+    }
+    const name = namePart;
 
     return {
       name,
