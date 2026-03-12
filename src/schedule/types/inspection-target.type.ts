@@ -6,7 +6,7 @@ export type InspectionTargetStudent = {
   roomCapacity: number;
   students: {
     studentName: string;
-    admissionYear: string;
+    studentNumber: string;
   }[];
   applyCleaningService: boolean;
   inspectionType: RoomInspectionType;

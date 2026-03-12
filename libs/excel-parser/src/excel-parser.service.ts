@@ -49,7 +49,7 @@ export class ExcelParserService {
           ? `${roomNumber[0]}하우스 (${genderKor})`
           : roomNumber;
 
-      const students: Array<{ name?: string; admissionYear?: string }> = [];
+      const students: Array<{ name?: string; studentNumber?: string }> = [];
 
       const residentCols = [5, 6, 7];
       for (const col of residentCols) {
@@ -125,7 +125,7 @@ export class ExcelParserService {
 
   private parseStudentCell(
     value: string,
-  ): { name: string; admissionYear: string } | null {
+  ): { name: string; studentNumber: string } | null {
     const trimmed = value.trim();
     if (!trimmed) {
       return null;
@@ -136,14 +136,13 @@ export class ExcelParserService {
       return null;
     }
     const studentNumber = idMatch[1];
-    const admissionYear = studentNumber;
 
     const namePart = trimmed.replace(studentNumber, '').replace(/[()\s]/g, '');
     const name = namePart || trimmed;
 
     return {
       name,
-      admissionYear,
+      studentNumber,
     };
   }
 }

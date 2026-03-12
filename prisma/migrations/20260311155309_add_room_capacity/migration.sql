@@ -6,7 +6,6 @@ ALTER TABLE "inspection_target"
   ADD COLUMN "student3_student_number" TEXT;
 
 -- Backfill room_capacity for existing rows
--- Existing rows have no explicit capacity 정보, 요구 사항에 따라 3으로 고정
 UPDATE "inspection_target"
 SET "room_capacity" = 3
 WHERE "room_capacity" IS NULL;
@@ -27,3 +26,19 @@ ALTER TABLE "inspection_target"
 -- Enforce NOT NULL constraint after backfill
 ALTER TABLE "inspection_target"
   ALTER COLUMN "room_capacity" SET NOT NULL;
+
+-- Normalize legacy DUO inspection types to SOLO before enum change
+UPDATE "inspection_target"
+SET "inspection_type" = 'SOLO'
+WHERE "inspection_type" = 'DUO';
+
+-- Recreate room_inspection_type enum without DUO
+ALTER TYPE "room_inspection_type" RENAME TO "room_inspection_type_old";
+
+CREATE TYPE "room_inspection_type" AS ENUM ('FULL', 'SOLO', 'EMPTY');
+
+ALTER TABLE "inspection_target"
+ALTER COLUMN "inspection_type" TYPE "room_inspection_type"
+USING "inspection_type"::text::"room_inspection_type";
+
+DROP TYPE "room_inspection_type_old";

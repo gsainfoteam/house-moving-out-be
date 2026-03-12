@@ -49,7 +49,6 @@ enum Gender {
 enum RoomInspectionType {
   FULL
   SOLO
-  DUO
   EMPTY
 
   @@map("room_inspection_type")

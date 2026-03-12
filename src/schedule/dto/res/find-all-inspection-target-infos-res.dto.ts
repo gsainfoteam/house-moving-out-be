@@ -3,10 +3,10 @@ import { RoomInspectionType } from 'generated/prisma/client';
 
 class Resident {
   @ApiProperty({
-    description: 'Admission year of the resident',
-    example: '20',
+    description: 'Student number of the resident',
+    example: '20250000',
   })
-  admissionYear: string;
+  studentNumber: string;
 
   @ApiProperty({
     description: 'Name of the resident',

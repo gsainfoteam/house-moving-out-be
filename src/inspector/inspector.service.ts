@@ -95,26 +95,26 @@ export class InspectorService {
       .map((latestApplication) => {
         const targetInfo = latestApplication.inspectionTargetInfo;
         const residents = [
-          targetInfo.student1Name && targetInfo.student1AdmissionYear
+          targetInfo.student1Name && targetInfo.student1StudentNumber
             ? {
-                admissionYear: targetInfo.student1AdmissionYear,
+                studentNumber: targetInfo.student1StudentNumber,
                 name: targetInfo.student1Name,
               }
             : null,
-          targetInfo.student2Name && targetInfo.student2AdmissionYear
+          targetInfo.student2Name && targetInfo.student2StudentNumber
             ? {
-                admissionYear: targetInfo.student2AdmissionYear,
+                studentNumber: targetInfo.student2StudentNumber,
                 name: targetInfo.student2Name,
               }
             : null,
-          targetInfo.student3Name && targetInfo.student3AdmissionYear
+          targetInfo.student3Name && targetInfo.student3StudentNumber
             ? {
-                admissionYear: targetInfo.student3AdmissionYear,
+                studentNumber: targetInfo.student3StudentNumber,
                 name: targetInfo.student3Name,
               }
             : null,
         ].filter(
-          (v): v is { admissionYear: string; name: string } => v !== null,
+          (v): v is { studentNumber: string; name: string } => v !== null,
         );
 
         return {

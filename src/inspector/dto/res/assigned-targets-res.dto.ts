@@ -9,10 +9,10 @@ class Resident {
   name: string;
 
   @ApiProperty({
-    description: 'Admission year',
-    example: '25',
+    description: 'Student number',
+    example: '20250000',
   })
-  admissionYear: string;
+  studentNumber: string;
 }
 
 class AssignedTarget {
