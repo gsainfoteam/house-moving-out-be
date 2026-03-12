@@ -15,7 +15,7 @@ class Resident {
   admissionYear: string;
 }
 
-class AssignedTarget {
+export class AssignedTargetsResDto {
   @ApiProperty({
     description: 'Application UUID',
     example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
@@ -61,12 +61,11 @@ class AssignedTarget {
     example: 2,
   })
   inspectionCount: number;
-}
 
-export class AssignedTargetsResDto {
   @ApiProperty({
-    description: 'List of inspection targets assigned to the inspector',
-    type: [AssignedTarget],
+    description: 'Whether the document url is active',
+    example: true,
+    nullable: true,
   })
-  targets: AssignedTarget[];
+  isDocumentActive: boolean | null;
 }

@@ -309,7 +309,7 @@ export class InspectionApplicationRepository {
       });
   }
 
-  async findLatestApplicationsByInspector(
+  async findApplicationsByInspector(
     inspectorUuid: string,
     scheduleUuid: string,
   ): Promise<ApplicationWithDetails[]> {
@@ -320,8 +320,6 @@ export class InspectionApplicationRepository {
           inspectorUuid,
           inspectionTargetInfo: { scheduleUuid },
         },
-        orderBy: [{ inspectionTargetInfoUuid: 'asc' }, { createdAt: 'desc' }],
-        distinct: ['inspectionTargetInfoUuid'],
         include: {
           inspectionSlot: true,
           inspectionTargetInfo: true,
@@ -330,11 +328,11 @@ export class InspectionApplicationRepository {
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
-            `findLatestApplicationsByInspector prisma error: ${error.message}`,
+            `findApplicationsByInspector prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findLatestApplicationsByInspector error: ${error}`);
+        this.logger.error(`findApplicationsByInspector error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

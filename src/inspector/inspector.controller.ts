@@ -63,7 +63,7 @@ export class InspectorController {
   })
   @ApiOkResponse({
     description: 'The inspection targets have been successfully retrieved.',
-    type: AssignedTargetsResDto,
+    type: [AssignedTargetsResDto],
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
@@ -79,7 +79,7 @@ export class InspectorController {
   @Get('me/assigned-targets')
   async getMyAssignedTargets(
     @GetUser() user: User,
-  ): Promise<AssignedTargetsResDto> {
+  ): Promise<AssignedTargetsResDto[]> {
     return await this.inspectorService.getMyAssignedTargets(user);
   }
 
