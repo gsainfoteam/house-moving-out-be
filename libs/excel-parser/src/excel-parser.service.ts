@@ -69,13 +69,26 @@ export class ExcelParserService {
       roomMap.set(roomKey, {
         houseName,
         roomNumber,
-        roomCapacity: Number(roomCapacity[0]),
+        roomCapacity: this.parseRoomCapacity(roomCapacity),
         limitType,
         students,
       });
     }
 
     return roomMap;
+  }
+
+  private parseRoomCapacity(value: string): number {
+    if (!value) {
+      return Number.NaN;
+    }
+
+    const firstDigitMatch = value.match(/\d/);
+    if (!firstDigitMatch) {
+      return Number.NaN;
+    }
+
+    return Number.parseInt(firstDigitMatch[0], 10);
   }
 
   private getCellValue(cell: ExcelJS.Cell): string {

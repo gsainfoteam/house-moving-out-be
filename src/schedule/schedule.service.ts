@@ -531,10 +531,13 @@ export class ScheduleService {
       const originalCount = originalStudents.length;
       const leavingCount = leavingStudents.length;
 
-      const roomCapacity =
-        currentSemesterRoom.roomCapacity && currentSemesterRoom.roomCapacity > 0
-          ? currentSemesterRoom.roomCapacity
-          : originalCount;
+      const roomCapacity = currentSemesterRoom.roomCapacity;
+
+      if (!Number.isFinite(roomCapacity) || roomCapacity <= 0) {
+        throw new BadRequestException(
+          `Invalid room capacity. Check Excel data for houseName=${currentSemesterRoom.houseName}, roomNumber=${currentSemesterRoom.roomNumber}`,
+        );
+      }
 
       if (originalCount > 0 && leavingCount === 0) {
         continue;
