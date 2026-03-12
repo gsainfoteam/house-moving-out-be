@@ -52,6 +52,7 @@ import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspect
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
+import { EXCEL_VALIDATION_CONSTANTS } from '@lib/excel-parser/constants/room-assignment-parser.constants';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schedule')
@@ -101,7 +102,7 @@ export class ScheduleController {
       ],
       {
         limits: {
-          fileSize: 10 * 1024 * 1024,
+          fileSize: EXCEL_VALIDATION_CONSTANTS.MAX_FILE_SIZE,
         },
       },
     ),
@@ -243,7 +244,7 @@ export class ScheduleController {
       ],
       {
         limits: {
-          fileSize: 10 * 1024 * 1024,
+          fileSize: EXCEL_VALIDATION_CONSTANTS.MAX_FILE_SIZE,
         },
       },
     ),
