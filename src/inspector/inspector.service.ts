@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
@@ -130,5 +130,19 @@ export class InspectorService {
       .sort((a, b) => a.inspectionTime.getTime() - b.inspectionTime.getTime());
 
     return { targets };
+  }
+
+  async checkInspectorByUserInfo(user: User): Promise<boolean> {
+    try {
+      const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+        user.email,
+        user.name,
+        user.studentNumber,
+      );
+      return !!inspector;
+    } catch (error) {
+      if (error instanceof ForbiddenException) return false;
+      throw error;
+    }
   }
 }
