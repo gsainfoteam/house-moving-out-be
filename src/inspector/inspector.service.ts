@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
@@ -76,7 +76,7 @@ export class InspectorService {
     email,
     name,
     studentNumber,
-  }: User): Promise<AssignedTargetsResDto> {
+  }: User): Promise<AssignedTargetsResDto[]> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       email,
       name,
@@ -85,50 +85,28 @@ export class InspectorService {
 
     const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
 
-    const latestApplications =
-      await this.inspectionApplicationRepository.findLatestApplicationsByInspector(
+    const applications =
+      await this.inspectionApplicationRepository.findApplicationsByInspector(
         inspector.uuid,
         schedule.uuid,
       );
 
-    const targets = latestApplications
-      .map((latestApplication) => {
-        const targetInfo = latestApplication.inspectionTargetInfo;
-        const residents = [
-          targetInfo.student1Name && targetInfo.student1StudentNumber
-            ? {
-                studentNumber: targetInfo.student1StudentNumber,
-                name: targetInfo.student1Name,
-              }
-            : null,
-          targetInfo.student2Name && targetInfo.student2StudentNumber
-            ? {
-                studentNumber: targetInfo.student2StudentNumber,
-                name: targetInfo.student2Name,
-              }
-            : null,
-          targetInfo.student3Name && targetInfo.student3StudentNumber
-            ? {
-                studentNumber: targetInfo.student3StudentNumber,
-                name: targetInfo.student3Name,
-              }
-            : null,
-        ].filter(
-          (v): v is { studentNumber: string; name: string } => v !== null,
-        );
+    return applications.map((application) => {
+      return new AssignedTargetsResDto(application);
+    });
+  }
 
-        return {
-          uuid: latestApplication.uuid,
-          roomNumber: targetInfo.roomNumber,
-          residents,
-          inspectionType: targetInfo.inspectionType,
-          inspectionTime: latestApplication.inspectionSlot.startTime,
-          isPassed: latestApplication.isPassed ?? null,
-          inspectionCount: targetInfo.inspectionCount,
-        };
-      })
-      .sort((a, b) => a.inspectionTime.getTime() - b.inspectionTime.getTime());
-
-    return { targets };
+  async checkInspectorByUserInfo(user: User): Promise<boolean> {
+    try {
+      const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+        user.email,
+        user.name,
+        user.studentNumber,
+      );
+      return !!inspector;
+    } catch (error) {
+      if (error instanceof ForbiddenException) return false;
+      throw error;
+    }
   }
 }
