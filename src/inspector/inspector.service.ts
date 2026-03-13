@@ -76,7 +76,7 @@ export class InspectorService {
     email,
     name,
     studentNumber,
-  }: User): Promise<AssignedTargetsResDto> {
+  }: User): Promise<AssignedTargetsResDto[]> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
       email,
       name,
@@ -85,50 +85,14 @@ export class InspectorService {
 
     const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
 
-    const latestApplications =
-      await this.inspectionApplicationRepository.findLatestApplicationsByInspector(
+    const applications =
+      await this.inspectionApplicationRepository.findApplicationsByInspector(
         inspector.uuid,
         schedule.uuid,
       );
 
-    const targets = latestApplications
-      .map((latestApplication) => {
-        const targetInfo = latestApplication.inspectionTargetInfo;
-        const residents = [
-          targetInfo.student1Name && targetInfo.student1AdmissionYear
-            ? {
-                admissionYear: targetInfo.student1AdmissionYear,
-                name: targetInfo.student1Name,
-              }
-            : null,
-          targetInfo.student2Name && targetInfo.student2AdmissionYear
-            ? {
-                admissionYear: targetInfo.student2AdmissionYear,
-                name: targetInfo.student2Name,
-              }
-            : null,
-          targetInfo.student3Name && targetInfo.student3AdmissionYear
-            ? {
-                admissionYear: targetInfo.student3AdmissionYear,
-                name: targetInfo.student3Name,
-              }
-            : null,
-        ].filter(
-          (v): v is { admissionYear: string; name: string } => v !== null,
-        );
-
-        return {
-          uuid: latestApplication.uuid,
-          roomNumber: targetInfo.roomNumber,
-          residents,
-          inspectionType: targetInfo.inspectionType,
-          inspectionTime: latestApplication.inspectionSlot.startTime,
-          isPassed: latestApplication.isPassed ?? null,
-          inspectionCount: targetInfo.inspectionCount,
-        };
-      })
-      .sort((a, b) => a.inspectionTime.getTime() - b.inspectionTime.getTime());
-
-    return { targets };
+    return applications.map((application) => {
+      return new AssignedTargetsResDto(application);
+    });
   }
 }

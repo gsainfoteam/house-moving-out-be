@@ -1,3 +1,4 @@
+import { ApplicationWithDetails } from '@lib/database';
 import { ApiProperty } from '@nestjs/swagger';
 import { RoomInspectionType } from 'generated/prisma/client';
 
@@ -15,7 +16,7 @@ class Resident {
   admissionYear: string;
 }
 
-class AssignedTarget {
+export class AssignedTargetsResDto {
   @ApiProperty({
     description: 'Application UUID',
     example: '123e4567-0000-0000-a456-aaaaaabbbbbb',
@@ -61,12 +62,44 @@ class AssignedTarget {
     example: 2,
   })
   inspectionCount: number;
-}
 
-export class AssignedTargetsResDto {
   @ApiProperty({
-    description: 'List of inspection targets assigned to the inspector',
-    type: [AssignedTarget],
+    description: 'Whether the document url is active',
+    example: true,
+    nullable: true,
   })
-  targets: AssignedTarget[];
+  isDocumentActive: boolean | null;
+
+  constructor(app: ApplicationWithDetails) {
+    this.uuid = app.uuid;
+    this.roomNumber = app.inspectionTargetInfo.roomNumber;
+    this.residents = [
+      app.inspectionTargetInfo.student1Name &&
+      app.inspectionTargetInfo.student1AdmissionYear
+        ? {
+            admissionYear: app.inspectionTargetInfo.student1AdmissionYear,
+            name: app.inspectionTargetInfo.student1Name,
+          }
+        : null,
+      app.inspectionTargetInfo.student2Name &&
+      app.inspectionTargetInfo.student2AdmissionYear
+        ? {
+            admissionYear: app.inspectionTargetInfo.student2AdmissionYear,
+            name: app.inspectionTargetInfo.student2Name,
+          }
+        : null,
+      app.inspectionTargetInfo.student3Name &&
+      app.inspectionTargetInfo.student3AdmissionYear
+        ? {
+            admissionYear: app.inspectionTargetInfo.student3AdmissionYear,
+            name: app.inspectionTargetInfo.student3Name,
+          }
+        : null,
+    ].filter((v): v is { admissionYear: string; name: string } => v !== null);
+    this.inspectionTime = app.inspectionSlot.startTime;
+    this.inspectionType = app.inspectionTargetInfo.inspectionType;
+    this.isPassed = app.isPassed;
+    this.inspectionCount = app.inspectionTargetInfo.inspectionCount;
+    this.isDocumentActive = app.isDocumentActive;
+  }
 }
