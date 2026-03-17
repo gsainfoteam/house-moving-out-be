@@ -5,12 +5,13 @@ import {
   HOUSE_GENDER_KEYS,
   HouseGenderKey,
 } from './constants/room-assignment-parser.constants';
+import { Gender } from 'generated/prisma/client';
 
 @Injectable()
 export class ExcelParserService {
   parseSheetToRoomInfoMap(
     worksheet: ExcelJS.Worksheet,
-    residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
+    residentGenderByHouseFloorKey: Record<string, Gender>,
   ): Map<string, RoomInfo> {
     if (!worksheet.rowCount) {
       return new Map<string, RoomInfo>();
@@ -55,7 +56,7 @@ export class ExcelParserService {
         );
       }
 
-      const genderKor = houseGender === 'male' ? '남' : '여';
+      const genderKor = houseGender === Gender.MALE ? '남' : '여';
 
       const houseName =
         roomNumber.length > 0

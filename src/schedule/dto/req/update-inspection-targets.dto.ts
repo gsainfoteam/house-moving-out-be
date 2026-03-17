@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsObject } from 'class-validator';
+import { Gender } from 'generated/prisma/client';
 
 export class UpdateInspectionTargetsDto {
   @ApiProperty({
@@ -8,15 +9,15 @@ export class UpdateInspectionTargetsDto {
     type: 'object',
     additionalProperties: {
       type: 'string',
-      enum: ['male', 'female'],
+      enum: [Gender.MALE, Gender.FEMALE],
     },
     example: {
-      G1: 'male',
-      G2: 'male',
-      G3: 'male',
-      G4: 'female',
-      G5: 'female',
-      G6: 'female',
+      G1: Gender.MALE,
+      G2: Gender.MALE,
+      G3: Gender.MALE,
+      G4: Gender.FEMALE,
+      G5: Gender.FEMALE,
+      G6: Gender.FEMALE,
     },
   })
   @Transform(({ value }) => {
@@ -24,9 +25,9 @@ export class UpdateInspectionTargetsDto {
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value) as Record<string, unknown>;
-        const result: Record<string, 'male' | 'female'> = {};
+        const result: Record<string, Gender> = {};
         for (const [key, v] of Object.entries(parsed)) {
-          if (v === 'male' || v === 'female') {
+          if (v === Gender.MALE || v === Gender.FEMALE) {
             result[key] = v;
           }
         }
@@ -37,9 +38,9 @@ export class UpdateInspectionTargetsDto {
     }
     if (typeof value === 'object') {
       const record = value as Record<string, unknown>;
-      const result: Record<string, 'male' | 'female'> = {};
+      const result: Record<string, Gender> = {};
       for (const [key, v] of Object.entries(record)) {
-        if (v === 'male' || v === 'female') {
+        if (v === Gender.MALE || v === Gender.FEMALE) {
           result[key] = v;
         }
       }
@@ -48,7 +49,7 @@ export class UpdateInspectionTargetsDto {
     return {};
   })
   @IsObject()
-  residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>;
+  residentGenderByHouseFloorKey: Record<string, Gender>;
 }
 
 export class UpdateInspectionTargetsFormDto extends UpdateInspectionTargetsDto {
