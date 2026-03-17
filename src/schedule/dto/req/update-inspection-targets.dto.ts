@@ -4,7 +4,12 @@ import { IsObject } from 'class-validator';
 
 export class UpdateInspectionTargetsDto {
   @ApiProperty({
-    description: 'Resident gender map per house+floor key.',
+    description: 'Resident gender map per house+floor key',
+    type: 'object',
+    additionalProperties: {
+      type: 'string',
+      enum: ['male', 'female'],
+    },
     example: {
       G1: 'male',
       G2: 'male',
