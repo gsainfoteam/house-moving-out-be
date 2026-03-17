@@ -31,7 +31,6 @@ import {
   PrismaTransaction,
 } from '@lib/database';
 import { User } from 'generated/prisma/client';
-import ms from 'ms';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import {
   CreateMoveOutScheduleWithTargetsDto,
@@ -48,7 +47,6 @@ import { FileService } from '@lib/file';
 @Loggable()
 @Injectable()
 export class ScheduleService {
-  private readonly SLOT_DURATION = ms('30m');
   private readonly WEIGHT_FACTOR = 1.5;
   constructor(
     private readonly databaseService: DatabaseService,
@@ -117,24 +115,18 @@ export class ScheduleService {
         nextSemester.season,
       );
 
-    const generatedSlots = this.generateSlots(
-      inspectionTimeRange,
-      this.SLOT_DURATION,
-    );
-
-    if (generatedSlots.length === 0) {
-      throw new BadRequestException(
-        'No slots were generated. Check your inspection time ranges.',
-      );
-    }
+    const slots = inspectionTimeRange.map((slot) => ({
+      startTime: slot.start,
+      endTime: slot.end,
+    }));
 
     const { maleCapacity, femaleCapacity } = this.calculateCapacity(
-      generatedSlots.length,
+      slots.length,
       targetCounts,
       this.WEIGHT_FACTOR,
     );
 
-    const slotsData = generatedSlots.map((slot) => ({
+    const slotsData = slots.map((slot) => ({
       ...slot,
       maleCapacity,
       femaleCapacity,
@@ -677,29 +669,6 @@ export class ScheduleService {
     throw new BadRequestException(
       `Invalid InspectionTargetInfo.houseName format. Expected last token "(남)" or "(여)". Regenerate inspection targets and retry. Invalid houseName: ${houseName}`,
     );
-  }
-  private generateSlots(
-    inspectionTimeRanges: InspectionTimeRange[],
-    slotDuration: number,
-  ): { startTime: Date; endTime: Date }[] {
-    const slots: { startTime: Date; endTime: Date }[] = [];
-
-    for (const range of inspectionTimeRanges) {
-      const rangeStart = new Date(range.start);
-      const rangeEndMs = new Date(range.end).getTime();
-
-      let slotStart = rangeStart;
-      for (
-        let slotEndMs = rangeStart.getTime() + slotDuration;
-        slotEndMs <= rangeEndMs;
-        slotEndMs += slotDuration
-      ) {
-        const slotEnd = new Date(slotEndMs);
-        slots.push({ startTime: slotStart, endTime: slotEnd });
-        slotStart = slotEnd;
-      }
-    }
-    return slots;
   }
 
   private validateScheduleAndRanges(
