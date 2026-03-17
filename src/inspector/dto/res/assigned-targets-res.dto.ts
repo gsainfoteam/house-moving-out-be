@@ -10,10 +10,10 @@ class Resident {
   name: string;
 
   @ApiProperty({
-    description: 'Admission year',
-    example: '25',
+    description: 'Student number',
+    example: '20250000',
   })
-  admissionYear: string;
+  studentNumber: string;
 }
 
 export class AssignedTargetsResDto {
@@ -75,27 +75,27 @@ export class AssignedTargetsResDto {
     this.roomNumber = app.inspectionTargetInfo.roomNumber;
     this.residents = [
       app.inspectionTargetInfo.student1Name &&
-      app.inspectionTargetInfo.student1AdmissionYear
+      app.inspectionTargetInfo.student1StudentNumber
         ? {
-            admissionYear: app.inspectionTargetInfo.student1AdmissionYear,
+            studentNumber: app.inspectionTargetInfo.student1StudentNumber,
             name: app.inspectionTargetInfo.student1Name,
           }
         : null,
       app.inspectionTargetInfo.student2Name &&
-      app.inspectionTargetInfo.student2AdmissionYear
+      app.inspectionTargetInfo.student2StudentNumber
         ? {
-            admissionYear: app.inspectionTargetInfo.student2AdmissionYear,
+            studentNumber: app.inspectionTargetInfo.student2StudentNumber,
             name: app.inspectionTargetInfo.student2Name,
           }
         : null,
       app.inspectionTargetInfo.student3Name &&
-      app.inspectionTargetInfo.student3AdmissionYear
+      app.inspectionTargetInfo.student3StudentNumber
         ? {
-            admissionYear: app.inspectionTargetInfo.student3AdmissionYear,
+            studentNumber: app.inspectionTargetInfo.student3StudentNumber,
             name: app.inspectionTargetInfo.student3Name,
           }
         : null,
-    ].filter((v): v is { admissionYear: string; name: string } => v !== null);
+    ].filter((v): v is { studentNumber: string; name: string } => v !== null);
     this.inspectionTime = app.inspectionSlot.startTime;
     this.inspectionType = app.inspectionTargetInfo.inspectionType;
     this.isPassed = app.isPassed;

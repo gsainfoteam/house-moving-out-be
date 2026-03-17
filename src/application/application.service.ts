@@ -49,10 +49,6 @@ export class ApplicationService {
     user: User,
     { inspectionSlotUuid }: ApplyInspectionDto,
   ): Promise<ApplicationUuidResDto> {
-    const admissionYear = this.scheduleService.extractAdmissionYear(
-      user.studentNumber,
-    );
-
     return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
         const { schedule } =
@@ -74,7 +70,7 @@ export class ApplicationService {
 
         const inspectionTargetInfo =
           await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfoInTx(
-            admissionYear,
+            user.studentNumber,
             user.name,
             schedule.uuid,
             tx,
@@ -138,15 +134,11 @@ export class ApplicationService {
   }
 
   async findMyInspectionType(user: User): Promise<MyInspectionTypeResDto> {
-    const admissionYear = this.scheduleService.extractAdmissionYear(
-      user.studentNumber,
-    );
-
     const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
 
     const targetInfo =
       await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
-        admissionYear,
+        user.studentNumber,
         user.name,
         schedule.uuid,
       );

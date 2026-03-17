@@ -9,12 +9,12 @@ import {
   Put,
   Patch,
   HttpCode,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   Query,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -39,13 +39,20 @@ import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { ScheduleService } from './schedule.service';
-import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
-import { UpdateInspectionTargetsDto } from './dto/req/update-inspection-targets.dto';
+import {
+  CreateMoveOutScheduleWithTargetsDto,
+  CreateMoveOutScheduleWithTargetsFormDto,
+} from './dto/req/create-move-out-schedule-with-targets.dto';
+import {
+  UpdateInspectionTargetsDto,
+  UpdateInspectionTargetsFormDto,
+} from './dto/req/update-inspection-targets.dto';
 import { UpdateInspectionTargetsResDto } from './dto/res/update-inspection-targets-res.dto';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
+import { EXCEL_VALIDATION_CONSTANTS } from '@lib/excel-parser/constants/room-assignment-parser.constants';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schedule')
@@ -85,23 +92,34 @@ export class ScheduleController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: CreateMoveOutScheduleWithTargetsDto })
+  @ApiBody({ type: CreateMoveOutScheduleWithTargetsFormDto })
   @UseGuards(AdminGuard)
   @UseInterceptors(
-    FileInterceptor('file', {
-      limits: {
-        fileSize: 10 * 1024 * 1024,
+    FileFieldsInterceptor(
+      [
+        { name: 'currentSemesterFile', maxCount: 1 },
+        { name: 'nextSemesterFile', maxCount: 1 },
+      ],
+      {
+        limits: {
+          fileSize: EXCEL_VALIDATION_CONSTANTS.MAX_FILE_SIZE,
+        },
       },
-    }),
+    ),
   )
   @Post()
   async createMoveOutScheduleWithTargets(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      currentSemesterFile: Express.Multer.File[];
+      nextSemesterFile: Express.Multer.File[];
+    },
     @Body()
     createMoveOutScheduleWithTargetsDto: CreateMoveOutScheduleWithTargetsDto,
   ): Promise<MoveOutScheduleResDto> {
     return await this.scheduleService.createMoveOutScheduleWithTargets(
-      file,
+      files.currentSemesterFile?.[0],
+      files.nextSemesterFile?.[0],
       createMoveOutScheduleWithTargetsDto,
     );
   }
@@ -200,7 +218,7 @@ export class ScheduleController {
   @ApiOperation({
     summary: 'Replace Inspection Targets and Update Slot Capacities',
     description:
-      'Upload Excel (2 sheets: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started.',
+      'Upload Excel files(2 files: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started.',
   })
   @ApiForbiddenResponse({
     description:
@@ -216,22 +234,35 @@ export class ScheduleController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: UpdateInspectionTargetsDto })
+  @ApiBody({ type: UpdateInspectionTargetsFormDto })
   @UseGuards(AdminGuard)
   @UseInterceptors(
-    FileInterceptor('file', {
-      limits: {
-        fileSize: 10 * 1024 * 1024,
+    FileFieldsInterceptor(
+      [
+        { name: 'currentSemesterFile', maxCount: 1 },
+        { name: 'nextSemesterFile', maxCount: 1 },
+      ],
+      {
+        limits: {
+          fileSize: EXCEL_VALIDATION_CONSTANTS.MAX_FILE_SIZE,
+        },
       },
-    }),
+    ),
   )
   @Put(':uuid/targets')
   async updateInspectionTargets(
     @Param('uuid', ParseUUIDPipe) uuid: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      currentSemesterFile: Express.Multer.File[];
+      nextSemesterFile: Express.Multer.File[];
+    },
+    @Body() dto: UpdateInspectionTargetsDto,
   ): Promise<UpdateInspectionTargetsResDto> {
     return await this.scheduleService.updateInspectionTargetsAndUpdateSlotCapacities(
-      file,
+      files.currentSemesterFile?.[0],
+      files.nextSemesterFile?.[0],
+      dto.residentGenderByHouseFloorKey,
       uuid,
     );
   }

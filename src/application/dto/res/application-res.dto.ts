@@ -78,10 +78,10 @@ class Resident {
   name: string;
 
   @ApiProperty({
-    description: 'Admission year',
-    example: '25',
+    description: 'Student number',
+    example: '20250000',
   })
-  admissionYear: string;
+  studentNumber: string;
 }
 
 class TargetInfoResDto {
@@ -114,26 +114,26 @@ class TargetInfoResDto {
   constructor(partial: InspectionTargetInfo) {
     this.roomNumber = partial.roomNumber;
     this.residents = [
-      partial.student1Name && partial.student1AdmissionYear
+      partial.student1Name && partial.student1StudentNumber
         ? {
             name: partial.student1Name,
-            admissionYear: partial.student1AdmissionYear,
+            studentNumber: partial.student1StudentNumber,
           }
         : null,
-      partial.student2Name && partial.student2AdmissionYear
+      partial.student2Name && partial.student2StudentNumber
         ? {
             name: partial.student2Name,
-            admissionYear: partial.student2AdmissionYear,
+            studentNumber: partial.student2StudentNumber,
           }
         : null,
-      partial.student3Name && partial.student3AdmissionYear
+      partial.student3Name && partial.student3StudentNumber
         ? {
             name: partial.student3Name,
-            admissionYear: partial.student3AdmissionYear,
+            studentNumber: partial.student3StudentNumber,
           }
         : null,
     ].filter(
-      (res): res is { name: string; admissionYear: string } => res !== null,
+      (res): res is { name: string; studentNumber: string } => res !== null,
     );
     this.inspectionType = partial.inspectionType;
     this.applyCleaningService = partial.applyCleaningService;

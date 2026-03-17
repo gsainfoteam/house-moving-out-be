@@ -103,12 +103,13 @@ export class InspectionTargetInfoRepository {
           scheduleUuid,
           houseName: target.houseName,
           roomNumber: target.roomNumber,
+          roomCapacity: target.roomCapacity,
           student1Name: target.students[0]?.studentName,
-          student1AdmissionYear: target.students[0]?.admissionYear,
+          student1StudentNumber: target.students[0]?.studentNumber,
           student2Name: target.students[1]?.studentName,
-          student2AdmissionYear: target.students[1]?.admissionYear,
+          student2StudentNumber: target.students[1]?.studentNumber,
           student3Name: target.students[2]?.studentName,
-          student3AdmissionYear: target.students[2]?.admissionYear,
+          student3StudentNumber: target.students[2]?.studentNumber,
           applyCleaningService: target.applyCleaningService ?? false,
           inspectionType: target.inspectionType,
         })),
@@ -186,7 +187,7 @@ export class InspectionTargetInfoRepository {
   }
 
   async findInspectionTargetInfoByUserInfo(
-    admissionYear: string,
+    studentNumber: string,
     studentName: string,
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
@@ -196,15 +197,15 @@ export class InspectionTargetInfoRepository {
           scheduleUuid,
           OR: [
             {
-              student1AdmissionYear: admissionYear,
+              student1StudentNumber: studentNumber,
               student1Name: studentName,
             },
             {
-              student2AdmissionYear: admissionYear,
+              student2StudentNumber: studentNumber,
               student2Name: studentName,
             },
             {
-              student3AdmissionYear: admissionYear,
+              student3StudentNumber: studentNumber,
               student3Name: studentName,
             },
           ],
@@ -226,7 +227,7 @@ export class InspectionTargetInfoRepository {
   }
 
   async findInspectionTargetInfoByUserInfoInTx(
-    admissionYear: string,
+    studentNumber: string,
     studentName: string,
     scheduleUuid: string,
     tx: PrismaTransaction,
@@ -237,15 +238,15 @@ export class InspectionTargetInfoRepository {
           scheduleUuid,
           OR: [
             {
-              student1AdmissionYear: admissionYear,
+              student1StudentNumber: studentNumber,
               student1Name: studentName,
             },
             {
-              student2AdmissionYear: admissionYear,
+              student2StudentNumber: studentNumber,
               student2Name: studentName,
             },
             {
-              student3AdmissionYear: admissionYear,
+              student3StudentNumber: studentNumber,
               student3Name: studentName,
             },
           ],

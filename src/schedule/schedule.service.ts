@@ -12,7 +12,6 @@ import {
   Season,
 } from 'generated/prisma/client';
 import { Semester } from './types/semester.type';
-import { InspectionTimeRange } from './dto/req/create-move-out-schedule-with-targets.dto';
 import { Loggable } from '@lib/logger';
 import * as ExcelJS from 'exceljs';
 import {
@@ -34,7 +33,10 @@ import {
 import { User } from 'generated/prisma/client';
 import ms from 'ms';
 import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
-import { CreateMoveOutScheduleWithTargetsDto } from './dto/req/create-move-out-schedule-with-targets.dto';
+import {
+  CreateMoveOutScheduleWithTargetsDto,
+  InspectionTimeRange,
+} from './dto/req/create-move-out-schedule-with-targets.dto';
 import { InspectionTargetStudent } from './types/inspection-target.type';
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
@@ -66,7 +68,8 @@ export class ScheduleService {
   }
 
   async createMoveOutScheduleWithTargets(
-    file: Express.Multer.File,
+    currentSemesterFile: Express.Multer.File,
+    nextSemesterFile: Express.Multer.File,
     {
       title,
       applicationStartTime,
@@ -76,6 +79,7 @@ export class ScheduleService {
       nextYear,
       nextSeason,
       inspectionTimeRange,
+      residentGenderByHouseFloorKey,
     }: CreateMoveOutScheduleWithTargetsDto,
   ): Promise<MoveOutSchedule> {
     this.validateScheduleAndRanges(
@@ -95,38 +99,12 @@ export class ScheduleService {
 
     this.validateSemesterOrder(currentSemester, nextSemester);
 
-    await this.excelValidatorService.validateExcelFile(file);
-
-    if (!file?.buffer) {
-      throw new BadRequestException('File buffer is missing');
-    }
-
-    const workbook = new ExcelJS.Workbook();
-    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await workbook.xlsx.load(file.buffer);
-
-    if (workbook.worksheets.length < 2) {
-      throw new BadRequestException(
-        'Excel file must have at least 2 sheets for comparison',
+    const { inspectionTargets, targetCounts } =
+      await this.generateInspectionTargetsAndCounts(
+        currentSemesterFile,
+        nextSemesterFile,
+        residentGenderByHouseFloorKey,
       );
-    }
-
-    const currentSemesterSheet = workbook.worksheets[0];
-    const nextSemesterSheet = workbook.worksheets[1];
-
-    if (!currentSemesterSheet || !nextSemesterSheet) {
-      throw new BadRequestException('Excel file has invalid sheets');
-    }
-
-    const currentSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(currentSemesterSheet);
-    const nextSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(nextSemesterSheet);
-
-    const inspectionTargets = this.findInspectionTargetRooms(
-      currentSemesterRooms,
-      nextSemesterRooms,
-    );
 
     const currentSemesterEntity =
       await this.semesterRepository.findOrCreateSemester(
@@ -138,9 +116,6 @@ export class ScheduleService {
         nextSemester.year,
         nextSemester.season,
       );
-
-    const targetCounts =
-      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
     const generatedSlots = this.generateSlots(
       inspectionTimeRange,
@@ -219,10 +194,8 @@ export class ScheduleService {
       throw new ForbiddenException('Application period has ended.');
     }
 
-    const admissionYear = this.extractAdmissionYear(user.studentNumber);
-
     await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
-      admissionYear,
+      user.studentNumber,
       user.name,
       schedule.uuid,
     );
@@ -263,44 +236,17 @@ export class ScheduleService {
   }
 
   async updateInspectionTargetsAndUpdateSlotCapacities(
-    file: Express.Multer.File,
+    currentSemesterFile: Express.Multer.File,
+    nextSemesterFile: Express.Multer.File,
+    residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
     scheduleUuid: string,
   ): Promise<{ count: number }> {
-    await this.excelValidatorService.validateExcelFile(file);
-
-    if (!file?.buffer) {
-      throw new BadRequestException('File buffer is missing');
-    }
-
-    const workbook = new ExcelJS.Workbook();
-    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
-    await workbook.xlsx.load(file.buffer);
-
-    if (workbook.worksheets.length < 2) {
-      throw new BadRequestException(
-        'Excel file must have at least 2 sheets for comparison',
+    const { inspectionTargets, targetCounts } =
+      await this.generateInspectionTargetsAndCounts(
+        currentSemesterFile,
+        nextSemesterFile,
+        residentGenderByHouseFloorKey,
       );
-    }
-
-    const currentSemesterSheet = workbook.worksheets[0];
-    const nextSemesterSheet = workbook.worksheets[1];
-
-    if (!currentSemesterSheet || !nextSemesterSheet) {
-      throw new BadRequestException('Excel file has invalid sheets');
-    }
-
-    const currentSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(currentSemesterSheet);
-    const nextSemesterRooms =
-      this.excelParserService.parseSheetToRoomInfoMap(nextSemesterSheet);
-
-    const inspectionTargets = this.findInspectionTargetRooms(
-      currentSemesterRooms,
-      nextSemesterRooms,
-    );
-
-    const targetCounts =
-      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
 
     return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
@@ -402,11 +348,9 @@ export class ScheduleService {
       const schedule =
         await this.moveOutScheduleRepository.findActiveSchedule();
 
-      const admissionYear = this.extractAdmissionYear(user.studentNumber);
-
       const targetInfo =
         await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
-          admissionYear,
+          user.studentNumber,
           user.name,
           schedule.uuid,
         );
@@ -437,26 +381,26 @@ export class ScheduleService {
     return inspectionTargetInfosWithApplications.map(
       (target): InspectionTargetsGroupedByRoomResDto => {
         const residents = [
-          target.student1Name && target.student1AdmissionYear
+          target.student1Name && target.student1StudentNumber
             ? {
-                admissionYear: target.student1AdmissionYear,
+                studentNumber: target.student1StudentNumber,
                 name: target.student1Name,
               }
             : null,
-          target.student2Name && target.student2AdmissionYear
+          target.student2Name && target.student2StudentNumber
             ? {
-                admissionYear: target.student2AdmissionYear,
+                studentNumber: target.student2StudentNumber,
                 name: target.student2Name,
               }
             : null,
-          target.student3Name && target.student3AdmissionYear
+          target.student3Name && target.student3StudentNumber
             ? {
-                admissionYear: target.student3AdmissionYear,
+                studentNumber: target.student3StudentNumber,
                 name: target.student3Name,
               }
             : null,
         ].filter(
-          (v): v is { admissionYear: string; name: string } => v !== null,
+          (v): v is { studentNumber: string; name: string } => v !== null,
         );
 
         const [latestApplication, previousApplication] =
@@ -500,8 +444,8 @@ export class ScheduleService {
       const nextSemesterRoom = nextSemesterRooms.get(roomKey);
 
       const originalStudents = currentSemesterRoom.students.filter(
-        (s): s is { name: string; admissionYear: string } =>
-          !!s && !!s.name && !!s.admissionYear,
+        (s): s is { name: string; studentNumber: string } =>
+          !!s && !!s.name && !!s.studentNumber,
       );
 
       const leavingStudents = originalStudents
@@ -512,44 +456,157 @@ export class ScheduleService {
           return !nextSemesterRoom.students.some(
             (next) =>
               current.name === next.name &&
-              current.admissionYear === next.admissionYear,
+              current.studentNumber === next.studentNumber,
           );
         })
         .map((s) => ({
           studentName: s.name,
-          admissionYear: s.admissionYear,
+          studentNumber: s.studentNumber,
         }));
 
       const originalCount = originalStudents.length;
       const leavingCount = leavingStudents.length;
 
-      let inspectionType: RoomInspectionType;
-      if (originalCount === 0) {
-        inspectionType = RoomInspectionType.EMPTY;
-      } else if (originalCount === leavingCount) {
-        inspectionType = RoomInspectionType.FULL;
-      } else if (originalCount >= 1 && leavingCount === 1) {
-        inspectionType = RoomInspectionType.SOLO;
-      } else if (originalCount === 3 && leavingCount === 2) {
-        inspectionType = RoomInspectionType.DUO;
-      } else {
-        inspectionType = RoomInspectionType.FULL;
+      const roomCapacity = currentSemesterRoom.roomCapacity;
+
+      if (!Number.isFinite(roomCapacity) || roomCapacity <= 0) {
+        throw new BadRequestException(
+          `Invalid room capacity. Check Excel data for houseName=${currentSemesterRoom.houseName}, roomNumber=${currentSemesterRoom.roomNumber}`,
+        );
       }
 
       if (originalCount > 0 && leavingCount === 0) {
         continue;
       }
 
+      if (currentSemesterRoom.limitType === '기타' || originalCount === 0) {
+        inspectionTargets.push({
+          houseName: currentSemesterRoom.houseName,
+          roomNumber: currentSemesterRoom.roomNumber,
+          roomCapacity,
+          students: [],
+          inspectionType: RoomInspectionType.EMPTY,
+          applyCleaningService: false,
+        });
+        continue;
+      }
+
+      if (originalCount === leavingCount) {
+        inspectionTargets.push({
+          houseName: currentSemesterRoom.houseName,
+          roomNumber: currentSemesterRoom.roomNumber,
+          roomCapacity,
+          students: leavingStudents.slice(0, 3),
+          inspectionType: RoomInspectionType.FULL,
+          applyCleaningService: false,
+        });
+        continue;
+      }
+
+      if (roomCapacity === 3 && leavingCount === 2) {
+        const [student1, student2] = leavingStudents;
+        const baseRoomNumber = currentSemesterRoom.roomNumber;
+
+        if (student1) {
+          inspectionTargets.push({
+            houseName: currentSemesterRoom.houseName,
+            roomNumber: `${baseRoomNumber}-1`,
+            roomCapacity,
+            students: [student1],
+            inspectionType: RoomInspectionType.SOLO,
+            applyCleaningService: false,
+          });
+        }
+
+        if (student2) {
+          inspectionTargets.push({
+            houseName: currentSemesterRoom.houseName,
+            roomNumber: `${baseRoomNumber}-2`,
+            roomCapacity,
+            students: [student2],
+            inspectionType: RoomInspectionType.SOLO,
+            applyCleaningService: false,
+          });
+        }
+        continue;
+      }
+
+      if ((roomCapacity === 3 || roomCapacity === 2) && leavingCount === 1) {
+        inspectionTargets.push({
+          houseName: currentSemesterRoom.houseName,
+          roomNumber: currentSemesterRoom.roomNumber,
+          roomCapacity,
+          students: leavingStudents.slice(0, 1),
+          inspectionType: RoomInspectionType.SOLO,
+          applyCleaningService: false,
+        });
+        continue;
+      }
+
       inspectionTargets.push({
         houseName: currentSemesterRoom.houseName,
         roomNumber: currentSemesterRoom.roomNumber,
+        roomCapacity,
         students: leavingStudents.slice(0, 3),
-        inspectionType,
+        inspectionType: RoomInspectionType.FULL,
         applyCleaningService: false,
       });
     }
 
     return inspectionTargets;
+  }
+
+  private async generateInspectionTargetsAndCounts(
+    currentSemesterFile: Express.Multer.File,
+    nextSemesterFile: Express.Multer.File,
+    residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
+  ): Promise<{
+    inspectionTargets: InspectionTargetStudent[];
+    targetCounts: InspectionTargetCount;
+  }> {
+    await this.excelValidatorService.validateExcelFile(currentSemesterFile);
+    await this.excelValidatorService.validateExcelFile(nextSemesterFile);
+
+    if (!currentSemesterFile.buffer || !nextSemesterFile.buffer) {
+      throw new BadRequestException('File buffer is missing');
+    }
+
+    const currentWorkbook = new ExcelJS.Workbook();
+    const nextWorkbook = new ExcelJS.Workbook();
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await currentWorkbook.xlsx.load(currentSemesterFile.buffer);
+    // @ts-expect-error - Express.Multer.File의 buffer 타입과 ExcelJS가 기대하는 Buffer 타입이 불일치하지만 런타임에서는 정상 동작
+    await nextWorkbook.xlsx.load(nextSemesterFile.buffer);
+
+    const currentSemesterSheet = currentWorkbook.worksheets[0];
+    const nextSemesterSheet = nextWorkbook.worksheets[0];
+
+    if (!currentSemesterSheet || !nextSemesterSheet) {
+      throw new BadRequestException('Excel file has invalid sheets');
+    }
+
+    const currentSemesterRooms =
+      this.excelParserService.parseSheetToRoomInfoMap(
+        currentSemesterSheet,
+        residentGenderByHouseFloorKey,
+      );
+    const nextSemesterRooms = this.excelParserService.parseSheetToRoomInfoMap(
+      nextSemesterSheet,
+      residentGenderByHouseFloorKey,
+    );
+
+    const inspectionTargets = this.findInspectionTargetRooms(
+      currentSemesterRooms,
+      nextSemesterRooms,
+    );
+
+    const targetCounts =
+      this.calculateTargetCountsFromInspectionTargets(inspectionTargets);
+
+    return {
+      inspectionTargets,
+      targetCounts,
+    };
   }
 
   private calculateCapacity(
@@ -621,14 +678,6 @@ export class ScheduleService {
       `Invalid InspectionTargetInfo.houseName format. Expected last token "(남)" or "(여)". Regenerate inspection targets and retry. Invalid houseName: ${houseName}`,
     );
   }
-
-  extractAdmissionYear(studentNumber: string): string {
-    if (!studentNumber || studentNumber.length < 4) {
-      throw new BadRequestException('Invalid student number format');
-    }
-    return studentNumber.substring(2, 4);
-  }
-
   private generateSlots(
     inspectionTimeRanges: InspectionTimeRange[],
     slotDuration: number,

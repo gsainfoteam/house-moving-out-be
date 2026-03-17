@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsDate,
   IsEnum,
   IsInt,
-  IsOptional,
+  IsObject,
   IsString,
   ValidateNested,
 } from 'class-validator';
@@ -107,73 +107,26 @@ export class CreateMoveOutScheduleWithTargetsDto {
       },
     ],
   })
-  @Transform(({ value }: { value: unknown }) => {
-    type RawInspectionTimeRange = { start: string; end: string };
+  @Transform(({ value }) => {
+    if (value == null || value === '') {
+      return [];
+    }
 
-    const toDateRange = (raw: RawInspectionTimeRange): InspectionTimeRange => ({
-      start: new Date(raw.start),
-      end: new Date(raw.end),
-    });
+    let parsed: unknown;
 
-    const parseOne = (raw: unknown): RawInspectionTimeRange | null => {
-      if (!raw) {
-        return null;
-      }
-
-      if (typeof raw === 'string') {
-        try {
-          const parsed = JSON.parse(raw) as unknown;
-          return parseOne(parsed);
-        } catch {
-          return null;
-        }
-      }
-
-      if (typeof raw === 'object') {
-        const obj = raw as { start?: unknown; end?: unknown };
-        if (typeof obj.start === 'string' && typeof obj.end === 'string') {
-          return { start: obj.start, end: obj.end };
-        }
-      }
-
-      return null;
-    };
-
-    const toRanges = (input: unknown): InspectionTimeRange[] => {
-      if (typeof input === 'string') {
-        try {
-          const parsed = JSON.parse(input) as
-            | RawInspectionTimeRange
-            | RawInspectionTimeRange[]
-            | null;
-          if (!parsed) {
-            return [];
-          }
-          const arr = Array.isArray(parsed) ? parsed : [parsed];
-          return arr
-            .map((raw) => parseOne(raw))
-            .filter((raw): raw is RawInspectionTimeRange => raw !== null)
-            .map((raw) => toDateRange(raw));
-        } catch {
-          return [];
-        }
-      }
-
-      if (Array.isArray(input)) {
-        return input
-          .map((raw) => parseOne(raw))
-          .filter((raw): raw is RawInspectionTimeRange => raw !== null)
-          .map((raw) => toDateRange(raw));
-      }
-
-      const single = parseOne(input);
-      if (!single) {
+    if (typeof value === 'string') {
+      try {
+        parsed = JSON.parse(value);
+      } catch {
         return [];
       }
-      return [toDateRange(single)];
-    };
+    } else {
+      parsed = value;
+    }
 
-    return toRanges(value);
+    const arr = Array.isArray(parsed) ? parsed : [parsed];
+
+    return plainToInstance(InspectionTimeRange, arr);
   })
   @Type(() => InspectionTimeRange)
   @ValidateNested({ each: true })
@@ -181,10 +134,60 @@ export class CreateMoveOutScheduleWithTargetsDto {
   inspectionTimeRange: InspectionTimeRange[];
 
   @ApiProperty({
+    description: 'Resident gender map per house+floor key',
+    example: {
+      G1: 'male',
+      G2: 'male',
+      G3: 'male',
+      G4: 'male',
+      G5: 'female',
+      G6: 'female',
+    },
+  })
+  @Transform(({ value }) => {
+    if (!value) return {};
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value) as Record<string, unknown>;
+        const result: Record<string, 'male' | 'female'> = {};
+        for (const [key, v] of Object.entries(parsed)) {
+          if (v === 'male' || v === 'female') {
+            result[key] = v;
+          }
+        }
+        return result;
+      } catch {
+        return {};
+      }
+    }
+    if (typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const result: Record<string, 'male' | 'female'> = {};
+      for (const [key, v] of Object.entries(record)) {
+        if (v === 'male' || v === 'female') {
+          result[key] = v;
+        }
+      }
+      return result;
+    }
+    return {};
+  })
+  @IsObject()
+  residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>;
+}
+
+export class CreateMoveOutScheduleWithTargetsFormDto extends CreateMoveOutScheduleWithTargetsDto {
+  @ApiProperty({
     type: 'string',
     format: 'binary',
-    description: 'Inspection targets Excel file (.xlsx)',
+    description: 'Current semester resident Excel file (.xlsx)',
   })
-  @IsOptional()
-  file?: Express.Multer.File;
+  currentSemesterFile: Express.Multer.File;
+
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Next semester resident Excel file (.xlsx)',
+  })
+  nextSemesterFile: Express.Multer.File;
 }

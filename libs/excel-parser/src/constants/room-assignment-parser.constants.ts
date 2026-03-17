@@ -15,3 +15,31 @@ export const EXCEL_VALIDATION_CONSTANTS = {
   ALLOWED_EXTENSIONS: ['.xlsx'],
   MAX_FILE_SIZE: 10 * 1024 * 1024,
 } as const;
+
+export const HOUSE_GENDER_KEYS = [
+  'G1',
+  'G2',
+  'G3',
+  'G4',
+  'G5',
+  'G6',
+  'I1',
+  'I2',
+  'I3',
+  'I4',
+  'I5',
+  'I6',
+  'S2',
+  'S3',
+  'S4',
+  'S5',
+  'S6',
+  'T1',
+  'T2',
+  'T3',
+  'T4',
+  'T5',
+  'T6',
+] as const;
+
+export type HouseGenderKey = (typeof HOUSE_GENDER_KEYS)[number];
