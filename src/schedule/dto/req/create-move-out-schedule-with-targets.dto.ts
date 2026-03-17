@@ -9,7 +9,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { Season } from 'generated/prisma/client';
+import { Gender, Season } from 'generated/prisma/client';
 
 export class InspectionTimeRange {
   @ApiProperty({
@@ -135,13 +135,18 @@ export class CreateMoveOutScheduleWithTargetsDto {
 
   @ApiProperty({
     description: 'Resident gender map per house+floor key',
+    type: 'object',
+    additionalProperties: {
+      type: 'string',
+      enum: [Gender.MALE, Gender.FEMALE],
+    },
     example: {
-      G1: 'male',
-      G2: 'male',
-      G3: 'male',
-      G4: 'male',
-      G5: 'female',
-      G6: 'female',
+      G1: Gender.MALE,
+      G2: Gender.MALE,
+      G3: Gender.MALE,
+      G4: Gender.MALE,
+      G5: Gender.FEMALE,
+      G6: Gender.FEMALE,
     },
   })
   @Transform(({ value }) => {
@@ -149,9 +154,9 @@ export class CreateMoveOutScheduleWithTargetsDto {
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value) as Record<string, unknown>;
-        const result: Record<string, 'male' | 'female'> = {};
+        const result: Record<string, Gender> = {};
         for (const [key, v] of Object.entries(parsed)) {
-          if (v === 'male' || v === 'female') {
+          if (v === Gender.MALE || v === Gender.FEMALE) {
             result[key] = v;
           }
         }
@@ -162,9 +167,9 @@ export class CreateMoveOutScheduleWithTargetsDto {
     }
     if (typeof value === 'object') {
       const record = value as Record<string, unknown>;
-      const result: Record<string, 'male' | 'female'> = {};
+      const result: Record<string, Gender> = {};
       for (const [key, v] of Object.entries(record)) {
-        if (v === 'male' || v === 'female') {
+        if (v === Gender.MALE || v === Gender.FEMALE) {
           result[key] = v;
         }
       }
@@ -173,7 +178,7 @@ export class CreateMoveOutScheduleWithTargetsDto {
     return {};
   })
   @IsObject()
-  residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>;
+  residentGenderByHouseFloorKey: Record<string, Gender>;
 }
 
 export class CreateMoveOutScheduleWithTargetsFormDto extends CreateMoveOutScheduleWithTargetsDto {

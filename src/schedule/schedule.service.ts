@@ -238,7 +238,7 @@ export class ScheduleService {
   async updateInspectionTargetsAndUpdateSlotCapacities(
     currentSemesterFile: Express.Multer.File,
     nextSemesterFile: Express.Multer.File,
-    residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
+    residentGenderByHouseFloorKey: Record<string, Gender>,
     scheduleUuid: string,
   ): Promise<{ count: number }> {
     const { inspectionTargets, targetCounts } =
@@ -559,7 +559,7 @@ export class ScheduleService {
   private async generateInspectionTargetsAndCounts(
     currentSemesterFile: Express.Multer.File,
     nextSemesterFile: Express.Multer.File,
-    residentGenderByHouseFloorKey: Record<string, 'male' | 'female'>,
+    residentGenderByHouseFloorKey: Record<string, Gender>,
   ): Promise<{
     inspectionTargets: InspectionTargetStudent[];
     targetCounts: InspectionTargetCount;
