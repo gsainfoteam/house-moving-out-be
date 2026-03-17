@@ -87,23 +87,19 @@ export class CreateMoveOutScheduleWithTargetsDto {
 
   @ApiProperty({
     type: [InspectionTimeRange],
-    description: 'Actual operation time range list',
+    description: 'Actual inspection slot list (each item is a single slot)',
     example: [
       {
         start: '2026-01-22T03:00:00.000Z',
-        end: '2026-01-22T06:00:00.000Z',
+        end: '2026-01-22T03:40:00.000Z',
       },
       {
-        start: '2026-01-23T03:00:00.000Z',
-        end: '2026-01-23T06:00:00.000Z',
+        start: '2026-01-22T03:40:00.000Z',
+        end: '2026-01-22T04:00:00.000Z',
       },
       {
-        start: '2026-01-24T03:00:00.000Z',
-        end: '2026-01-24T10:00:00.000Z',
-      },
-      {
-        start: '2026-01-25T03:00:00.000Z',
-        end: '2026-01-25T08:30:00.000Z',
+        start: '2026-01-22T04:00:00.000Z',
+        end: '2026-01-22T04:30:00.000Z',
       },
     ],
   })
