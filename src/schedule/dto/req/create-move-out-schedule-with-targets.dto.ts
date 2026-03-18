@@ -114,19 +114,23 @@ export class CreateMoveOutScheduleWithTargetsDto {
       try {
         parsed = JSON.parse(value);
       } catch {
-        return [];
+        try {
+          parsed = JSON.parse(`[${value}]`);
+        } catch {
+          return [];
+        }
       }
     } else {
       parsed = value;
     }
 
-    const arr = Array.isArray(parsed) ? parsed : [parsed];
+    const arr = Array.isArray(parsed) ? (parsed as unknown[]) : [parsed];
 
     return plainToInstance(InspectionTimeRange, arr);
   })
+  @IsArray()
   @Type(() => InspectionTimeRange)
   @ValidateNested({ each: true })
-  @IsArray()
   inspectionTimeRange: InspectionTimeRange[];
 
   @ApiProperty({

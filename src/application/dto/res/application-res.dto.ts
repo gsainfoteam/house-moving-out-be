@@ -7,6 +7,7 @@ import {
   User,
   InspectionTargetInfo,
   RoomInspectionType,
+  Gender,
 } from 'generated/prisma/client';
 import { ApplicationInfo } from '@lib/database';
 
@@ -111,6 +112,13 @@ class TargetInfoResDto {
   })
   applyCleaningService: boolean;
 
+  @ApiProperty({
+    description: 'Gender of the room',
+    example: Gender.MALE,
+    enum: Gender,
+  })
+  gender: Gender;
+
   constructor(partial: InspectionTargetInfo) {
     this.roomNumber = partial.roomNumber;
     this.residents = [
@@ -137,6 +145,10 @@ class TargetInfoResDto {
     );
     this.inspectionType = partial.inspectionType;
     this.applyCleaningService = partial.applyCleaningService;
+    this.gender =
+      partial.houseName.match(/\(([^()]*)\)\s*$/)?.[1]?.trim() === '남'
+        ? Gender.MALE
+        : Gender.FEMALE;
   }
 }
 
