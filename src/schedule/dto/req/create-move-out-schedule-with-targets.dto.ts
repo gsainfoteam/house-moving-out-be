@@ -108,34 +108,25 @@ export class CreateMoveOutScheduleWithTargetsDto {
       return [];
     }
 
-    const items = Array.isArray(value) ? value : [value];
-    const parsed = items
-      .flatMap((item): unknown[] => {
-        if (typeof item === 'string') {
-          const trimmed = item.trim();
-          try {
-            const p: unknown = JSON.parse(trimmed);
-            return Array.isArray(p) ? p : [p];
-          } catch {
-            try {
-              const wrapped = trimmed.startsWith('[')
-                ? trimmed
-                : `[${trimmed}]`;
-              const p: unknown = JSON.parse(wrapped);
-              return Array.isArray(p) ? p : [p];
-            } catch {
-              return [];
-            }
-          }
-        }
-        return [item];
-      })
-      .filter(
-        (item): item is Record<string, unknown> =>
-          item !== null && typeof item === 'object',
-      );
+    let parsed: unknown;
 
-    return plainToInstance(InspectionTimeRange, parsed);
+    if (typeof value === 'string') {
+      try {
+        parsed = JSON.parse(value);
+      } catch {
+        try {
+          parsed = JSON.parse(`[${value}]`);
+        } catch {
+          return [];
+        }
+      }
+    } else {
+      parsed = value;
+    }
+
+    const arr = Array.isArray(parsed) ? (parsed as unknown[]) : [parsed];
+
+    return plainToInstance(InspectionTimeRange, arr);
   })
   @IsArray()
   @Type(() => InspectionTimeRange)
