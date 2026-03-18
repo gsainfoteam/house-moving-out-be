@@ -108,25 +108,38 @@ export class CreateMoveOutScheduleWithTargetsDto {
       return [];
     }
 
-    let parsed: unknown;
+    const items = Array.isArray(value) ? value : [value];
+    const parsed = items
+      .flatMap((item): unknown[] => {
+        if (typeof item === 'string') {
+          const trimmed = item.trim();
+          try {
+            const p: unknown = JSON.parse(trimmed);
+            return Array.isArray(p) ? p : [p];
+          } catch {
+            try {
+              const wrapped = trimmed.startsWith('[')
+                ? trimmed
+                : `[${trimmed}]`;
+              const p: unknown = JSON.parse(wrapped);
+              return Array.isArray(p) ? p : [p];
+            } catch {
+              return [];
+            }
+          }
+        }
+        return [item];
+      })
+      .filter(
+        (item): item is Record<string, unknown> =>
+          item !== null && typeof item === 'object',
+      );
 
-    if (typeof value === 'string') {
-      try {
-        parsed = JSON.parse(value);
-      } catch {
-        return [];
-      }
-    } else {
-      parsed = value;
-    }
-
-    const arr = Array.isArray(parsed) ? parsed : [parsed];
-
-    return plainToInstance(InspectionTimeRange, arr);
+    return plainToInstance(InspectionTimeRange, parsed);
   })
+  @IsArray()
   @Type(() => InspectionTimeRange)
   @ValidateNested({ each: true })
-  @IsArray()
   inspectionTimeRange: InspectionTimeRange[];
 
   @ApiProperty({
