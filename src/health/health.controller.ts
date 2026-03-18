@@ -1,7 +1,6 @@
 import { DatabaseService } from '@lib/database';
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import {
-  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -14,8 +13,8 @@ import {
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
 import { AdminGuard } from 'src/auth/guard/admin.guard';
-import { HealthService } from './health.service';
 import { DatabaseSizeResDto } from './dto/database-size-res.dto';
+import { HealthService } from './health.service';
 
 @ApiTags('health')
 @Controller('health')
@@ -50,7 +49,6 @@ export class HealthController {
     type: DatabaseSizeResDto,
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiForbiddenResponse({ description: 'Forbidden' })
   @Get('database')
   @UseGuards(AdminGuard)
   async getDatabaseSize() {
