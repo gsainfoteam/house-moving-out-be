@@ -26,6 +26,7 @@ export class ExcelParserService {
       const buildingName = this.getCellValue(row.getCell(1));
       const rawRoomNumber = this.getCellValue(row.getCell(2));
       const roomNumber = rawRoomNumber.replace(/\s*호\s*$/, '').trim();
+      const houseName = this.getCellValue(row.getCell(4));
       const roomCapacity = this.getCellValue(row.getCell(3));
       const limitType = this.getCellValue(row.getCell(9));
 
@@ -56,8 +57,6 @@ export class ExcelParserService {
           `Missing gender mapping for key. roomNumber=${roomNumber}, key=${houseGenderKey}`,
         );
       }
-
-      const houseName = roomNumber.length > 0 ? roomNumber[0] : roomNumber;
 
       const students: Array<{ name?: string; studentNumber?: string }> = [];
 
