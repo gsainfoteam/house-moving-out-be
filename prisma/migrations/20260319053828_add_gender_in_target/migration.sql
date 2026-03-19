@@ -23,3 +23,8 @@ SET "house_name" = TRIM(
     'g'
   )
 );
+
+-- Normalize room_number: strip '호'
+UPDATE "inspection_target"
+SET "room_number" = TRIM(REGEXP_REPLACE("room_number", '\s*호\s*', '', 'g'))
+WHERE "room_number" ~ '\s*호\s*';
