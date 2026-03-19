@@ -335,7 +335,7 @@ export class ScheduleService {
 
   async findTargetInfoByUserInfo(
     user: User,
-  ): Promise<{ gender: Gender; roomNumber: string } | null> {
+  ): Promise<{ gender: Gender; houseName: string; roomNumber: string } | null> {
     try {
       const schedule =
         await this.moveOutScheduleRepository.findActiveSchedule();
@@ -349,6 +349,7 @@ export class ScheduleService {
 
       return {
         gender: targetInfo.gender,
+        houseName: targetInfo.houseName,
         roomNumber: targetInfo.roomNumber,
       };
     } catch (error) {
@@ -409,6 +410,7 @@ export class ScheduleService {
 
         return {
           uuid: target.uuid,
+          houseName: target.houseName,
           roomNumber: target.roomNumber,
           residents,
           inspectionType: target.inspectionType,
