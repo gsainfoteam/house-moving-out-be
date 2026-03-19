@@ -348,9 +348,7 @@ export class ScheduleService {
         );
 
       return {
-        gender: this.extractGenderFromHouseName(targetInfo.houseName)
-          ? Gender.MALE
-          : Gender.FEMALE,
+        gender: this.extractGenderFromHouseName(targetInfo.houseName),
         roomNumber: targetInfo.roomNumber,
       };
     } catch (error) {
@@ -418,6 +416,7 @@ export class ScheduleService {
           applyCleaningService: target.applyCleaningService,
           lastInspectionTime,
           isPassed: latestApplication?.isPassed ?? null,
+          gender: this.extractGenderFromHouseName(target.houseName),
         };
       },
     );
@@ -638,8 +637,8 @@ export class ScheduleService {
     const counts: InspectionTargetCount = { male: 0, female: 0 };
 
     for (const { houseName } of inspectionTargets) {
-      const isMale = this.extractGenderFromHouseName(houseName);
-      if (isMale) {
+      const gender = this.extractGenderFromHouseName(houseName);
+      if (gender === Gender.MALE) {
         counts.male += 1;
       } else {
         counts.female += 1;
@@ -655,15 +654,15 @@ export class ScheduleService {
     return counts;
   }
 
-  extractGenderFromHouseName(houseName: string): boolean {
+  extractGenderFromHouseName(houseName: string): Gender {
     const lastParenMatch = houseName.match(/\(([^()]*)\)\s*$/);
     const genderToken = lastParenMatch?.[1]?.trim();
 
     if (genderToken === '남') {
-      return true;
+      return Gender.MALE;
     }
     if (genderToken === '여') {
-      return false;
+      return Gender.FEMALE;
     }
 
     throw new BadRequestException(
