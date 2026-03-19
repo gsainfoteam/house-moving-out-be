@@ -38,6 +38,12 @@ export class ExcelParserService {
         continue;
       }
 
+      if (!buildingName || !rawRoomNumber || !houseName || !roomCapacity) {
+        throw new BadRequestException(
+          `Required cell value is missing. buildingName=${buildingName}, roomNumber=${rawRoomNumber}, houseName=${houseName}, roomCapacity=${roomCapacity}`,
+        );
+      }
+
       const roomMatch = roomNumber.match(/^([A-Za-z])(\d)/);
       if (!roomMatch) {
         throw new BadRequestException(
