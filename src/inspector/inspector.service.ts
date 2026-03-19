@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateInspectorsDto } from './dto/req/create-inspectors.dto';
 import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
@@ -7,11 +11,12 @@ import {
   InspectorRepository,
   InspectorAvailableSlotRepository,
   InspectionApplicationRepository,
+  InspectionSlotRepository,
   MoveOutScheduleRepository,
   PrismaTransaction,
 } from '@lib/database';
 import { Loggable } from '@lib/logger';
-import { User } from 'generated/prisma/client';
+import { Gender, User } from 'generated/prisma/client';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 
 @Loggable()
@@ -22,6 +27,7 @@ export class InspectorService {
     private readonly databaseService: DatabaseService,
     private readonly inspectorAvailableSlotRepository: InspectorAvailableSlotRepository,
     private readonly inspectionApplicationRepository: InspectionApplicationRepository,
+    private readonly inspectionSlotRepository: InspectionSlotRepository,
     private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
   ) {}
 
@@ -37,6 +43,15 @@ export class InspectorService {
           inspector,
           tx,
         );
+
+        if (availableSlotUuids.length > 0) {
+          await this.validateInspectorSlotGenderInTx(
+            inspector.gender,
+            availableSlotUuids,
+            tx,
+          );
+        }
+
         await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
           uuid,
           availableSlotUuids,
@@ -56,10 +71,21 @@ export class InspectorService {
     { availableSlotUuids }: UpdateInspectorDto,
   ): Promise<void> {
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      if (availableSlotUuids.length > 0) {
+        const inspector = await this.inspectorRepository.findInspector(uuid);
+
+        await this.validateInspectorSlotGenderInTx(
+          inspector.gender,
+          availableSlotUuids,
+          tx,
+        );
+      }
+
       await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
         uuid,
         tx,
       );
+
       await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
         uuid,
         availableSlotUuids,
@@ -107,6 +133,30 @@ export class InspectorService {
     } catch (error) {
       if (error instanceof ForbiddenException) return false;
       throw error;
+    }
+  }
+
+  private async validateInspectorSlotGenderInTx(
+    inspectorGender: Gender,
+    slotUuids: string[],
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    const slots =
+      await this.inspectionSlotRepository.findSlotsByUuidsWithGenderInTx(
+        slotUuids,
+        tx,
+      );
+
+    if (slots.length !== slotUuids.length) {
+      throw new NotFoundException('Inspection slot not found');
+    }
+
+    const invalidSlot = slots.find((slot) => slot.gender !== inspectorGender);
+
+    if (invalidSlot) {
+      throw new ForbiddenException(
+        'Inspector gender must match inspection slot gender.',
+      );
     }
   }
 }

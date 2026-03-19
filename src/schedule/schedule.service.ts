@@ -115,22 +115,29 @@ export class ScheduleService {
         nextSemester.season,
       );
 
-    const slots = inspectionTimeRange.map((slot) => ({
+    const baseSlots = inspectionTimeRange.map((slot) => ({
       startTime: slot.start,
       endTime: slot.end,
     }));
 
     const { maleCapacity, femaleCapacity } = this.calculateCapacity(
-      slots.length,
+      baseSlots.length,
       targetCounts,
       this.WEIGHT_FACTOR,
     );
 
-    const slotsData = slots.map((slot) => ({
-      ...slot,
-      maleCapacity,
-      femaleCapacity,
-    }));
+    const slotsData = baseSlots.flatMap((slot) => [
+      {
+        ...slot,
+        gender: Gender.MALE,
+        capacity: maleCapacity,
+      },
+      {
+        ...slot,
+        gender: Gender.FEMALE,
+        capacity: femaleCapacity,
+      },
+    ]);
 
     const scheduleData = {
       title,

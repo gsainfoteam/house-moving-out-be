@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { Gender } from 'generated/prisma/client';
 import { Loggable } from '@lib/logger';
 import { DatabaseService, PrismaTransaction } from '@lib/database';
 import { User } from 'generated/prisma/client';
@@ -92,18 +91,14 @@ export class ApplicationService {
         const updatedSlot =
           await this.inspectionSlotRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
-            inspectionTargetInfo.gender,
             tx,
           );
 
-        if (inspectionTargetInfo.gender === Gender.MALE) {
-          if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
-            throw new ConflictException('Male capacity is already full.');
-          }
-        } else {
-          if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
-            throw new ConflictException('Female capacity is already full.');
-          }
+        if (updatedSlot.gender !== inspectionTargetInfo.gender) {
+          throw new BadRequestException('Inspection slot gender mismatch.');
+        }
+        if (updatedSlot.reservedCount > updatedSlot.capacity) {
+          throw new ConflictException('Slot capacity is already full.');
         }
 
         const inspector =
@@ -185,15 +180,9 @@ export class ApplicationService {
         );
       }
 
-      const reservedCountField =
-        application.inspectionTargetInfo.gender === Gender.MALE
-          ? 'maleReservedCount'
-          : 'femaleReservedCount';
-
       await this.inspectionSlotRepository.swapSlotReservedCountsInTx(
         application.inspectionSlotUuid,
         inspectionSlotUuid,
-        reservedCountField,
         tx,
       );
 
@@ -211,14 +200,11 @@ export class ApplicationService {
         );
       }
 
-      if (application.inspectionTargetInfo.gender === Gender.MALE) {
-        if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
-          throw new ConflictException('Male capacity is already full.');
-        }
-      } else {
-        if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
-          throw new ConflictException('Female capacity is already full.');
-        }
+      if (updatedSlot.gender !== application.inspectionTargetInfo.gender) {
+        throw new BadRequestException('Inspection slot gender mismatch.');
+      }
+      if (updatedSlot.reservedCount > updatedSlot.capacity) {
+        throw new ConflictException('Slot capacity is already full.');
       }
 
       const inspector =
@@ -277,7 +263,6 @@ export class ApplicationService {
 
         await this.inspectionSlotRepository.decrementSlotReservedCountInTx(
           application.inspectionSlotUuid,
-          application.inspectionTargetInfo.gender,
           tx,
         );
 

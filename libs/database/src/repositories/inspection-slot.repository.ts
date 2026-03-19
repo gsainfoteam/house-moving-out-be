@@ -96,17 +96,13 @@ export class InspectionSlotRepository {
 
   async incrementSlotReservedCountInTx(
     slotUuid: string,
-    gender: Gender,
     tx: PrismaTransaction,
   ): Promise<InspectionSlot> {
     return await tx.inspectionSlot
       .update({
         where: { uuid: slotUuid },
         data: {
-          maleReservedCount:
-            gender === Gender.MALE ? { increment: 1 } : undefined,
-          femaleReservedCount:
-            gender === Gender.FEMALE ? { increment: 1 } : undefined,
+          reservedCount: { increment: 1 },
         },
       })
       .catch((error) => {
@@ -127,17 +123,13 @@ export class InspectionSlotRepository {
 
   async decrementSlotReservedCountInTx(
     slotUuid: string,
-    gender: Gender,
     tx: PrismaTransaction,
   ): Promise<InspectionSlot> {
     return await tx.inspectionSlot
       .update({
         where: { uuid: slotUuid },
         data: {
-          maleReservedCount:
-            gender === Gender.MALE ? { increment: -1 } : undefined,
-          femaleReservedCount:
-            gender === Gender.FEMALE ? { increment: -1 } : undefined,
+          reservedCount: { increment: -1 },
         },
       })
       .catch((error) => {
@@ -159,7 +151,6 @@ export class InspectionSlotRepository {
   async swapSlotReservedCountsInTx(
     currentSlotUuid: string,
     updatedSlotUuid: string,
-    reservedCountField: 'maleReservedCount' | 'femaleReservedCount',
     tx: PrismaTransaction,
   ): Promise<void> {
     try {
@@ -170,14 +161,14 @@ export class InspectionSlotRepository {
       const { count: decCount } = await tx.inspectionSlot.updateMany({
         where: {
           uuid: currentSlotUuid,
-          [reservedCountField]: { gt: 0 },
+          reservedCount: { gt: 0 },
         },
-        data: { [reservedCountField]: { decrement: 1 } },
+        data: { reservedCount: { decrement: 1 } },
       });
 
       const { count: incCount } = await tx.inspectionSlot.updateMany({
         where: { uuid: updatedSlotUuid },
-        data: { [reservedCountField]: { increment: 1 } },
+        data: { reservedCount: { increment: 1 } },
       });
 
       if (incCount !== 1) {
@@ -221,21 +212,50 @@ export class InspectionSlotRepository {
     femaleCapacity: number,
     tx: PrismaTransaction,
   ): Promise<{ count: number }> {
+    try {
+      const [maleResult, femaleResult] = await Promise.all([
+        tx.inspectionSlot.updateMany({
+          where: { scheduleUuid, gender: Gender.MALE },
+          data: { capacity: maleCapacity },
+        }),
+        tx.inspectionSlot.updateMany({
+          where: { scheduleUuid, gender: Gender.FEMALE },
+          data: { capacity: femaleCapacity },
+        }),
+      ]);
+
+      return { count: maleResult.count + femaleResult.count };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        this.logger.error(
+          `updateSlotCapacitiesByScheduleUuidInTx prisma error: ${error.message}`,
+        );
+        throw new InternalServerErrorException('Database Error');
+      }
+      this.logger.error(
+        `updateSlotCapacitiesByScheduleUuidInTx error: ${error}`,
+      );
+      throw new InternalServerErrorException('Unknown Error');
+    }
+  }
+
+  async findSlotsByUuidsWithGenderInTx(
+    slotUuids: string[],
+    tx: PrismaTransaction,
+  ): Promise<Array<Pick<InspectionSlot, 'uuid' | 'gender'>>> {
     return await tx.inspectionSlot
-      .updateMany({
-        where: { scheduleUuid },
-        data: { maleCapacity, femaleCapacity },
+      .findMany({
+        where: { uuid: { in: slotUuids } },
+        select: { uuid: true, gender: true },
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
-            `updateSlotCapacitiesByScheduleUuidInTx prisma error: ${error.message}`,
+            `findSlotsByUuidsWithGenderInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(
-          `updateSlotCapacitiesByScheduleUuidInTx error: ${error}`,
-        );
+        this.logger.error(`findSlotsByUuidsWithGenderInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
