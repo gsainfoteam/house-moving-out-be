@@ -163,6 +163,10 @@ export class InspectionSlotRepository {
     tx: PrismaTransaction,
   ): Promise<void> {
     try {
+      await tx.$queryRaw<
+        Array<{ uuid: string }>
+      >`SELECT uuid FROM inspection_slot WHERE uuid = ${currentSlotUuid} OR uuid = ${updatedSlotUuid} ORDER BY uuid FOR UPDATE`;
+
       const { count: decCount } = await tx.inspectionSlot.updateMany({
         where: {
           uuid: currentSlotUuid,
