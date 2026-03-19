@@ -84,7 +84,7 @@ export class ApplicationService {
           );
         }
 
-        const isMale = this.scheduleService.extractGenderFromHouseName(
+        const gender = this.scheduleService.extractGenderFromHouseName(
           inspectionTargetInfo.houseName,
         );
 
@@ -96,11 +96,11 @@ export class ApplicationService {
         const updatedSlot =
           await this.inspectionSlotRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
-            isMale,
+            gender,
             tx,
           );
 
-        if (isMale) {
+        if (gender === Gender.MALE) {
           if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
             throw new ConflictException('Male capacity is already full.');
           }
@@ -114,7 +114,7 @@ export class ApplicationService {
           await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
             user.email,
             inspectionSlotUuid,
-            isMale ? Gender.MALE : Gender.FEMALE,
+            gender,
             tx,
           );
 
@@ -189,14 +189,14 @@ export class ApplicationService {
         );
       }
 
-      const isMale = this.scheduleService.extractGenderFromHouseName(
+      const gender = this.scheduleService.extractGenderFromHouseName(
         application.inspectionTargetInfo.houseName,
       );
 
       await this.inspectionSlotRepository.swapSlotReservedCountsInTx(
         application.inspectionSlotUuid,
         inspectionSlotUuid,
-        isMale,
+        gender,
         tx,
       );
 
@@ -214,7 +214,7 @@ export class ApplicationService {
         );
       }
 
-      if (isMale) {
+      if (gender === Gender.MALE) {
         if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
           throw new ConflictException('Male capacity is already full.');
         }
@@ -228,7 +228,7 @@ export class ApplicationService {
         await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
           user.email,
           inspectionSlotUuid,
-          isMale ? Gender.MALE : Gender.FEMALE,
+          gender,
           tx,
         );
 
@@ -278,13 +278,13 @@ export class ApplicationService {
           );
         }
 
-        const isMale = this.scheduleService.extractGenderFromHouseName(
+        const gender = this.scheduleService.extractGenderFromHouseName(
           application.inspectionTargetInfo.houseName,
         );
 
         await this.inspectionSlotRepository.decrementSlotReservedCountInTx(
           application.inspectionSlotUuid,
-          isMale,
+          gender,
           tx,
         );
 
