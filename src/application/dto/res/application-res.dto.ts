@@ -145,10 +145,7 @@ class TargetInfoResDto {
     );
     this.inspectionType = partial.inspectionType;
     this.applyCleaningService = partial.applyCleaningService;
-    this.gender =
-      partial.houseName.match(/\(([^()]*)\)\s*$/)?.[1]?.trim() === '남'
-        ? Gender.MALE
-        : Gender.FEMALE;
+    this.gender = partial.gender;
   }
 }
 

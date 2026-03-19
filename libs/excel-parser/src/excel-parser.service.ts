@@ -56,12 +56,7 @@ export class ExcelParserService {
         );
       }
 
-      const genderKor = houseGender === Gender.MALE ? '남' : '여';
-
-      const houseName =
-        roomNumber.length > 0
-          ? `${roomNumber[0]}하우스 (${genderKor})`
-          : roomNumber;
+      const houseName = roomNumber.length > 0 ? roomNumber[0] : roomNumber;
 
       const students: Array<{ name?: string; studentNumber?: string }> = [];
 
@@ -82,6 +77,7 @@ export class ExcelParserService {
 
       roomMap.set(roomKey, {
         houseName,
+        gender: houseGender,
         roomNumber,
         roomCapacity: this.parseRoomCapacity(roomCapacity),
         limitType,

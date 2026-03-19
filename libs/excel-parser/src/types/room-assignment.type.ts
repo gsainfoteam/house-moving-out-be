@@ -1,3 +1,5 @@
+import { Gender } from 'generated/prisma/client';
+
 export type ParsedExcelSet = {
   houseName: string;
   data: ParsedExcelRow[];
@@ -23,6 +25,7 @@ export type InfoGroup = {
 
 export type RoomInfo = {
   houseName: string;
+  gender: Gender;
   roomNumber: string;
   roomCapacity: number;
   limitType: string | null;

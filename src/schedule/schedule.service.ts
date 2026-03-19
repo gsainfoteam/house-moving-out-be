@@ -348,7 +348,7 @@ export class ScheduleService {
         );
 
       return {
-        gender: this.extractGenderFromHouseName(targetInfo.houseName),
+        gender: targetInfo.gender,
         roomNumber: targetInfo.roomNumber,
       };
     } catch (error) {
@@ -416,7 +416,7 @@ export class ScheduleService {
           applyCleaningService: target.applyCleaningService,
           lastInspectionTime,
           isPassed: latestApplication?.isPassed ?? null,
-          gender: this.extractGenderFromHouseName(target.houseName),
+          gender: target.gender,
         };
       },
     );
@@ -473,6 +473,7 @@ export class ScheduleService {
       if (currentSemesterRoom.limitType === '기타' || originalCount === 0) {
         inspectionTargets.push({
           houseName: currentSemesterRoom.houseName,
+          gender: currentSemesterRoom.gender,
           roomNumber: currentSemesterRoom.roomNumber,
           roomCapacity,
           students: [],
@@ -485,6 +486,7 @@ export class ScheduleService {
       if (originalCount === leavingCount) {
         inspectionTargets.push({
           houseName: currentSemesterRoom.houseName,
+          gender: currentSemesterRoom.gender,
           roomNumber: currentSemesterRoom.roomNumber,
           roomCapacity,
           students: leavingStudents.slice(0, 3),
@@ -501,6 +503,7 @@ export class ScheduleService {
         if (student1) {
           inspectionTargets.push({
             houseName: currentSemesterRoom.houseName,
+            gender: currentSemesterRoom.gender,
             roomNumber: `${baseRoomNumber}-1`,
             roomCapacity,
             students: [student1],
@@ -512,6 +515,7 @@ export class ScheduleService {
         if (student2) {
           inspectionTargets.push({
             houseName: currentSemesterRoom.houseName,
+            gender: currentSemesterRoom.gender,
             roomNumber: `${baseRoomNumber}-2`,
             roomCapacity,
             students: [student2],
@@ -525,6 +529,7 @@ export class ScheduleService {
       if ((roomCapacity === 3 || roomCapacity === 2) && leavingCount === 1) {
         inspectionTargets.push({
           houseName: currentSemesterRoom.houseName,
+          gender: currentSemesterRoom.gender,
           roomNumber: currentSemesterRoom.roomNumber,
           roomCapacity,
           students: leavingStudents.slice(0, 1),
@@ -536,6 +541,7 @@ export class ScheduleService {
 
       inspectionTargets.push({
         houseName: currentSemesterRoom.houseName,
+        gender: currentSemesterRoom.gender,
         roomNumber: currentSemesterRoom.roomNumber,
         roomCapacity,
         students: leavingStudents.slice(0, 3),
@@ -636,8 +642,7 @@ export class ScheduleService {
   ): InspectionTargetCount {
     const counts: InspectionTargetCount = { male: 0, female: 0 };
 
-    for (const { houseName } of inspectionTargets) {
-      const gender = this.extractGenderFromHouseName(houseName);
+    for (const { gender } of inspectionTargets) {
       if (gender === Gender.MALE) {
         counts.male += 1;
       } else {
@@ -652,22 +657,6 @@ export class ScheduleService {
     }
 
     return counts;
-  }
-
-  extractGenderFromHouseName(houseName: string): Gender {
-    const lastParenMatch = houseName.match(/\(([^()]*)\)\s*$/);
-    const genderToken = lastParenMatch?.[1]?.trim();
-
-    if (genderToken === '남') {
-      return Gender.MALE;
-    }
-    if (genderToken === '여') {
-      return Gender.FEMALE;
-    }
-
-    throw new BadRequestException(
-      `Invalid InspectionTargetInfo.houseName format. Expected last token "(남)" or "(여)". Regenerate inspection targets and retry. Invalid houseName: ${houseName}`,
-    );
   }
 
   private validateScheduleAndRanges(
