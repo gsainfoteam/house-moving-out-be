@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import {
+  Gender,
   InspectionSlot,
   MoveOutSchedule,
   Prisma,
@@ -94,23 +95,17 @@ export class InspectionSlotRepository {
 
   async incrementSlotReservedCountInTx(
     slotUuid: string,
-    isMale: boolean,
+    gender: Gender,
     tx: PrismaTransaction,
   ): Promise<InspectionSlot> {
     return await tx.inspectionSlot
       .update({
         where: { uuid: slotUuid },
         data: {
-          maleReservedCount: isMale
-            ? {
-                increment: 1,
-              }
-            : undefined,
-          femaleReservedCount: !isMale
-            ? {
-                increment: 1,
-              }
-            : undefined,
+          maleReservedCount:
+            gender === Gender.MALE ? { increment: 1 } : undefined,
+          femaleReservedCount:
+            gender === Gender.FEMALE ? { increment: 1 } : undefined,
         },
       })
       .catch((error) => {
@@ -131,23 +126,17 @@ export class InspectionSlotRepository {
 
   async decrementSlotReservedCountInTx(
     slotUuid: string,
-    isMale: boolean,
+    gender: Gender,
     tx: PrismaTransaction,
   ): Promise<InspectionSlot> {
     return await tx.inspectionSlot
       .update({
         where: { uuid: slotUuid },
         data: {
-          maleReservedCount: isMale
-            ? {
-                increment: -1,
-              }
-            : undefined,
-          femaleReservedCount: !isMale
-            ? {
-                increment: -1,
-              }
-            : undefined,
+          maleReservedCount:
+            gender === Gender.MALE ? { increment: -1 } : undefined,
+          femaleReservedCount:
+            gender === Gender.FEMALE ? { increment: -1 } : undefined,
         },
       })
       .catch((error) => {
@@ -169,20 +158,20 @@ export class InspectionSlotRepository {
   async swapSlotReservedCountsInTx(
     currentSlotUuid: string,
     updatedSlotUuid: string,
-    isMale: boolean,
+    gender: Gender,
     tx: PrismaTransaction,
   ): Promise<void> {
     const affected_slots_count = await tx.$executeRaw<number>`
       UPDATE inspection_slot
       SET
         male_reserved_count = CASE
-          WHEN ${isMale} = TRUE AND uuid = ${currentSlotUuid} THEN male_reserved_count - 1
-          WHEN ${isMale} = TRUE AND uuid = ${updatedSlotUuid} THEN male_reserved_count + 1
+          WHEN ${gender === Gender.MALE} = TRUE AND uuid = ${currentSlotUuid} THEN male_reserved_count - 1
+          WHEN ${gender === Gender.MALE} = TRUE AND uuid = ${updatedSlotUuid} THEN male_reserved_count + 1
           ELSE male_reserved_count
         END,
         female_reserved_count = CASE
-          WHEN ${isMale} = FALSE AND uuid = ${currentSlotUuid} THEN female_reserved_count - 1
-          WHEN ${isMale} = FALSE AND uuid = ${updatedSlotUuid} THEN female_reserved_count + 1
+          WHEN ${gender === Gender.FEMALE} = TRUE AND uuid = ${currentSlotUuid} THEN female_reserved_count - 1
+          WHEN ${gender === Gender.FEMALE} = TRUE AND uuid = ${updatedSlotUuid} THEN female_reserved_count + 1
           ELSE female_reserved_count
         END
       WHERE uuid IN (${currentSlotUuid}, ${updatedSlotUuid});
