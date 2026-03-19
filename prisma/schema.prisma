@@ -166,6 +166,7 @@ model InspectionTargetInfo {
   uuid                  String             @id @default(uuid())
   scheduleUuid          String             @map("schedule_uuid")
   houseName             String             @map("house_name")
+  gender                Gender             @map("gender")
   roomNumber            String             @map("room_number")
   roomCapacity          Int                @map("room_capacity")
   student1Name          String?            @map("student1_name")
