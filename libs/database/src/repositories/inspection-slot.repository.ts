@@ -1,5 +1,6 @@
 import { Loggable } from '@lib/logger';
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -158,24 +159,47 @@ export class InspectionSlotRepository {
   async swapSlotReservedCountsInTx(
     currentSlotUuid: string,
     updatedSlotUuid: string,
-    gender: Gender,
+    reservedCountField: 'maleReservedCount' | 'femaleReservedCount',
     tx: PrismaTransaction,
   ): Promise<void> {
-    const affected_slots_count = await tx.$executeRaw<number>`
-      UPDATE inspection_slot
-      SET
-        male_reserved_count = CASE
-          WHEN ${gender === Gender.MALE} = TRUE AND uuid = ${currentSlotUuid} THEN male_reserved_count - 1
-          WHEN ${gender === Gender.MALE} = TRUE AND uuid = ${updatedSlotUuid} THEN male_reserved_count + 1
-          ELSE male_reserved_count
-        END,
-        female_reserved_count = CASE
-          WHEN ${gender === Gender.FEMALE} = TRUE AND uuid = ${currentSlotUuid} THEN female_reserved_count - 1
-          WHEN ${gender === Gender.FEMALE} = TRUE AND uuid = ${updatedSlotUuid} THEN female_reserved_count + 1
-          ELSE female_reserved_count
-        END
-      WHERE uuid IN (${currentSlotUuid}, ${updatedSlotUuid});
-    `.catch((error) => {
+    try {
+      const { count: decCount } = await tx.inspectionSlot.updateMany({
+        where: {
+          uuid: currentSlotUuid,
+          [reservedCountField]: { gt: 0 },
+        },
+        data: { [reservedCountField]: { decrement: 1 } },
+      });
+
+      const { count: incCount } = await tx.inspectionSlot.updateMany({
+        where: { uuid: updatedSlotUuid },
+        data: { [reservedCountField]: { increment: 1 } },
+      });
+
+      if (incCount !== 1) {
+        this.logger.debug(
+          `InspectionSlot not found: updatedSlotUuid=${updatedSlotUuid}`,
+        );
+        throw new NotFoundException(
+          `Inspection slot not found. slotUuid=${updatedSlotUuid}`,
+        );
+      }
+
+      if (decCount !== 1) {
+        this.logger.debug(
+          `InspectionSlot reserved count underflow or slot missing: currentSlotUuid=${currentSlotUuid}`,
+        );
+        throw new ConflictException(
+          `Cannot decrement reserved count. slotUuid=${currentSlotUuid}`,
+        );
+      }
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.error(
           `swapSlotReservedCountsInTx prisma error: ${error.message}`,
@@ -184,10 +208,6 @@ export class InspectionSlotRepository {
       }
       this.logger.error(`swapSlotReservedCountsInTx error: ${error}`);
       throw new InternalServerErrorException('Unknown Error');
-    });
-    if (affected_slots_count !== 2) {
-      this.logger.debug('InspectionSlot not found');
-      throw new NotFoundException('Inspection slot not found.');
     }
   }
 

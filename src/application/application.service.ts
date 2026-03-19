@@ -185,10 +185,15 @@ export class ApplicationService {
         );
       }
 
+      const reservedCountField =
+        application.inspectionTargetInfo.gender === Gender.MALE
+          ? 'maleReservedCount'
+          : 'femaleReservedCount';
+
       await this.inspectionSlotRepository.swapSlotReservedCountsInTx(
         application.inspectionSlotUuid,
         inspectionSlotUuid,
-        application.inspectionTargetInfo.gender,
+        reservedCountField,
         tx,
       );
 

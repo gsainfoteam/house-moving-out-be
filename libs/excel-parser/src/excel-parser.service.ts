@@ -24,7 +24,8 @@ export class ExcelParserService {
       const row = worksheet.getRow(rowNum);
 
       const buildingName = this.getCellValue(row.getCell(1));
-      const roomNumber = this.getCellValue(row.getCell(2));
+      const rawRoomNumber = this.getCellValue(row.getCell(2));
+      const roomNumber = rawRoomNumber.replace(/\s*호\s*$/, '').trim();
       const roomCapacity = this.getCellValue(row.getCell(3));
       const limitType = this.getCellValue(row.getCell(9));
 
