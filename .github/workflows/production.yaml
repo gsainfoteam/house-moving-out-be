@@ -48,6 +48,8 @@ jobs:
           registry: public.ecr.aws
           username: ${{ steps.creds.outputs.aws-access-key-id }}
           password: ${{ steps.creds.outputs.aws-secret-access-key }}
+        env:
+          AWS_REGION: us-east-1
 
       - name: Extract metadata (tags, labels) from the Docker
         id: meta
