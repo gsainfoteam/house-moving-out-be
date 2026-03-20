@@ -1,9 +1,10 @@
 name: Deploy Production (Production)
 
 on:
+  # push:
+  #   tags:
+  #     - 'v*'
   push:
-    tags:
-      - 'v*'
 
 env:
   REGISTRY: ghcr.io
@@ -56,23 +57,34 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    name: Deploy to Google Cloud Run
-    needs: build
+    name: Deploy to AWS Lambda
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
 
-      - uses: google-github-actions/auth@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_CREDENTIAL }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - uses: google-github-actions/setup-gcloud@v3
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
-      - uses: google-github-actions/deploy-cloudrun@v2
+      - name: Build Lambda Function
+        run: |
+          bun install
+          bun run build
+          mkdir upload
+          cp -r dist generated node_modules package.json upload/
+
+      - name: Deploy Lambda Function
+        uses: aws-actions/aws-lambda-deploy@v1.1.0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.IMAGE_TAG }}
-          service: ${{ secrets.CLOUD_RUN_SERVICE }}
-          region: ${{ secrets.CLOUD_RUN_REGION }}
+          function-name: ${{ env.FUNCTION_NAME }}
+          code-artifacts-dir: upload
