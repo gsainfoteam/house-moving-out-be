@@ -91,3 +91,4 @@ jobs:
         with:
           function-name: ${{ secrets.FUNCTION_NAME }}
           code-artifacts-dir: upload
+          s3-bucket: ${{ secrets.FUNCTION_S3_BUCKET }}
