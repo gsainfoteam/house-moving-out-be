@@ -101,7 +101,7 @@ jobs:
             --query 'LayerVersionArn' --output text)
           echo "prisma_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
           LAYER_ARN=$(aws lambda publish-layer-version \
-            --layer-name "house-moving-out-node-modules-prisma-layer" \
+            --layer-name "house-moving-out-node-modules-layer" \
             --zip-file fileb://node_modules_layer.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
