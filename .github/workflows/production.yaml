@@ -100,6 +100,11 @@ jobs:
           zip -rq node_modules_layer_prisma_engines.zip nodejs
           rm -rf nodejs
 
+          mkdir -p nodejs/node_modules
+          mv nodejs-wd/node_modules/@nestjs nodejs/node_modules
+          zip -rq node_modules_layer_nestjs.zip nodejs
+          rm -rf nodejs
+
           mv nodejs-wd nodejs
           zip -rq node_modules_layer.zip nodejs
 
@@ -107,13 +112,13 @@ jobs:
         id: publish-layer
         run: |
           LAYER_ARN=$(aws lambda publish-layer-version \
-            --layer-name "house-moving-out-node-modules-prisma-layer" \
+            --layer-name "house-moving-out-node-modules-prisma-client-layer" \
             --zip-file fileb://node_modules_layer_prisma_client.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "prisma_client_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
           LAYER_ARN=$(aws lambda publish-layer-version \
-            --layer-name "house-moving-out-node-modules-prisma-layer" \
+            --layer-name "house-moving-out-node-modules-prisma-studio-core-layer" \
             --zip-file fileb://node_modules_layer_prisma_studio_core.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
@@ -124,6 +129,12 @@ jobs:
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "prisma_engines_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-nestjs-layer" \
+            --zip-file fileb://node_modules_layer_nestjs.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "nestjs_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-layer" \
             --zip-file fileb://node_modules_layer.zip \
@@ -149,5 +160,6 @@ jobs:
               "${{ steps.publish-layer.outputs.prisma_client_layer_arn }}",
               "${{ steps.publish-layer.outputs.prisma_studio_core_layer_arn }}",
               "${{ steps.publish-layer.outputs.prisma_engines_layer_arn }}",
+              "${{ steps.publish-layer.outputs.nestjs_layer_arn }}",
               "${{ steps.publish-layer.outputs.layer_arn }}",
             ]
