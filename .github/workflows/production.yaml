@@ -58,7 +58,9 @@ jobs:
           images: |
             ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
             ${{ secrets.ECR_REPOSITORY }}
-          tags: ${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.IMAGE_TAG }}
+            latest
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
