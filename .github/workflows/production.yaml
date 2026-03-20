@@ -86,10 +86,10 @@ jobs:
 
           mkdir -p nodejs/node_modules
           mv nodejs-wd/node_modules/@prisma nodejs/node_modules
-          zip -r node_modules_layer_prisma.zip nodejs
+          zip -rq node_modules_layer_prisma.zip nodejs
           rm -rf nodejs
           mv nodejs-wd nodejs
-          zip -r node_modules_layer.zip nodejs
+          zip -rq node_modules_layer.zip nodejs
 
       - name: Publish Node Modules Layer
         id: publish-layer
