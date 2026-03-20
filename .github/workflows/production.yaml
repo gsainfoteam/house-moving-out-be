@@ -76,27 +76,38 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Build Lambda Function
+      - name: Build NodeModules Layer
         run: |
-          mkdir -p nodejs
-          cp package.json bun.lock nodejs/
-          cd nodejs
+          mkdir -p nodejs-wd
+          cp package.json bun.lock nodejs-wd/
+          cd nodejs-wd
           bun install --production
-          zip -r node_modules.zip node_modules package.json
           cd ..
+
+          mkdir -p nodejs/node_modules
+          mv nodejs-wd/node_modules/@prisma nodejs/node_modules
+          zip -r node_modules_layer_prisma.zip nodejs
+          rm -rf nodejs
+          mv nodejs-wd nodejs
           zip -r node_modules_layer.zip nodejs
 
       - name: Publish Node Modules Layer
         id: publish-layer
         run: |
           LAYER_ARN=$(aws lambda publish-layer-version \
-            --layer-name "${{ secrets.FUNCTION_NODE_MODULES_LAYER_NAME }}" \
+            --layer-name "house-moving-out-node-modules-prisma-layer" \
+            --zip-file fileb://node_modules_layer_prisma.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "prisma_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-prisma-layer" \
             --zip-file fileb://node_modules_layer.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
 
-      - name: Build
+      - name: Build Lambda Function
         run: |
           bun install
           bun prisma generate --generator=client
@@ -110,4 +121,4 @@ jobs:
           runtime: nodejs24.x
           code-artifacts-dir: upload
           s3-bucket: ${{ secrets.FUNCTION_S3_BUCKET }}
-          layers: '["${{ steps.publish-layer.outputs.layer_arn }}"]'
+          layers: '["${{ steps.publish-layer.outputs.prisma_layer_arn }}", "${{ steps.publish-layer.outputs.layer_arn }}"]'
