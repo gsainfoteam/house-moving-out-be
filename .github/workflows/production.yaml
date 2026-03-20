@@ -78,13 +78,30 @@ jobs:
 
       - name: Build Lambda Function
         run: |
+          mkdir -p nodejs
+          cp package.json bun.lock nodejs/
+          cd nodejs
+          bun install --production
+          zip -r node_modules.zip node_modules package.json
+          cd ..
+          zip -r node_modules_layer.zip nodejs
+
+      - name: Publish Node Modules Layer
+        id: publish-layer
+        run: |
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "${{ secrets.FUNCTION_NODE_MODULES_LAYER_NAME }}" \
+            --zip-file fileb://node_modules_layer.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: |
           bun install
           bun prisma generate --generator=client
-          bun run build
-          rm -rf node_modules
-          bun install --production
           mkdir upload
-          cp -r dist generated node_modules package.json upload/
+          cp -r dist generated package.json upload/
 
       - name: Deploy Lambda Function
         uses: aws-actions/aws-lambda-deploy@v1.1.0
@@ -93,3 +110,4 @@ jobs:
           runtime: nodejs24.x
           code-artifacts-dir: upload
           s3-bucket: ${{ secrets.FUNCTION_S3_BUCKET }}
+          layers: '["${{ steps.publish-layer.outputs.layer_arn }}"]'
