@@ -120,5 +120,4 @@ jobs:
           function-name: ${{ secrets.FUNCTION_NAME }}
           runtime: nodejs24.x
           code-artifacts-dir: upload
-          s3-bucket: ${{ secrets.FUNCTION_S3_BUCKET }}
           layers: '["${{ steps.publish-layer.outputs.prisma_layer_arn }}", "${{ steps.publish-layer.outputs.layer_arn }}"]'
