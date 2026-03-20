@@ -10,7 +10,6 @@ env:
   REGISTRY: ghcr.io
   REPOSITORY: ${{ github.repository }}
   IMAGE_TAG: prod-${{ github.ref_name }}-${{ github.run_number }}
-  AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
   build:
@@ -72,7 +71,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -90,5 +89,5 @@ jobs:
       - name: Deploy Lambda Function
         uses: aws-actions/aws-lambda-deploy@v1.1.0
         with:
-          function-name: ${{ env.FUNCTION_NAME }}
+          function-name: ${{ secrets.FUNCTION_NAME }}
           code-artifacts-dir: upload
