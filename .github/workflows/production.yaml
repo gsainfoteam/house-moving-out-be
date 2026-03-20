@@ -90,5 +90,6 @@ jobs:
         uses: aws-actions/aws-lambda-deploy@v1.1.0
         with:
           function-name: ${{ secrets.FUNCTION_NAME }}
+          runtime: nodejs24.x
           code-artifacts-dir: upload
           s3-bucket: ${{ secrets.FUNCTION_S3_BUCKET }}
