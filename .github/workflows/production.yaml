@@ -235,5 +235,5 @@ jobs:
               "${{ steps.publish-layer.outputs.other2_layer_arn }}",
               "${{ steps.publish-layer.outputs.other3_layer_arn }}",
               "${{ steps.publish-layer.outputs.other4_layer_arn }}",
-              "${{ steps.publish-layer.outputs.layer_arn }}",
+              "${{ steps.publish-layer.outputs.layer_arn }}"
             ]
