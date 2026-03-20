@@ -214,6 +214,7 @@ jobs:
         run: |
           bun install
           bun prisma generate --generator=client
+          bun run build
           mkdir upload
           cp -r dist generated package.json upload/
 
