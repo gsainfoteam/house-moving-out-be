@@ -10,6 +10,7 @@ env:
   REGISTRY: ghcr.io
   REPOSITORY: ${{ github.repository }}
   IMAGE_TAG: prod-${{ github.ref_name }}-${{ github.run_number }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
   build:
