@@ -84,10 +84,22 @@ jobs:
           bun install --production
           cd ..
 
-          mkdir -p nodejs/node_modules
-          mv nodejs-wd/node_modules/@prisma nodejs/node_modules
-          zip -rq node_modules_layer_prisma.zip nodejs
+          mkdir -p nodejs/node_modules/@prisma
+          mv nodejs-wd/node_modules/@prisma/client nodejs/node_modules/@prisma
+          zip -rq node_modules_layer_prisma_client.zip nodejs
           rm -rf nodejs
+
+          mkdir -p nodejs/node_modules/@prisma
+          mv nodejs-wd/node_modules/@prisma/studio-core nodejs/node_modules/@prisma
+          zip -rq node_modules_layer_prisma_studio_core.zip nodejs
+          rm -rf nodejs
+
+
+          mkdir -p nodejs/node_modules/@prisma
+          mv nodejs-wd/node_modules/@prisma/engines nodejs/node_modules/@prisma
+          zip -rq node_modules_layer_prisma_engines.zip nodejs
+          rm -rf nodejs
+
           mv nodejs-wd nodejs
           zip -rq node_modules_layer.zip nodejs
 
@@ -96,10 +108,22 @@ jobs:
         run: |
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-prisma-layer" \
-            --zip-file fileb://node_modules_layer_prisma.zip \
+            --zip-file fileb://node_modules_layer_prisma_client.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
-          echo "prisma_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+          echo "prisma_client_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-prisma-layer" \
+            --zip-file fileb://node_modules_layer_prisma_studio_core.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "prisma_studio_core_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-prisma-engines-layer" \
+            --zip-file fileb://node_modules_layer_prisma_engines.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "prisma_engines_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-layer" \
             --zip-file fileb://node_modules_layer.zip \
@@ -120,4 +144,10 @@ jobs:
           function-name: ${{ secrets.FUNCTION_NAME }}
           runtime: nodejs24.x
           code-artifacts-dir: upload
-          layers: '["${{ steps.publish-layer.outputs.prisma_layer_arn }}", "${{ steps.publish-layer.outputs.layer_arn }}"]'
+          layers: |
+            [
+              "${{ steps.publish-layer.outputs.prisma_client_layer_arn }}",
+              "${{ steps.publish-layer.outputs.prisma_studio_core_layer_arn }}",
+              "${{ steps.publish-layer.outputs.prisma_engines_layer_arn }}",
+              "${{ steps.publish-layer.outputs.layer_arn }}",
+            ]
