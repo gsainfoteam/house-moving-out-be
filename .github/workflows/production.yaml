@@ -105,6 +105,31 @@ jobs:
           rm -rf nodejs
 
           mkdir -p nodejs/node_modules
+          mv nodejs-wd/node_modules/effect nodejs-wd/node_modules/@aws-sdk nodejs/node_modules
+          zip -rq node_modules_layer_other1.zip nodejs
+          rm -rf nodejs
+
+          mkdir -p nodejs/node_modules
+          mv nodejs-wd/node_modules/@electric-sql nodejs-wd/node_modules/libphonenumber-js nodejs/node_modules
+          zip -rq node_modules_layer_other2.zip nodejs
+          rm -rf nodejs
+
+          mkdir -p nodejs/node_modules
+          mv nodejs-wd/node_modules/typescript nodejs-wd/node_modules/exceljs nodejs/node_modules
+          zip -rq node_modules_layer_other3.zip nodejs
+          rm -rf nodejs
+
+          mkdir -p nodejs/node_modules
+          mv nodejs-wd/node_modules/swagger-ui-dist nodejs-wd/node_modules/rxjs nodejs/node_modules
+          zip -rq node_modules_layer_other3.zip nodejs
+          rm -rf nodejs
+
+          mkdir -p nodejs/node_modules
+          mv nodejs-wd/node_modules/@smithy nodejs-wd/node_modules/class-validator nodejs/node_modules
+          zip -rq node_modules_layer_other4.zip nodejs
+          rm -rf nodejs
+
+          mkdir -p nodejs/node_modules
           mv nodejs-wd/node_modules/@nestjs nodejs/node_modules
           zip -rq node_modules_layer_nestjs.zip nodejs
           rm -rf nodejs
@@ -121,30 +146,63 @@ jobs:
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "prisma_client_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-prisma-studio-core-layer" \
             --zip-file fileb://node_modules_layer_prisma_studio_core.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "prisma_studio_core_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-prisma-engines-layer" \
             --zip-file fileb://node_modules_layer_prisma_engines.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "prisma_engines_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-nestjs-layer" \
             --zip-file fileb://node_modules_layer_nestjs.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "nestjs_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-prisma-layer" \
             --zip-file fileb://node_modules_layer_prisma.zip \
             --compatible-runtimes nodejs24.x \
             --query 'LayerVersionArn' --output text)
           echo "prisma_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-other1-layer" \
+            --zip-file fileb://node_modules_layer_other1.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "other1_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-other2-layer" \
+            --zip-file fileb://node_modules_layer_other2.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "other2_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-other3-layer" \
+            --zip-file fileb://node_modules_layer_other3.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "other3_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name "house-moving-out-node-modules-other4-layer" \
+            --zip-file fileb://node_modules_layer_other4.zip \
+            --compatible-runtimes nodejs24.x \
+            --query 'LayerVersionArn' --output text)
+          echo "other4_layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+
           LAYER_ARN=$(aws lambda publish-layer-version \
             --layer-name "house-moving-out-node-modules-layer" \
             --zip-file fileb://node_modules_layer.zip \
@@ -172,5 +230,9 @@ jobs:
               "${{ steps.publish-layer.outputs.prisma_engines_layer_arn }}",
               "${{ steps.publish-layer.outputs.nestjs_layer_arn }}",
               "${{ steps.publish-layer.outputs.prisma_layer_arn }}",
+              "${{ steps.publish-layer.outputs.other1_layer_arn }}",
+              "${{ steps.publish-layer.outputs.other2_layer_arn }}",
+              "${{ steps.publish-layer.outputs.other3_layer_arn }}",
+              "${{ steps.publish-layer.outputs.other4_layer_arn }}",
               "${{ steps.publish-layer.outputs.layer_arn }}",
             ]
