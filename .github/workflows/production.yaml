@@ -79,9 +79,11 @@ jobs:
 
       - name: Build Lambda Function
         run: |
-          bun install --production
+          bun install
           bun prisma generate --generator=client
           bun run build
+          rm -rf node_modules
+          bun install --production
           mkdir upload
           cp -r dist generated node_modules package.json upload/
 
