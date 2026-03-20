@@ -45,11 +45,9 @@ jobs:
       - name: Login to the Container registry
         uses: docker/login-action@v4
         with:
-          registry: public.ecr.aws
+          registry: ${{ secrets.ECR_REGISTRY }}
           username: ${{ steps.creds.outputs.aws-access-key-id }}
           password: ${{ steps.creds.outputs.aws-secret-access-key }}
-        env:
-          AWS_REGION: us-east-1
 
       - name: Extract metadata (tags, labels) from the Docker
         id: meta
@@ -57,7 +55,7 @@ jobs:
         with:
           images: |
             ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
-            ${{ secrets.ECR_REPOSITORY }}
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}
           tags: |
             ${{ env.IMAGE_TAG }}
             latest
