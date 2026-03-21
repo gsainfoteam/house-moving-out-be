@@ -98,6 +98,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Get SSM Extension URL
+        id: ssm-extension
+        run: |
+          echo "ssm_extension_url=$(aws lambda get-layer-version-by-arn --arn arn:aws:lambda:ap-northeast-2:738900069198:layer:AWS-Parameters-and-Secrets-Lambda-Extension:59 --query 'Content.Location' --output text)" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v7
@@ -110,6 +115,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
+          build-args: SSM_EXTENSION_URL=${{ steps.ssm-extension.outputs.ssm_extension_url }}
 
   deploy:
     name: Deploy to AWS Lambda
