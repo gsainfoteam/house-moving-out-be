@@ -1,10 +1,9 @@
 name: Deploy Production (Production)
 
 on:
-  # push:
-  #   tags:
-  #     - 'v*'
   push:
+    tags:
+      - 'v*'
 
 env:
   REGISTRY: ghcr.io
