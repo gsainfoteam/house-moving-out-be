@@ -38,14 +38,16 @@ export const handler: Handler = async (
   event: any,
   context: Context,
 ): Promise<void> => {
-  const config = {
-    DATABASE_URL: await getParameter('/moving-out/DATABASE_URL'),
-    USER_JWT_SECRET: await getParameter('/moving-out/USER_JWT_SECRET'),
-    REFRESH_TOKEN_HMAC_SECRET: await getParameter(
-      '/moving-out/REFRESH_TOKEN_HMAC_SECRET',
-    ),
-  };
-  process.env = { ...process.env, ...config };
-  cachedServer = cachedServer ?? (await bootstrapServer());
+  if (!cachedServer) {
+    const config = Object.fromEntries(
+      await Promise.all(
+        ['DATABASE_URL', 'USER_JWT_SECRET', 'REFRESH_TOKEN_HMAC_SECRET'].map(
+          async (param) => [param, await getParameter(`/moving-out/${param}`)],
+        ),
+      ),
+    ) as Record<string, string>;
+    process.env = { ...process.env, ...config };
+    cachedServer = await bootstrapServer();
+  }
   return cachedServer(event, context);
 };
