@@ -31,10 +31,12 @@ export class InspectorAvailableSlotRepository {
             this.logger.debug(`Inspection slot not found: ${error.message}`);
             throw new NotFoundException(`Inspection slot not found`);
           }
-          this.logger.error(`createInspectors prisma error: ${error.message}`);
+          this.logger.error(
+            `connectInspectorAndSlotsInTx prisma error: ${error.message}`,
+          );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`createInspectors error: ${error}`);
+        this.logger.error(`connectInspectorAndSlotsInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

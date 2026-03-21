@@ -1,7 +1,8 @@
-import { RoomInspectionType } from 'generated/prisma/client';
+import { Gender, RoomInspectionType } from 'generated/prisma/client';
 
 export type InspectionTargetStudent = {
   houseName: string;
+  gender: Gender;
   roomNumber: string;
   roomCapacity: number;
   students: {

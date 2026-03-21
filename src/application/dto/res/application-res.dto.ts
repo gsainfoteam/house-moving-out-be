@@ -87,6 +87,12 @@ class Resident {
 
 class TargetInfoResDto {
   @ApiProperty({
+    description: 'House name',
+    example: 'G',
+  })
+  houseName: string;
+
+  @ApiProperty({
     description: 'Room number',
     example: 'XXX101',
   })
@@ -120,6 +126,7 @@ class TargetInfoResDto {
   gender: Gender;
 
   constructor(partial: InspectionTargetInfo) {
+    this.houseName = partial.houseName;
     this.roomNumber = partial.roomNumber;
     this.residents = [
       partial.student1Name && partial.student1StudentNumber
@@ -145,10 +152,7 @@ class TargetInfoResDto {
     );
     this.inspectionType = partial.inspectionType;
     this.applyCleaningService = partial.applyCleaningService;
-    this.gender =
-      partial.houseName.match(/\(([^()]*)\)\s*$/)?.[1]?.trim() === '남'
-        ? Gender.MALE
-        : Gender.FEMALE;
+    this.gender = partial.gender;
   }
 }
 

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
 import { MoveOutScheduleResDto } from './move-out-schedule-res.dto';
 import { Season } from 'generated/prisma/enums';
+import { Gender } from 'generated/prisma/client';
 
 class SemesterResDto {
   @ApiProperty({
@@ -51,28 +52,23 @@ export class InspectionSlotResDto {
   endTime: Date;
 
   @ApiProperty({
-    description: '남자 최대 수용 인원',
+    description: '슬롯 성별',
+    enum: Gender,
+    example: Gender.MALE,
+  })
+  gender: Gender;
+
+  @ApiProperty({
+    description: '슬롯 최대 수용 인원',
     example: 7,
   })
-  maleCapacity: number;
+  capacity: number;
 
   @ApiProperty({
-    description: '여자 최대 수용 인원',
-    example: 5,
-  })
-  femaleCapacity: number;
-
-  @ApiProperty({
-    description: '남자 현재 예약된 인원',
+    description: '슬롯 현재 예약된 인원',
     example: 0,
   })
-  maleReservedCount: number;
-
-  @ApiProperty({
-    description: '여자 현재 예약된 인원',
-    example: 0,
-  })
-  femaleReservedCount: number;
+  reservedCount: number;
 }
 
 export class MoveOutScheduleWithSlotsResDto extends MoveOutScheduleResDto {
