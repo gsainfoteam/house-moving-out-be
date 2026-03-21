@@ -11,7 +11,7 @@ const allowlist = packages
   .filter((packageJson) => packageJson.type === 'module')
   .map((packageJson) => packageJson.name)
   .filter(Boolean)
-  .map((name) => new RegExp(`^${name}`));
+  .map((name) => new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
 
 module.exports = function (options) {
   return {
