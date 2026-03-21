@@ -82,8 +82,6 @@ jobs:
         uses: docker/login-action@v4
         with:
           registry: ${{ secrets.ECR_REGISTRY }}
-          username: ${{ steps.creds.outputs.aws-access-key-id }}
-          password: ${{ steps.creds.outputs.aws-secret-access-key }}
 
       - name: Extract metadata (tags, labels) from the Docker
         id: meta
