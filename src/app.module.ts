@@ -34,10 +34,12 @@ import axios from 'axios';
               )
               .then((res) => res.data.Parameter.Value);
           };
-          return {
+          const config = {
             DATABASE_URL: await getParameter('/moving-out/DATABASE_URL'),
             USER_JWT_SECRET: await getParameter('/moving-out/USER_JWT_SECRET'),
           };
+          console.info(config);
+          return config;
         },
       ],
     }),
