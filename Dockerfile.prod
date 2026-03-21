@@ -19,8 +19,7 @@ RUN bun install && bun run build --config=./nest-cli.prod.json
 
 FROM alpine AS ssm-extension
 ARG SSM_EXTENSION_URL
-RUN apk add --no-cache curl unzip && \
-  curl $SSM_EXTENSION_URL --output layer.zip && unzip layer.zip -d ./aws-lambda-parameters-and-secrets-extension
+RUN apk add --no-cache curl && curl $SSM_EXTENSION_URL --output ssm-extension.zip
 
 # copy production dependencies and source code into final image
 FROM public.ecr.aws/lambda/nodejs:24 AS release
@@ -29,7 +28,7 @@ COPY --from=prod /usr/src/app/generated ./generated
 COPY --from=builder ./usr/src/app/.env ./.env
 COPY --from=builder ./usr/src/app/dist ./dist
 COPY --from=builder ./usr/src/app/package.json ./package.json
-COPY --from=ssm-extension ./aws-lambda-parameters-and-secrets-extension /opt
+COPY --from=ssm-extension ./ssm-extension.zip /opt/extensions
 
 # run the app
 CMD [ "dist/lambda.handler" ]
