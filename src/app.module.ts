@@ -19,7 +19,10 @@ import axios from 'axios';
       load: [
         async () => {
           const token = process.env.AWS_SESSION_TOKEN;
-          if (!token) return {};
+          if (!token) {
+            console.info('AWS_SESSION_TOKEN is not set');
+            return {};
+          }
           const getParameter = async (name: string) => {
             return await axios.get(
               'http://localhost:2773/systemsmanager/parameters/get',
