@@ -47,6 +47,7 @@ export const handler: Handler = async (
       ),
     ) as Record<string, string>;
     process.env = { ...process.env, ...config };
+    console.info('process.env', process.env);
     cachedServer = await bootstrapServer();
   }
   return cachedServer(event, context);
