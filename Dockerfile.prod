@@ -27,4 +27,4 @@ COPY --from=builder ./usr/src/app/package.json ./package.json
 
 # run the app
 USER nodejs
-ENTRYPOINT [ "dist/lambda.handler" ]
+CMD [ "dist/lambda.handler" ]
