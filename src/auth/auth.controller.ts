@@ -57,6 +57,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() body?: UserLoginDto,
   ): Promise<JwtToken> {
+    console.info('req.headers', req.headers);
     const auth = req.headers['authorization'];
     if (!auth) throw new UnauthorizedException();
 
