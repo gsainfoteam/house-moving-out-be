@@ -25,5 +25,9 @@ module.exports = function (options) {
         '.js': ['.ts', '.js'],
       },
     },
+    outputs: {
+      ...options.output,
+      libraryTarget: 'commonjs2',
+    },
   };
 };
