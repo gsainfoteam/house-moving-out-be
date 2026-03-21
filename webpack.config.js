@@ -7,7 +7,7 @@ module.exports = function (options) {
     entry: options.entry,
     externals: [
       nodeExternals({
-        allowlist: [/^file-type/, /^token-types/, /^@borewit/],
+        allowlist: [/^file-type/, /^token-types/, /^@borewit/, /^strtok3/],
       }),
     ],
     resolve: {
