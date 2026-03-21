@@ -21,7 +21,7 @@ FROM alpine AS ssm-extension
 ARG SSM_EXTENSION_URL
 RUN apk add --no-cache curl unzip && \
   mkdir -p /opt && \
-  curl $SSM_EXTENSION_URL --output ssm-extension.zip && \
+  curl -fL $SSM_EXTENSION_URL --output ssm-extension.zip && \
   unzip ssm-extension.zip -d /opt && \
   rm ssm-extension.zip
 
