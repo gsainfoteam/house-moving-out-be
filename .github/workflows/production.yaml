@@ -108,3 +108,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
+
+  deploy:
+    name: Deploy to AWS Lambda
+    needs: build-lambda
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy Lambda Function
+        uses: aws-actions/aws-lambda-deploy@v1.1.0
+        with:
+          function-name: ${{ secrets.FUNCTION_NAME }}
+          package-type: Image
+          image-uri: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
