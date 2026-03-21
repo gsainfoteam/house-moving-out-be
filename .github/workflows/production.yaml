@@ -112,6 +112,7 @@ jobs:
   deploy:
     name: Deploy to AWS Lambda
     needs: build-lambda
+    environment: production
     runs-on: ubuntu-latest
     permissions:
       contents: read
