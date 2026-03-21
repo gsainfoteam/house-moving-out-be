@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     outputs:
-      image-uri: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}@${{ steps.push.outputs.digest }}
+      digest: ${{ steps.push.outputs.digest }}
     permissions:
       contents: read
       id-token: write
@@ -134,4 +134,4 @@ jobs:
         with:
           function-name: ${{ secrets.FUNCTION_NAME }}
           package-type: Image
-          image-uri: ${{ needs.build-lambda.outputs.image-uri }}
+          image-uri: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}@${{ needs.build-lambda.outputs.digest }}
