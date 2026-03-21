@@ -18,7 +18,7 @@ COPY --from=prod /usr/src/app/generated ./generated
 RUN bun install && bun run build --config=./nest-cli.prod.json
 
 # copy production dependencies and source code into final image
-FROM --platform=linux/x86_64 public.ecr.aws/lambda/nodejs:24 AS release
+FROM public.ecr.aws/lambda/nodejs:24 AS release
 COPY --from=prod /usr/src/app/node_modules ./node_modules
 COPY --from=prod /usr/src/app/generated ./generated
 COPY --from=builder ./usr/src/app/.env ./.env
