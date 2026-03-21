@@ -8,7 +8,6 @@ import { InspectorModule } from './inspector/inspector.module';
 import { UserModule } from './user/user.module';
 import { HealthModule } from './health/health.module';
 import { ArticleModule } from './article/article.module';
-import axios from 'axios';
 
 @Module({
   imports: [
