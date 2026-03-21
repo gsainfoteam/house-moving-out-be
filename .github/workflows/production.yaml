@@ -78,16 +78,15 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to the Container registry
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ secrets.ECR_REGISTRY }}
+      - name: Login to the ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Extract metadata (tags, labels) from the Docker
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}
           tags: |
             ${{ env.IMAGE_TAG }}
             latest
