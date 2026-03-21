@@ -59,6 +59,8 @@ jobs:
     name: Build Lambda docker Image
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      image-uri: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}@${{ steps.push.outputs.digest }}
     permissions:
       contents: read
       id-token: write
@@ -132,4 +134,4 @@ jobs:
         with:
           function-name: ${{ secrets.FUNCTION_NAME }}
           package-type: Image
-          image-uri: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          image-uri: ${{ needs.build-lambda.outputs.image-uri }}
