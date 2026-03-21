@@ -24,13 +24,15 @@ import axios from 'axios';
             return {};
           }
           const getParameter = async (name: string) => {
-            return await axios.get(
-              'http://localhost:2773/systemsmanager/parameters/get',
-              {
-                params: { name, withDecryption: true },
-                headers: { 'X-Aws-Parameters-Secrets-Token': token },
-              },
-            );
+            return await axios
+              .get<{ Parameter: { Value: string } }>(
+                'http://localhost:2773/systemsmanager/parameters/get',
+                {
+                  params: { name, withDecryption: true },
+                  headers: { 'X-Aws-Parameters-Secrets-Token': token },
+                },
+              )
+              .then((res) => res.data.Parameter.Value);
           };
           return {
             DATABASE_URL: await getParameter('/moving-out/DATABASE_URL'),
