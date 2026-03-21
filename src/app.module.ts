@@ -16,32 +16,6 @@ import axios from 'axios';
       isGlobal: true,
       envFilePath: '.env',
       cache: true,
-      load: [
-        async () => {
-          const token = process.env.AWS_SESSION_TOKEN;
-          if (!token) {
-            console.info('AWS_SESSION_TOKEN is not set');
-            return {};
-          }
-          const getParameter = async (name: string) => {
-            return await axios
-              .get<{ Parameter: { Value: string } }>(
-                'http://localhost:2773/systemsmanager/parameters/get',
-                {
-                  params: { name, withDecryption: true },
-                  headers: { 'X-Aws-Parameters-Secrets-Token': token },
-                },
-              )
-              .then((res) => res.data.Parameter.Value);
-          };
-          const config = {
-            DATABASE_URL: await getParameter('/moving-out/DATABASE_URL'),
-            USER_JWT_SECRET: await getParameter('/moving-out/USER_JWT_SECRET'),
-          };
-          console.info(config);
-          return config;
-        },
-      ],
     }),
     AuthModule,
     ScheduleModule,
