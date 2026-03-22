@@ -75,6 +75,12 @@ export class ApplicationService {
             tx,
           );
 
+        if (inspectionTargetInfo.applyCleaningService) {
+          throw new ForbiddenException(
+            'Cannot apply for inspection while applying for cleaning service.',
+          );
+        }
+
         if (
           inspectionTargetInfo.inspectionCount >= this.INSPECTION_COUNT_LIMIT
         ) {
