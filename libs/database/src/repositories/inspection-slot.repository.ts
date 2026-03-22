@@ -259,4 +259,30 @@ export class InspectionSlotRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+
+  async findSlotsWithInspectorCountByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<Array<InspectionSlot & { _count: { inspectors: number } }>> {
+    return await this.databaseService.inspectionSlot
+      .findMany({
+        where: { scheduleUuid },
+        include: {
+          _count: {
+            select: { inspectors: true },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findSlotsWithInspectorCountByScheduleUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findSlotsWithInspectorCountByScheduleUuid error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }

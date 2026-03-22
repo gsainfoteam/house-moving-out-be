@@ -343,6 +343,51 @@ export class ScheduleService {
     });
   }
 
+  async updateStatus(uuid: string, newStatus: ScheduleStatus): Promise<void> {
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(uuid);
+
+    const allowedTransitions: Record<ScheduleStatus, ScheduleStatus[]> = {
+      [ScheduleStatus.DRAFT]: [ScheduleStatus.ACTIVE, ScheduleStatus.CANCELED],
+      [ScheduleStatus.ACTIVE]: [
+        ScheduleStatus.COMPLETED,
+        ScheduleStatus.CANCELED,
+      ],
+      [ScheduleStatus.COMPLETED]: [],
+      [ScheduleStatus.CANCELED]: [],
+    };
+
+    if (!allowedTransitions[schedule.status].includes(newStatus)) {
+      throw new ForbiddenException(
+        `Invalid status transition: ${schedule.status} -> ${newStatus}`,
+      );
+    }
+
+    if (
+      schedule.status === ScheduleStatus.DRAFT &&
+      newStatus === ScheduleStatus.ACTIVE
+    ) {
+      const slotsWithInspectorCount =
+        await this.inspectionSlotRepository.findSlotsWithInspectorCountByScheduleUuid(
+          uuid,
+        );
+
+      const slotsWithoutInspector = slotsWithInspectorCount.filter(
+        (slot) => slot._count.inspectors === 0,
+      );
+
+      if (slotsWithoutInspector.length > 0) {
+        throw new ForbiddenException(
+          'All inspection slots must have at least one inspector assigned before activating the schedule.',
+        );
+      }
+    }
+
+    await this.moveOutScheduleRepository.updateMoveOutSchedule(uuid, {
+      status: newStatus,
+    });
+  }
+
   async findTargetInfoByUserInfo(
     user: User,
   ): Promise<InspectionTargetInfo | null> {

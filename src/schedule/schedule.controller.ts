@@ -54,6 +54,7 @@ import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-ser
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
 import { EXCEL_VALIDATION_CONSTANTS } from '@lib/excel-parser/constants/room-assignment-parser.constants';
+import { UpdateScheduleStatusDto } from './dto/req/update-schedule-status.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schedule')
@@ -168,6 +169,28 @@ export class ScheduleController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<MoveOutScheduleWithSlotsResDto> {
     return await this.scheduleService.findMoveOutScheduleWithSlots(uuid);
+  }
+
+  @ApiOperation({
+    summary: 'Update move out schedule status',
+    description: 'Update the status of a specific move out schedule.',
+  })
+  @ApiOkResponse({
+    description: 'Status updated successfully',
+    type: MoveOutScheduleResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid status transition' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid/status')
+  async updateStatus(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: UpdateScheduleStatusDto,
+  ): Promise<void> {
+    return await this.scheduleService.updateStatus(uuid, dto.status);
   }
 
   @ApiOperation({
