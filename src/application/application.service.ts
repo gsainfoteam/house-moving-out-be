@@ -383,7 +383,7 @@ export class ApplicationService {
         await this.inspectionApplicationRepository.updateInspectionResultInTx(
           applicationUuid,
           { passed, failed },
-          additionalComment,
+          additionalComment ?? null,
           failed.length === 0,
           key,
           false,

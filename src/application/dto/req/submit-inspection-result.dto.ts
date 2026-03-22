@@ -41,10 +41,11 @@ export class SubmitInspectionResultDto {
   @Min(1)
   contentLength: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Comment about the inspection result',
     example: 'The door is damaged.',
   })
   @IsString()
-  additionalComment: string;
+  @IsOptional()
+  additionalComment?: string;
 }
