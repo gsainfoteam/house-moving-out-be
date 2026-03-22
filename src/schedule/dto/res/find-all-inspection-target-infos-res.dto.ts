@@ -24,6 +24,12 @@ export class InspectionTargetsGroupedByRoomResDto {
   uuid: string;
 
   @ApiProperty({
+    description: 'House name',
+    example: 'G',
+  })
+  houseName: string;
+
+  @ApiProperty({
     description: 'Room number',
     example: 'XXX101',
   })

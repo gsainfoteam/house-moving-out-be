@@ -18,7 +18,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -55,24 +54,86 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy to Google Cloud Run
-    needs: build
+  build-lambda:
+    name: Build Lambda docker Image
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: setup environment
+        run: |
+          echo "API_VERSION=${{ github.ref_name }}-${{ github.run_number }}" >> .env
+
+      - name: Configure AWS credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to the ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract metadata (tags, labels) from the Docker
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}
+          tags: |
+            ${{ env.IMAGE_TAG }}
+            latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Get SSM Extension URL
+        id: ssm-extension
+        run: |
+          echo "ssm_extension_url=$(aws lambda get-layer-version-by-arn --arn arn:aws:lambda:ap-northeast-2:738900069198:layer:AWS-Parameters-and-Secrets-Lambda-Extension:59 --query 'Content.Location' --output text)" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          build-args: SSM_EXTENSION_URL=${{ steps.ssm-extension.outputs.ssm_extension_url }}
+
+  deploy:
+    name: Deploy to AWS Lambda
+    needs: build-lambda
+    environment: production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
 
-      - uses: google-github-actions/auth@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_CREDENTIAL }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - uses: google-github-actions/setup-gcloud@v3
-
-      - uses: google-github-actions/deploy-cloudrun@v2
+      - name: Deploy Lambda Function
+        uses: aws-actions/aws-lambda-deploy@v1.1.0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.IMAGE_TAG }}
-          service: ${{ secrets.CLOUD_RUN_SERVICE }}
-          region: ${{ secrets.CLOUD_RUN_REGION }}
+          function-name: ${{ secrets.FUNCTION_NAME }}
+          package-type: Image
+          image-uri: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}@${{ needs.build-lambda.outputs.digest }}
