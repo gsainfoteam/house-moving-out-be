@@ -37,6 +37,27 @@ export class MoveOutScheduleRepository {
       });
   }
 
+  async findMoveOutScheduleWithUuid(uuid: string): Promise<MoveOutSchedule> {
+    return await this.databaseService.moveOutSchedule
+      .findUniqueOrThrow({
+        where: { uuid },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
+            throw new NotFoundException(`Move out schedule not found`);
+          }
+          this.logger.error(
+            `findMoveOutScheduleWithUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findMoveOutScheduleWithUuid error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async createMoveOutScheduleInTx(
     scheduleData: Pick<
       MoveOutSchedule,

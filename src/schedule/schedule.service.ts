@@ -757,9 +757,13 @@ export class ScheduleService {
   }
 
   async downloadInspectionDocuments(scheduleUuid: string): Promise<Buffer> {
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(
+        scheduleUuid,
+      );
     const applications =
       await this.inspectionApplicationRepository.findApplicationDocumentsByScheduleUuid(
-        scheduleUuid,
+        schedule.uuid,
       );
     const documents = applications
       .map((app) => app.document)
