@@ -162,6 +162,7 @@ export class InspectionApplicationRepository {
   async updateInspectionResultInTx(
     applicationUuid: string,
     itemResults: Prisma.InputJsonValue,
+    additionalComment: string,
     isPassed: boolean,
     document: string,
     isDocumentActive: boolean,
@@ -172,6 +173,7 @@ export class InspectionApplicationRepository {
         where: { uuid: applicationUuid, deletedAt: null },
         data: {
           itemResults,
+          additionalComment,
           isPassed,
           document,
           isDocumentActive,

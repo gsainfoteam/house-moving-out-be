@@ -213,6 +213,7 @@ model InspectionApplication {
   inspectionSlotUuid       String    @map("inspection_slot_uuid")
   isPassed                 Boolean?  @map("is_passed")
   itemResults              Json?     @map("item_results")
+  additionalComment        String?   @map("additional_comment")
   document                 String?
   isDocumentActive         Boolean?  @map("is_document_active")
   createdAt                DateTime  @default(now()) @map("created_at")

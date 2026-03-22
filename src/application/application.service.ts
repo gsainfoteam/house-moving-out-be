@@ -327,7 +327,12 @@ export class ApplicationService {
   async submitInspectionResult(
     { email, name, studentNumber }: User,
     applicationUuid: string,
-    { passed, failed, contentLength }: SubmitInspectionResultDto,
+    {
+      passed,
+      failed,
+      contentLength,
+      additionalComment,
+    }: SubmitInspectionResultDto,
   ): Promise<RegisterResultResDto> {
     if (passed.length === 0 && failed.length === 0) {
       throw new BadRequestException(
@@ -378,6 +383,7 @@ export class ApplicationService {
         await this.inspectionApplicationRepository.updateInspectionResultInTx(
           applicationUuid,
           { passed, failed },
+          additionalComment,
           failed.length === 0,
           key,
           false,
