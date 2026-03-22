@@ -38,13 +38,22 @@ export class FileService {
       Bucket: this.configService.getOrThrow<string>('AWS_S3_BUCKET'),
       Key: key,
     });
-    const response = await this.s3Client.send(command);
-    if (!response.Body) {
-      throw new NotFoundException(
-        `File with key ${key} not found in S3 bucket`,
-      );
+    try {
+      const response = await this.s3Client.send(command);
+      if (!response.Body) {
+        throw new NotFoundException(
+          `File with key ${key} not found in S3 bucket`,
+        );
+      }
+      return response.Body.transformToByteArray();
+    } catch (error) {
+      if (error instanceof S3ServiceException && error.name === 'NotFound') {
+        throw new NotFoundException(
+          `File with key ${key} not found in S3 bucket`,
+        );
+      }
+      throw error;
     }
-    return response.Body.transformToByteArray();
   }
 
   async createPresignedUrl(key: string, length: number): Promise<string> {
