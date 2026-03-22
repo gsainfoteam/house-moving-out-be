@@ -58,8 +58,7 @@ export class ApplicationController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiForbiddenResponse({
-    description:
-      'Forbidden - Application period has not started yet or has already ended',
+    description: 'Forbidden',
   })
   @ApiNotFoundResponse({
     description: 'Not Found - Inspection target info or slot not found',
