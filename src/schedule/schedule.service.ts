@@ -764,6 +764,9 @@ export class ScheduleService {
     const documents = applications
       .map((app) => app.document)
       .filter((u) => u !== null);
+    if (documents.length === 0) {
+      throw new NotFoundException('No inspection documents found');
+    }
     const limit = pLimit(30);
     const documentBuffers = await Promise.all(
       documents.map((doc) => limit(() => this.fileService.getBytesArray(doc))),
