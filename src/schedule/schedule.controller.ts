@@ -334,7 +334,7 @@ export class ScheduleController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
-  // @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard)
   @Get(':uuid/documents')
   async downloadInspectionDocuments(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
