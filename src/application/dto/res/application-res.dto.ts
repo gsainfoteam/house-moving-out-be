@@ -203,6 +203,14 @@ export class ApplicationResDto {
   itemResults: ItemResultsResDto | JsonValue;
 
   @ApiProperty({
+    description: 'Additional comment about the inspection result',
+    example: 'The door is damaged.',
+    type: String,
+    nullable: true,
+  })
+  additionalComment: string | null;
+
+  @ApiProperty({
     description: 'Inspection document URL (Expires in 10 minutes)',
     type: String,
     nullable: true,
@@ -226,6 +234,7 @@ export class ApplicationResDto {
     this.targetInfo = new TargetInfoResDto(partial.inspectionTargetInfo);
     this.isPassed = partial.isPassed;
     this.itemResults = partial.itemResults;
+    this.additionalComment = partial.additionalComment;
     this.document = partial.isDocumentActive ? partial.document : null;
     this.createdAt = partial.createdAt;
     this.inspectionCount = partial.inspectionCount;
