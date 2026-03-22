@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   Gender,
+  InspectionTargetInfo,
   MoveOutSchedule,
   RoomInspectionType,
   ScheduleStatus,
@@ -344,7 +345,7 @@ export class ScheduleService {
 
   async findTargetInfoByUserInfo(
     user: User,
-  ): Promise<{ gender: Gender; houseName: string; roomNumber: string } | null> {
+  ): Promise<InspectionTargetInfo | null> {
     try {
       const schedule =
         await this.moveOutScheduleRepository.findActiveSchedule();
@@ -356,11 +357,7 @@ export class ScheduleService {
           schedule.uuid,
         );
 
-      return {
-        gender: targetInfo.gender,
-        houseName: targetInfo.houseName,
-        roomNumber: targetInfo.roomNumber,
-      };
+      return targetInfo;
     } catch (error) {
       if (
         error instanceof ForbiddenException ||
