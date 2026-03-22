@@ -33,6 +33,20 @@ export class FileService {
     return getSignedUrl(this.s3Client, command, { expiresIn });
   }
 
+  async getBytesArray(key: string): Promise<Uint8Array> {
+    const command = new GetObjectCommand({
+      Bucket: this.configService.getOrThrow<string>('AWS_S3_BUCKET'),
+      Key: key,
+    });
+    const response = await this.s3Client.send(command);
+    if (!response.Body) {
+      throw new NotFoundException(
+        `File with key ${key} not found in S3 bucket`,
+      );
+    }
+    return response.Body.transformToByteArray();
+  }
+
   async createPresignedUrl(key: string, length: number): Promise<string> {
     const command = new PutObjectCommand({
       Bucket: this.configService.getOrThrow<string>('AWS_S3_BUCKET'),

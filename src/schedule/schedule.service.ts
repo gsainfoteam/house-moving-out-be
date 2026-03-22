@@ -43,6 +43,8 @@ import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspect
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { FileService } from '@lib/file';
+import { PDFDocument } from 'pdf-lib';
+import pLimit from 'p-limit';
 
 @Loggable()
 @Injectable()
@@ -752,5 +754,29 @@ export class ScheduleService {
         );
       }
     }
+  }
+
+  async downloadInspectionDocuments(scheduleUuid: string): Promise<Buffer> {
+    const applications =
+      await this.inspectionApplicationRepository.findApplicationDocumentsByScheduleUuid(
+        scheduleUuid,
+      );
+    const documents = applications
+      .map((app) => app.document)
+      .filter((u) => u !== null);
+    const limit = pLimit(30);
+    const documentBuffers = await Promise.all(
+      documents.map((doc) => limit(() => this.fileService.getBytesArray(doc))),
+    );
+    const merged = await PDFDocument.create();
+    for (const buffer of documentBuffers) {
+      const pdf = await PDFDocument.load(buffer);
+      const pages = await merged.copyPages(pdf, pdf.getPageIndices());
+      for (const page of pages) {
+        merged.addPage(page);
+      }
+    }
+    const out = await merged.save();
+    return Buffer.from(out);
   }
 }

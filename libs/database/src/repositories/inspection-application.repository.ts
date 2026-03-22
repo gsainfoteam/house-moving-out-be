@@ -289,6 +289,32 @@ export class InspectionApplicationRepository {
       });
   }
 
+  async findApplicationDocumentsByScheduleUuid(
+    scheduleUuid: string,
+  ): Promise<InspectionApplication[]> {
+    return await this.databaseService.inspectionApplication
+      .findMany({
+        where: {
+          inspectionSlot: { scheduleUuid },
+          deletedAt: null,
+          isDocumentActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findApplicationDocumentsByScheduleUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findApplicationDocumentsByScheduleUuid error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async countApplications(scheduleUuid: string): Promise<number> {
     return await this.databaseService.inspectionApplication
       .count({
