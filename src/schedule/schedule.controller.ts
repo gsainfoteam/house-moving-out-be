@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
   Query,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -317,5 +318,33 @@ export class ScheduleController {
     @Body() dto: BulkUpdateCleaningServiceDto,
   ): Promise<void> {
     await this.scheduleService.bulkUpdateCleaningService(scheduleUuid, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Download inspection documents',
+    description: 'Download inspection documents by schedule UUID',
+  })
+  @ApiOkResponse({
+    description: 'Inspection documents successfully downloaded',
+  })
+  @ApiBadRequestResponse({
+    description: 'schedule UUID is wrong',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get(':uuid/documents')
+  async downloadInspectionDocuments(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+  ): Promise<StreamableFile> {
+    return new StreamableFile(
+      await this.scheduleService.downloadInspectionDocuments(scheduleUuid),
+      {
+        type: 'application/pdf',
+        disposition: 'attachment',
+      },
+    );
   }
 }
