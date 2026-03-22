@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { Gender } from 'generated/prisma/client';
 import { Loggable } from '@lib/logger';
 import { DatabaseService, PrismaTransaction } from '@lib/database';
 import { User } from 'generated/prisma/client';
@@ -84,10 +83,6 @@ export class ApplicationService {
           );
         }
 
-        const gender = this.scheduleService.extractGenderFromHouseName(
-          inspectionTargetInfo.houseName,
-        );
-
         const updatedTargetInfo =
           await this.inspectionTargetInfoRepository.incrementInspectionCountInTx(
             inspectionTargetInfo.uuid,
@@ -96,25 +91,21 @@ export class ApplicationService {
         const updatedSlot =
           await this.inspectionSlotRepository.incrementSlotReservedCountInTx(
             inspectionSlotUuid,
-            gender,
             tx,
           );
 
-        if (gender === Gender.MALE) {
-          if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
-            throw new ConflictException('Male capacity is already full.');
-          }
-        } else {
-          if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
-            throw new ConflictException('Female capacity is already full.');
-          }
+        if (updatedSlot.gender !== inspectionTargetInfo.gender) {
+          throw new BadRequestException('Inspection slot gender mismatch.');
+        }
+        if (updatedSlot.reservedCount > updatedSlot.capacity) {
+          throw new ConflictException('Slot capacity is already full.');
         }
 
         const inspector =
           await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
             user.email,
             inspectionSlotUuid,
-            gender,
+            inspectionTargetInfo.gender,
             tx,
           );
 
@@ -189,14 +180,9 @@ export class ApplicationService {
         );
       }
 
-      const gender = this.scheduleService.extractGenderFromHouseName(
-        application.inspectionTargetInfo.houseName,
-      );
-
       await this.inspectionSlotRepository.swapSlotReservedCountsInTx(
         application.inspectionSlotUuid,
         inspectionSlotUuid,
-        gender,
         tx,
       );
 
@@ -214,21 +200,18 @@ export class ApplicationService {
         );
       }
 
-      if (gender === Gender.MALE) {
-        if (updatedSlot.maleReservedCount > updatedSlot.maleCapacity) {
-          throw new ConflictException('Male capacity is already full.');
-        }
-      } else {
-        if (updatedSlot.femaleReservedCount > updatedSlot.femaleCapacity) {
-          throw new ConflictException('Female capacity is already full.');
-        }
+      if (updatedSlot.gender !== application.inspectionTargetInfo.gender) {
+        throw new BadRequestException('Inspection slot gender mismatch.');
+      }
+      if (updatedSlot.reservedCount > updatedSlot.capacity) {
+        throw new ConflictException('Slot capacity is already full.');
       }
 
       const inspector =
         await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
           user.email,
           inspectionSlotUuid,
-          gender,
+          application.inspectionTargetInfo.gender,
           tx,
         );
 
@@ -278,13 +261,8 @@ export class ApplicationService {
           );
         }
 
-        const gender = this.scheduleService.extractGenderFromHouseName(
-          application.inspectionTargetInfo.houseName,
-        );
-
         await this.inspectionSlotRepository.decrementSlotReservedCountInTx(
           application.inspectionSlotUuid,
-          gender,
           tx,
         );
 

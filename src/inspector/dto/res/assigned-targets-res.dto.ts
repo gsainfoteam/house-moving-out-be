@@ -25,6 +25,12 @@ export class AssignedTargetsResDto {
   uuid: string;
 
   @ApiProperty({
+    description: 'House name',
+    example: 'G',
+  })
+  houseName: string;
+
+  @ApiProperty({
     description: 'Room number',
     example: 'XXX101',
   })
@@ -72,6 +78,7 @@ export class AssignedTargetsResDto {
 
   constructor(app: ApplicationWithDetails) {
     this.uuid = app.uuid;
+    this.houseName = app.inspectionTargetInfo.houseName;
     this.roomNumber = app.inspectionTargetInfo.roomNumber;
     this.residents = [
       app.inspectionTargetInfo.student1Name &&

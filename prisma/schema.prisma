@@ -166,6 +166,7 @@ model InspectionTargetInfo {
   uuid                  String             @id @default(uuid())
   scheduleUuid          String             @map("schedule_uuid")
   houseName             String             @map("house_name")
+  gender                Gender             @map("gender")
   roomNumber            String             @map("room_number")
   roomCapacity          Int                @map("room_capacity")
   student1Name          String?            @map("student1_name")
@@ -193,16 +194,15 @@ model InspectionSlot {
   scheduleUuid        String   @map("schedule_uuid")
   startTime           DateTime @map("start_time")
   endTime             DateTime @map("end_time")
-  maleCapacity        Int      @default(0) @map("male_capacity")
-  femaleCapacity      Int      @default(0) @map("female_capacity")
-  maleReservedCount   Int      @default(0) @map("male_reserved_count")
-  femaleReservedCount Int      @default(0) @map("female_reserved_count")
+  gender              Gender   @map("gender")
+  capacity            Int      @default(0) @map("capacity")
+  reservedCount       Int      @default(0) @map("reserved_count")
 
   inspectionApplications InspectionApplication[]
   inspectors             InspectorAvailableSlot[]
   schedule               MoveOutSchedule          @relation(fields: [scheduleUuid], references: [uuid], onDelete: Cascade)
 
-  @@index([scheduleUuid, startTime])
+  @@unique([scheduleUuid, startTime, endTime, gender])
   @@map("inspection_slot")
 }
 

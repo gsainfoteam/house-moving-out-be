@@ -102,6 +102,7 @@ export class InspectionTargetInfoRepository {
         data: inspectionTargetInfos.map((target) => ({
           scheduleUuid,
           houseName: target.houseName,
+          gender: target.gender,
           roomNumber: target.roomNumber,
           roomCapacity: target.roomCapacity,
           student1Name: target.students[0]?.studentName,

@@ -34,6 +34,13 @@ export class UserDto {
   })
   roomNumber?: string;
 
+  @ApiPropertyOptional({
+    description: 'house name',
+    example: 'G',
+    type: String,
+  })
+  houseName?: string;
+
   @ApiProperty({
     description: 'role',
     enum: Role,
@@ -61,7 +68,7 @@ export class UserDto {
 
   constructor(
     user: User,
-    target: { gender: Gender; roomNumber: string } | null,
+    target: { gender: Gender; houseName: string; roomNumber: string } | null,
     isInspector: boolean,
   ) {
     this.name = user.name;
@@ -69,6 +76,7 @@ export class UserDto {
     this.studentNumber = user.studentNumber;
     this.gender = target?.gender;
     this.roomNumber = target?.roomNumber;
+    this.houseName = target?.houseName;
     this.role = user.role;
     this.isInspector = isInspector;
     this.createdAt = user.createdAt;

@@ -24,7 +24,9 @@ export class ExcelParserService {
       const row = worksheet.getRow(rowNum);
 
       const buildingName = this.getCellValue(row.getCell(1));
-      const roomNumber = this.getCellValue(row.getCell(2));
+      const rawRoomNumber = this.getCellValue(row.getCell(2));
+      const roomNumber = rawRoomNumber.replace(/\s*호\s*$/, '').trim();
+      const houseName = this.getCellValue(row.getCell(4));
       const roomCapacity = this.getCellValue(row.getCell(3));
       const limitType = this.getCellValue(row.getCell(9));
 
@@ -34,6 +36,12 @@ export class ExcelParserService {
 
       if (!buildingName && !roomNumber) {
         continue;
+      }
+
+      if (!buildingName || !rawRoomNumber || !houseName || !roomCapacity) {
+        throw new BadRequestException(
+          `Required cell value is missing. buildingName=${buildingName}, roomNumber=${rawRoomNumber}, houseName=${houseName}, roomCapacity=${roomCapacity}`,
+        );
       }
 
       const roomMatch = roomNumber.match(/^([A-Za-z])(\d)/);
@@ -56,13 +64,6 @@ export class ExcelParserService {
         );
       }
 
-      const genderKor = houseGender === Gender.MALE ? '남' : '여';
-
-      const houseName =
-        roomNumber.length > 0
-          ? `${roomNumber[0]}하우스 (${genderKor})`
-          : roomNumber;
-
       const students: Array<{ name?: string; studentNumber?: string }> = [];
 
       const residentCols = [5, 6, 7];
@@ -82,6 +83,7 @@ export class ExcelParserService {
 
       roomMap.set(roomKey, {
         houseName,
+        gender: houseGender,
         roomNumber,
         roomCapacity: this.parseRoomCapacity(roomCapacity),
         limitType,
