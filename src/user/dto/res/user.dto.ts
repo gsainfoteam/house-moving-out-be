@@ -1,5 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Gender, Role, User } from 'generated/prisma/client';
+import {
+  Gender,
+  InspectionTargetInfo,
+  Role,
+  User,
+} from 'generated/prisma/client';
 
 export class UserDto {
   @ApiProperty({
@@ -41,6 +46,12 @@ export class UserDto {
   })
   houseName?: string;
 
+  @ApiPropertyOptional({
+    description: 'apply cleaning service',
+    example: true,
+  })
+  applyCleaningService?: boolean;
+
   @ApiProperty({
     description: 'role',
     enum: Role,
@@ -68,7 +79,7 @@ export class UserDto {
 
   constructor(
     user: User,
-    target: { gender: Gender; houseName: string; roomNumber: string } | null,
+    target: InspectionTargetInfo | null,
     isInspector: boolean,
   ) {
     this.name = user.name;
@@ -77,6 +88,7 @@ export class UserDto {
     this.gender = target?.gender;
     this.roomNumber = target?.roomNumber;
     this.houseName = target?.houseName;
+    this.applyCleaningService = target?.applyCleaningService;
     this.role = user.role;
     this.isInspector = isInspector;
     this.createdAt = user.createdAt;
