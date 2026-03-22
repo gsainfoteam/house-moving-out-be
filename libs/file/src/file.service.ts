@@ -47,9 +47,12 @@ export class FileService {
       }
       return response.Body.transformToByteArray();
     } catch (error) {
-      throw new NotFoundException(
-        `File with key ${key} not found in S3 bucket`,
-      );
+      if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
+        throw new NotFoundException(
+          `File with key ${key} not found in S3 bucket`,
+        );
+      }
+      throw error;
     }
   }
 
