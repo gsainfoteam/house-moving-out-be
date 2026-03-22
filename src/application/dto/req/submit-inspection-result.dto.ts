@@ -40,4 +40,11 @@ export class SubmitInspectionResultDto {
   @Max(3 * 1024 * 1024)
   @Min(1)
   contentLength: number;
+
+  @ApiProperty({
+    description: 'Comment about the inspection result',
+    example: 'The door is damaged.',
+  })
+  @IsString()
+  additionalComment: string;
 }
