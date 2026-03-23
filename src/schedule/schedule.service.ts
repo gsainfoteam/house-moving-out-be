@@ -306,7 +306,7 @@ export class ScheduleService {
         schedule.status !== ScheduleStatus.ACTIVE
       ) {
         throw new ForbiddenException(
-          'Cleaning service application can be modified only when the schedule status is DRAFT.',
+          'Cleaning service application can be modified only when the schedule status is DRAFT or ACTIVE.',
         );
       }
 
@@ -333,47 +333,58 @@ export class ScheduleService {
   }
 
   async updateStatus(uuid: string, newStatus: ScheduleStatus): Promise<void> {
-    const schedule =
-      await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(uuid);
-
-    const allowedTransitions: Record<ScheduleStatus, ScheduleStatus[]> = {
-      [ScheduleStatus.DRAFT]: [ScheduleStatus.ACTIVE, ScheduleStatus.CANCELED],
-      [ScheduleStatus.ACTIVE]: [
-        ScheduleStatus.COMPLETED,
-        ScheduleStatus.CANCELED,
-      ],
-      [ScheduleStatus.COMPLETED]: [],
-      [ScheduleStatus.CANCELED]: [],
-    };
-
-    if (!allowedTransitions[schedule.status].includes(newStatus)) {
-      throw new ForbiddenException(
-        `Invalid status transition: ${schedule.status} -> ${newStatus}`,
-      );
-    }
-
-    if (
-      schedule.status === ScheduleStatus.DRAFT &&
-      newStatus === ScheduleStatus.ACTIVE
-    ) {
-      const slotsWithInspectorCount =
-        await this.inspectionSlotRepository.findSlotsWithInspectorCountByScheduleUuid(
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      const schedule =
+        await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
           uuid,
+          tx,
         );
 
-      const slotsWithoutInspector = slotsWithInspectorCount.filter(
-        (slot) => slot._count.inspectors === 0,
-      );
+      const allowedTransitions: Record<ScheduleStatus, ScheduleStatus[]> = {
+        [ScheduleStatus.DRAFT]: [
+          ScheduleStatus.ACTIVE,
+          ScheduleStatus.CANCELED,
+        ],
+        [ScheduleStatus.ACTIVE]: [
+          ScheduleStatus.COMPLETED,
+          ScheduleStatus.CANCELED,
+        ],
+        [ScheduleStatus.COMPLETED]: [],
+        [ScheduleStatus.CANCELED]: [],
+      };
 
-      if (slotsWithoutInspector.length > 0) {
+      if (!allowedTransitions[schedule.status].includes(newStatus)) {
         throw new ForbiddenException(
-          'All inspection slots must have at least one inspector assigned before activating the schedule.',
+          `Invalid status transition: ${schedule.status} -> ${newStatus}`,
         );
       }
-    }
 
-    await this.moveOutScheduleRepository.updateMoveOutSchedule(uuid, {
-      status: newStatus,
+      if (
+        schedule.status === ScheduleStatus.DRAFT &&
+        newStatus === ScheduleStatus.ACTIVE
+      ) {
+        const slotsWithInspectorCount =
+          await this.inspectionSlotRepository.findSlotsWithInspectorCountByScheduleUuidInTx(
+            uuid,
+            tx,
+          );
+
+        const slotsWithoutInspector = slotsWithInspectorCount.filter(
+          (slot) => slot._count.inspectors === 0,
+        );
+
+        if (slotsWithoutInspector.length > 0) {
+          throw new ForbiddenException(
+            'All inspection slots must have at least one inspector assigned before activating the schedule.',
+          );
+        }
+      }
+
+      await this.moveOutScheduleRepository.updateMoveOutScheduleInTx(
+        uuid,
+        { status: newStatus },
+        tx,
+      );
     });
   }
 

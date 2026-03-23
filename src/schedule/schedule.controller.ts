@@ -173,10 +173,10 @@ export class ScheduleController {
   })
   @ApiOkResponse({
     description: 'Status updated successfully',
-    type: MoveOutScheduleResDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid status transition' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
