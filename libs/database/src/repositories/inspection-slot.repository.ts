@@ -12,6 +12,7 @@ import {
   InspectionSlot,
   MoveOutSchedule,
   Prisma,
+  ScheduleStatus,
 } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 
@@ -282,6 +283,32 @@ export class InspectionSlotRepository {
         this.logger.error(
           `findSlotsWithInspectorCountByScheduleUuid error: ${error}`,
         );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findSlotsWithSchedule(
+    slotUuids: string[],
+  ): Promise<{ schedule: { status: ScheduleStatus } }[]> {
+    return await this.databaseService.inspectionSlot
+      .findMany({
+        where: { uuid: { in: slotUuids } },
+        select: {
+          schedule: {
+            select: {
+              status: true,
+            },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findScheduleBySlotUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findScheduleBySlotUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

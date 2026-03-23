@@ -238,6 +238,12 @@ export class ScheduleService {
             tx,
           );
 
+        if (schedule.status !== ScheduleStatus.DRAFT) {
+          throw new ForbiddenException(
+            'Inspection targets can be updated only when the schedule status is DRAFT.',
+          );
+        }
+
         const now = new Date();
         if (now >= schedule.applicationStartTime) {
           throw new ForbiddenException(
@@ -295,7 +301,10 @@ export class ScheduleService {
           tx,
         );
 
-      if (schedule.status !== ScheduleStatus.DRAFT) {
+      if (
+        schedule.status !== ScheduleStatus.DRAFT &&
+        schedule.status !== ScheduleStatus.ACTIVE
+      ) {
         throw new ForbiddenException(
           'Cleaning service application can be modified only when the schedule status is DRAFT.',
         );

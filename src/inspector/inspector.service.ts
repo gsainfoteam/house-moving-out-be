@@ -16,7 +16,7 @@ import {
   PrismaTransaction,
 } from '@lib/database';
 import { Loggable } from '@lib/logger';
-import { Gender, User } from 'generated/prisma/client';
+import { Gender, ScheduleStatus, User } from 'generated/prisma/client';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 
 @Loggable()
@@ -37,6 +37,9 @@ export class InspectorService {
   }
 
   async createInspectors({ inspectors }: CreateInspectorsDto): Promise<void> {
+    const allSlotUuids = inspectors.flatMap((i) => i.availableSlotUuids);
+    await this.validateScheduleStatus(allSlotUuids);
+
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       for (const { availableSlotUuids, ...inspector } of inspectors) {
         const { uuid } = await this.inspectorRepository.createInspectorsInTx(
@@ -70,10 +73,15 @@ export class InspectorService {
     uuid: string,
     { availableSlotUuids }: UpdateInspectorDto,
   ): Promise<void> {
+    const inspector = await this.inspectorRepository.findInspector(uuid);
+    const currentSlotUuids = inspector.availableSlots.map(
+      (slot) => slot.inspectionSlot.uuid,
+    );
+    await this.validateScheduleStatus([
+      ...new Set([...currentSlotUuids, ...availableSlotUuids]),
+    ]);
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       if (availableSlotUuids.length > 0) {
-        const inspector = await this.inspectorRepository.findInspector(uuid);
-
         await this.validateInspectorSlotGenderInTx(
           inspector.gender,
           availableSlotUuids,
@@ -95,6 +103,13 @@ export class InspectorService {
   }
 
   async deleteInspector(uuid: string): Promise<void> {
+    const inspector = await this.inspectorRepository.findInspector(uuid);
+    const slotUuids = inspector.availableSlots.map(
+      (slot) => slot.inspectionSlot.uuid,
+    );
+
+    await this.validateScheduleStatus(slotUuids);
+
     await this.inspectorRepository.deleteInspector(uuid);
   }
 
@@ -156,6 +171,23 @@ export class InspectorService {
     if (invalidSlot) {
       throw new ForbiddenException(
         'Inspector gender must match inspection slot gender.',
+      );
+    }
+  }
+
+  private async validateScheduleStatus(slotUuids: string[]): Promise<void> {
+    if (slotUuids.length === 0) return;
+
+    const slots =
+      await this.inspectionSlotRepository.findSlotsWithSchedule(slotUuids);
+
+    const invalidSchedule = slots.find(
+      (slot) => slot.schedule.status !== ScheduleStatus.DRAFT,
+    );
+
+    if (invalidSchedule) {
+      throw new ForbiddenException(
+        `Inspectors can only be managed when the schedule status is DRAFT.`,
       );
     }
   }
