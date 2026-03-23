@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { InspectionSlotResDto } from '../../../schedule/dto/res/move-out-schedule-with-slots-res.dto';
 import { Type } from 'class-transformer';
+import { InspectionSlotResDto } from '../../../schedule/dto/res/move-out-schedule-with-slots-res.dto';
+import { ItemResultsResDto } from './application-res.dto';
+import { JsonValue } from '@prisma/client/runtime/client';
 
 export class InspectionResDto {
   @ApiProperty({
@@ -20,4 +22,18 @@ export class InspectionResDto {
     description: 'Whether inspection is passed',
   })
   isPassed?: boolean;
+
+  @ApiProperty({
+    description: 'Inspection count',
+    example: 1,
+  })
+  inspectionCount: number;
+
+  @ApiPropertyOptional({
+    description: 'Inspection item results',
+    type: ItemResultsResDto,
+    nullable: true,
+  })
+  @Type(() => ItemResultsResDto)
+  itemResults?: ItemResultsResDto | JsonValue;
 }

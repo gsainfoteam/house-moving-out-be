@@ -292,6 +292,8 @@ export class ApplicationService {
       uuid: application.uuid,
       inspectionSlot: { ...application.inspectionSlot },
       isPassed: application.isPassed ?? undefined,
+      inspectionCount: application.inspectionCount,
+      itemResults: application.itemResults,
     };
   }
 
