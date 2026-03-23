@@ -156,7 +156,7 @@ class TargetInfoResDto {
   }
 }
 
-class ItemResultsResDto {
+export class ItemResultsResDto {
   @ApiProperty({ description: 'Passed items', example: ['floor', 'window'] })
   passed: string[];
 
