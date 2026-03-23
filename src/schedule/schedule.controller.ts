@@ -142,10 +142,8 @@ export class ScheduleController {
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
   @Get('active')
-  async findActiveMoveOutScheduleWithSlots(
-    @GetUser() user: User,
-  ): Promise<MoveOutScheduleWithSlotsResDto> {
-    return await this.scheduleService.findActiveMoveOutScheduleWithSlots(user);
+  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlotsResDto> {
+    return await this.scheduleService.findActiveMoveOutScheduleWithSlots();
   }
 
   @ApiOperation({

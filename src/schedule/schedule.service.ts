@@ -181,28 +181,8 @@ export class ScheduleService {
     );
   }
 
-  async findActiveMoveOutScheduleWithSlots(
-    user: User,
-  ): Promise<MoveOutScheduleWithSlots> {
-    const schedule =
-      await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
-
-    const now = new Date();
-    if (now < schedule.applicationStartTime) {
-      throw new ForbiddenException('Application period has not started yet.');
-    }
-
-    if (now > schedule.applicationEndTime) {
-      throw new ForbiddenException('Application period has ended.');
-    }
-
-    await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
-      user.studentNumber,
-      user.name,
-      schedule.uuid,
-    );
-
-    return schedule;
+  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
+    return await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
   }
 
   async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
