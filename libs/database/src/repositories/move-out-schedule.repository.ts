@@ -128,6 +128,34 @@ export class MoveOutScheduleRepository {
       });
   }
 
+  async findMoveOutScheduleByUuidWithXLockInTx(
+    uuid: string,
+    tx: PrismaTransaction,
+  ): Promise<MoveOutSchedule> {
+    await tx.$executeRaw`SELECT 1 FROM "move_out_schedule" WHERE "uuid" = ${uuid} FOR UPDATE`;
+
+    return await tx.moveOutSchedule
+      .findUniqueOrThrow({
+        where: { uuid },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
+            throw new NotFoundException(`Move out schedule not found`);
+          }
+          this.logger.error(
+            `findMoveOutScheduleByUuidWithXLockInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findMoveOutScheduleByUuidWithXLockInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
     uuid: string,
     tx: PrismaTransaction,
@@ -229,6 +257,32 @@ export class MoveOutScheduleRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`updateMoveOutSchedule error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async updateMoveOutScheduleInTx(
+    uuid: string,
+    data: Prisma.MoveOutScheduleUpdateInput,
+    tx: PrismaTransaction,
+  ): Promise<MoveOutSchedule> {
+    return await tx.moveOutSchedule
+      .update({
+        where: { uuid },
+        data,
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`MoveOutSchedule not found: ${uuid}`);
+            throw new NotFoundException(`Move out schedule not found`);
+          }
+          this.logger.error(
+            `updateMoveOutScheduleInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateMoveOutScheduleInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

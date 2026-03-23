@@ -181,28 +181,8 @@ export class ScheduleService {
     );
   }
 
-  async findActiveMoveOutScheduleWithSlots(
-    user: User,
-  ): Promise<MoveOutScheduleWithSlots> {
-    const schedule =
-      await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
-
-    const now = new Date();
-    if (now < schedule.applicationStartTime) {
-      throw new ForbiddenException('Application period has not started yet.');
-    }
-
-    if (now > schedule.applicationEndTime) {
-      throw new ForbiddenException('Application period has ended.');
-    }
-
-    await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
-      user.studentNumber,
-      user.name,
-      schedule.uuid,
-    );
-
-    return schedule;
+  async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
+    return await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
   }
 
   async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
@@ -257,6 +237,12 @@ export class ScheduleService {
             scheduleUuid,
             tx,
           );
+
+        if (schedule.status !== ScheduleStatus.DRAFT) {
+          throw new ForbiddenException(
+            'Inspection targets can be updated only when the schedule status is DRAFT.',
+          );
+        }
 
         const now = new Date();
         if (now >= schedule.applicationStartTime) {
@@ -315,9 +301,12 @@ export class ScheduleService {
           tx,
         );
 
-      if (schedule.status !== ScheduleStatus.DRAFT) {
+      if (
+        schedule.status !== ScheduleStatus.DRAFT &&
+        schedule.status !== ScheduleStatus.ACTIVE
+      ) {
         throw new ForbiddenException(
-          'Cleaning service application can be modified only when the schedule status is DRAFT.',
+          'Cleaning service application can be modified only when the schedule status is DRAFT or ACTIVE.',
         );
       }
 
@@ -338,6 +327,62 @@ export class ScheduleService {
         scheduleUuid,
         uniqueTargetUuids,
         applyCleaningService,
+        tx,
+      );
+    });
+  }
+
+  async updateStatus(uuid: string, newStatus: ScheduleStatus): Promise<void> {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      const schedule =
+        await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+          uuid,
+          tx,
+        );
+
+      const allowedTransitions: Record<ScheduleStatus, ScheduleStatus[]> = {
+        [ScheduleStatus.DRAFT]: [
+          ScheduleStatus.ACTIVE,
+          ScheduleStatus.CANCELED,
+        ],
+        [ScheduleStatus.ACTIVE]: [
+          ScheduleStatus.COMPLETED,
+          ScheduleStatus.CANCELED,
+        ],
+        [ScheduleStatus.COMPLETED]: [],
+        [ScheduleStatus.CANCELED]: [],
+      };
+
+      if (!allowedTransitions[schedule.status].includes(newStatus)) {
+        throw new ForbiddenException(
+          `Invalid status transition: ${schedule.status} -> ${newStatus}`,
+        );
+      }
+
+      if (
+        schedule.status === ScheduleStatus.DRAFT &&
+        newStatus === ScheduleStatus.ACTIVE
+      ) {
+        const slotsWithInspectorCount =
+          await this.inspectionSlotRepository.findSlotsWithInspectorCountByScheduleUuidInTx(
+            uuid,
+            tx,
+          );
+
+        const slotsWithInsufficientInspectors = slotsWithInspectorCount.filter(
+          (slot) => slot._count.inspectors < Math.ceil(slot.capacity / 2),
+        );
+
+        if (slotsWithInsufficientInspectors.length > 0) {
+          throw new ForbiddenException(
+            'All inspection slots must have enough inspectors assigned before activating the schedule.',
+          );
+        }
+      }
+
+      await this.moveOutScheduleRepository.updateMoveOutScheduleInTx(
+        uuid,
+        { status: newStatus },
         tx,
       );
     });

@@ -12,6 +12,7 @@ import {
   InspectionSlot,
   MoveOutSchedule,
   Prisma,
+  ScheduleStatus,
 } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 
@@ -256,6 +257,59 @@ export class InspectionSlotRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findSlotsByUuidsWithGenderInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findSlotsWithInspectorCountByScheduleUuidInTx(
+    scheduleUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<Array<InspectionSlot & { _count: { inspectors: number } }>> {
+    return await tx.inspectionSlot
+      .findMany({
+        where: { scheduleUuid },
+        include: {
+          _count: {
+            select: { inspectors: true },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findSlotsWithInspectorCountByScheduleUuidInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `findSlotsWithInspectorCountByScheduleUuidInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findSlotsWithSchedule(
+    slotUuids: string[],
+  ): Promise<{ schedule: { status: ScheduleStatus } }[]> {
+    return await this.databaseService.inspectionSlot
+      .findMany({
+        where: { uuid: { in: slotUuids } },
+        select: {
+          schedule: {
+            select: {
+              status: true,
+            },
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findScheduleBySlotUuid prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findScheduleBySlotUuid error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
