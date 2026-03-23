@@ -369,13 +369,13 @@ export class ScheduleService {
             tx,
           );
 
-        const slotsWithoutInspector = slotsWithInspectorCount.filter(
+        const slotsWithInsufficientInspectors = slotsWithInspectorCount.filter(
           (slot) => slot._count.inspectors < Math.ceil(slot.capacity / 2),
         );
 
-        if (slotsWithoutInspector.length > 0) {
+        if (slotsWithInsufficientInspectors.length > 0) {
           throw new ForbiddenException(
-            'All inspection slots must have at least half of their capacity filled with inspectors before activating the schedule.',
+            'All inspection slots must have enough inspectors assigned before activating the schedule.',
           );
         }
       }
