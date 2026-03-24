@@ -314,7 +314,7 @@ export class ScheduleController {
   @ApiOperation({
     summary: 'Bulk update cleaning service for inspection targets',
     description:
-      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT.',
+      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT or ACTIVE.',
   })
   @ApiNoContentResponse({
     description: 'Cleaning service flags successfully updated',
@@ -324,7 +324,7 @@ export class ScheduleController {
   })
   @ApiForbiddenResponse({
     description:
-      'Cleaning service flags can be modified only when the schedule status is DRAFT',
+      'Cleaning service flags can be modified only when the schedule status is DRAFT or ACTIVE.',
   })
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
