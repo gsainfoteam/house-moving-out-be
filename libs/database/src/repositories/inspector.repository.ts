@@ -31,6 +31,9 @@ export class InspectorRepository {
         },
         include: {
           availableSlots: {
+            where: {
+              inspectionSlot: { scheduleUuid },
+            },
             include: {
               inspectionSlot: true,
             },
@@ -186,6 +189,9 @@ export class InspectorRepository {
         },
         include: {
           availableSlots: {
+            where: {
+              inspectionSlot: { scheduleUuid: uuid },
+            },
             include: {
               inspectionSlot: true,
             },
