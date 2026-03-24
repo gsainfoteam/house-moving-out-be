@@ -187,6 +187,34 @@ export class InspectionTargetInfoRepository {
       });
   }
 
+  async updateApplyRepairCheckByScheduleAndUuidsInTx(
+    scheduleUuid: string,
+    targetUuids: string[],
+    applyRepairCheck: boolean,
+    tx: PrismaTransaction,
+  ): Promise<{ count: number }> {
+    return await tx.inspectionTargetInfo
+      .updateMany({
+        where: {
+          scheduleUuid,
+          uuid: { in: targetUuids },
+        },
+        data: { applyRepairCheck },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `updateApplyRepairCheckByScheduleAndUuidsInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `updateApplyRepairCheckByScheduleAndUuidsInTx error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findInspectionTargetInfoByUserInfo(
     studentNumber: string,
     studentName: string,
