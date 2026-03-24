@@ -19,9 +19,16 @@ export class InspectorRepository {
   private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async findAllInspectors(): Promise<InspectorWithSlots[]> {
+  async findAllInspectors(scheduleUuid: string): Promise<InspectorWithSlots[]> {
     return await this.databaseService.inspector
       .findMany({
+        where: {
+          availableSlots: {
+            some: {
+              inspectionSlot: { scheduleUuid },
+            },
+          },
+        },
         include: {
           availableSlots: {
             include: {
@@ -44,18 +51,24 @@ export class InspectorRepository {
     inspector: Prisma.InspectorCreateInput,
     tx: PrismaTransaction,
   ) {
-    return await tx.inspector.create({ data: inspector }).catch((error) => {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          this.logger.debug(`Conflict email: ${error.message}`);
-          throw new ConflictException('Conflict Error');
+    return await tx.inspector
+      .upsert({
+        where: { email: inspector.email },
+        create: inspector,
+        update: inspector,
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            this.logger.debug(`Conflict email: ${error.message}`);
+            throw new ConflictException('Conflict Error');
+          }
+          this.logger.error(`createInspectors prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`createInspectors prisma error: ${error.message}`);
-        throw new InternalServerErrorException('Database Error');
-      }
-      this.logger.error(`createInspectors error: ${error}`);
-      throw new InternalServerErrorException('Unknown Error');
-    });
+        this.logger.error(`createInspectors error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
   }
 
   async findInspector(uuid: string): Promise<InspectorWithSlots> {

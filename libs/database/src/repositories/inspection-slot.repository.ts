@@ -12,7 +12,6 @@ import {
   InspectionSlot,
   MoveOutSchedule,
   Prisma,
-  ScheduleStatus,
 } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 
@@ -288,19 +287,13 @@ export class InspectionSlotRepository {
       });
   }
 
-  async findSlotsWithSchedule(
+  async findSlotsWithScheduleInTx(
     slotUuids: string[],
-  ): Promise<{ schedule: { status: ScheduleStatus } }[]> {
-    return await this.databaseService.inspectionSlot
+    tx: PrismaTransaction,
+  ): Promise<InspectionSlot[]> {
+    return await tx.inspectionSlot
       .findMany({
         where: { uuid: { in: slotUuids } },
-        select: {
-          schedule: {
-            select: {
-              status: true,
-            },
-          },
-        },
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {

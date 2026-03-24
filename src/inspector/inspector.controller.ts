@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -33,6 +34,7 @@ import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
+import { InspectorQueryDto } from './dto/req/inspector-query.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -52,8 +54,10 @@ export class InspectorController {
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Get()
-  async getInspectors(): Promise<InspectorResDto[]> {
-    return await this.inspectorService.getInspectors();
+  async getInspectors(
+    @Query() { scheduleUuid }: InspectorQueryDto,
+  ): Promise<InspectorResDto[]> {
+    return await this.inspectorService.getInspectors(scheduleUuid);
   }
 
   @ApiOperation({
@@ -97,8 +101,11 @@ export class InspectorController {
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Post()
-  async createInspectors(@Body() dto: CreateInspectorsDto): Promise<void> {
-    return await this.inspectorService.createInspectors(dto);
+  async createInspectors(
+    @Query() { scheduleUuid }: InspectorQueryDto,
+    @Body() dto: CreateInspectorsDto,
+  ): Promise<void> {
+    return await this.inspectorService.createInspectors(scheduleUuid, dto);
   }
 
   @ApiOperation({
@@ -137,13 +144,11 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Patch(':id')
   async updateInspector(
+    @Query() { scheduleUuid }: InspectorQueryDto,
     @Param('id', ParseUUIDPipe) uuid: string,
-    @Body() updateInspectorDto: UpdateInspectorDto,
+    @Body() dto: UpdateInspectorDto,
   ): Promise<void> {
-    return await this.inspectorService.updateInspector(
-      uuid,
-      updateInspectorDto,
-    );
+    return await this.inspectorService.updateInspector(scheduleUuid, uuid, dto);
   }
 
   @ApiOperation({
@@ -161,8 +166,9 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Delete(':id')
   async deleteInspector(
+    @Query() { scheduleUuid }: InspectorQueryDto,
     @Param('id', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
-    return await this.inspectorService.deleteInspector(uuid);
+    return await this.inspectorService.deleteInspector(scheduleUuid, uuid);
   }
 }
