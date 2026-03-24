@@ -1,5 +1,5 @@
 import { ApplicationWithDetails } from '@lib/database';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ApplicationStatus, RoomInspectionType } from 'generated/prisma/client';
 
 class Resident {
@@ -55,7 +55,7 @@ export class AssignedTargetsResDto {
   })
   inspectionType: RoomInspectionType;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether the inspection is passed',
     example: ApplicationStatus.PASSED,
     nullable: true,
@@ -69,7 +69,7 @@ export class AssignedTargetsResDto {
   })
   inspectionCount: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether the document url is active',
     example: true,
     nullable: true,

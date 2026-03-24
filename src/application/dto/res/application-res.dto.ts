@@ -188,14 +188,14 @@ export class ApplicationResDto {
   @Type(() => TargetInfoResDto)
   targetInfo: TargetInfoResDto;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether inspection is passed',
     enum: ApplicationStatus,
     nullable: true,
   })
   status: ApplicationStatus | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Inspection item results',
     type: ItemResultsResDto,
     nullable: true,
@@ -203,7 +203,7 @@ export class ApplicationResDto {
   @Type(() => ItemResultsResDto)
   itemResults: ItemResultsResDto | JsonValue;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Additional comment about the inspection result',
     example: 'The door is damaged.',
     type: String,
@@ -211,7 +211,7 @@ export class ApplicationResDto {
   })
   additionalComment: string | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Inspection document URL (Expires in 10 minutes)',
     type: String,
     nullable: true,
