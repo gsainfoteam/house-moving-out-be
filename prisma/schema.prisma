@@ -68,6 +68,15 @@ enum ArticleType {
   @@map("article_type")
 }
 
+enum ApplicationStatus {
+  PASSED
+  FAILED
+  PENDING_NO_SHOW
+  NO_SHOW
+
+  @@map("application_status")
+}
+
 model User {
   uuid          String @id
   name          String
@@ -208,20 +217,20 @@ model InspectionSlot {
 }
 
 model InspectionApplication {
-  uuid                     String    @id @default(uuid())
-  userUuid                 String    @map("user_uuid")
-  inspectionTargetInfoUuid String    @map("inspection_target_info_uuid")
-  inspectionSlotUuid       String    @map("inspection_slot_uuid")
-  isPassed                 Boolean?  @map("is_passed")
-  itemResults              Json?     @map("item_results")
-  additionalComment        String?   @map("additional_comment")
+  uuid                     String             @id @default(uuid())
+  userUuid                 String             @map("user_uuid")
+  inspectionTargetInfoUuid String             @map("inspection_target_info_uuid")
+  inspectionSlotUuid       String             @map("inspection_slot_uuid")
+  status                   ApplicationStatus?
+  itemResults              Json?              @map("item_results")
+  additionalComment        String?            @map("additional_comment")
   document                 String?
-  isDocumentActive         Boolean?  @map("is_document_active")
-  createdAt                DateTime  @default(now()) @map("created_at")
-  updatedAt                DateTime  @default(now()) @updatedAt @map("updated_at")
-  deletedAt                DateTime? @map("deleted_at")
-  inspectorUuid            String    @map("inspector_uuid")
-  inspectionCount          Int       @map("inspection_count")
+  isDocumentActive         Boolean?           @map("is_document_active")
+  createdAt                DateTime           @default(now()) @map("created_at")
+  updatedAt                DateTime           @default(now()) @updatedAt @map("updated_at")
+  deletedAt                DateTime?          @map("deleted_at")
+  inspectorUuid            String             @map("inspector_uuid")
+  inspectionCount          Int                @map("inspection_count")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   inspectionTargetInfo InspectionTargetInfo @relation(fields: [inspectionTargetInfoUuid], references: [uuid], onDelete: Cascade)

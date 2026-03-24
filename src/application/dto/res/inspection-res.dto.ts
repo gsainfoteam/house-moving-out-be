@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import { InspectionSlotResDto } from '../../../schedule/dto/res/move-out-schedule-with-slots-res.dto';
 import { ItemResultsResDto } from './application-res.dto';
 import { JsonValue } from '@prisma/client/runtime/client';
+import { ApplicationStatus } from 'generated/prisma/enums';
 
 export class InspectionResDto {
   @ApiProperty({
@@ -20,8 +21,10 @@ export class InspectionResDto {
 
   @ApiPropertyOptional({
     description: 'Whether inspection is passed',
+    enum: ApplicationStatus,
+    example: ApplicationStatus.PASSED,
   })
-  isPassed?: boolean;
+  status?: ApplicationStatus;
 
   @ApiProperty({
     description: 'Inspection count',
