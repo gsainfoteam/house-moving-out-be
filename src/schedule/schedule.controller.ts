@@ -343,7 +343,7 @@ export class ScheduleController {
   @ApiOperation({
     summary: 'Bulk update repair check for inspection targets',
     description:
-      'Bulk update the repair check flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT.',
+      'Bulk update the repair check flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT or ACTIVE.',
   })
   @ApiNoContentResponse({
     description: 'Repair check flags successfully updated',
