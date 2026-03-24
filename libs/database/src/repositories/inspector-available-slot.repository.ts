@@ -51,9 +51,7 @@ export class InspectorAvailableSlotRepository {
         where: {
           inspectorUuid,
           inspectionSlot: {
-            schedule: {
-              uuid: scheduleUuid,
-            },
+            scheduleUuid,
           },
         },
       })
