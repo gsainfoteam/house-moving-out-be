@@ -14,6 +14,7 @@ import {
   InspectionSlotRepository,
   MoveOutScheduleRepository,
   PrismaTransaction,
+  InspectorWithSlots,
 } from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { Gender, ScheduleStatus, User } from 'generated/prisma/client';
@@ -43,7 +44,11 @@ export class InspectorService {
   ): Promise<void> {
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       const allSlotUuids = inspectors.flatMap((i) => i.availableSlotUuids);
-      await this.validateScheduleStatusInTx(allSlotUuids, scheduleUuid, tx);
+      await this.validateScheduleStatusBySlotInTx(
+        allSlotUuids,
+        scheduleUuid,
+        tx,
+      );
 
       for (const { availableSlotUuids, ...inspector } of inspectors) {
         const { uuid } = await this.inspectorRepository.createInspectorsInTx(
@@ -80,28 +85,16 @@ export class InspectorService {
   ): Promise<void> {
     const inspector = await this.inspectorRepository.findInspector(uuid);
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
-      await this.validateScheduleStatusInTx(
+      await this.validateScheduleStatusBySlotInTx(
         availableSlotUuids,
         scheduleUuid,
         tx,
       );
-      const currentSlotUuids = inspector.availableSlots.map(
-        (slot) => slot.inspectionSlot.uuid,
+      await this.validateScheduleStatusByInspectorInTx(
+        inspector,
+        scheduleUuid,
+        tx,
       );
-      const slots =
-        await this.inspectionSlotRepository.findSlotsWithScheduleInTx(
-          currentSlotUuids,
-          tx,
-        );
-      const validSlot = slots.find(
-        (slot) => slot.scheduleUuid === scheduleUuid,
-      );
-
-      if (!validSlot) {
-        throw new ForbiddenException(
-          `Inspectors can only be managed when the schedule status is DRAFT.`,
-        );
-      }
 
       if (availableSlotUuids.length > 0) {
         await this.validateInspectorSlotGenderInTx(
@@ -127,11 +120,13 @@ export class InspectorService {
 
   async deleteInspector(scheduleUuid: string, uuid: string): Promise<void> {
     const inspector = await this.inspectorRepository.findInspector(uuid);
-    const slotUuids = inspector.availableSlots.map(
-      (slot) => slot.inspectionSlot.uuid,
-    );
+
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
-      await this.validateScheduleStatusInTx(slotUuids, scheduleUuid, tx);
+      await this.validateScheduleStatusByInspectorInTx(
+        inspector,
+        scheduleUuid,
+        tx,
+      );
 
       await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
         uuid,
@@ -203,7 +198,7 @@ export class InspectorService {
     }
   }
 
-  private async validateScheduleStatusInTx(
+  private async validateScheduleStatusBySlotInTx(
     slotUuids: string[],
     scheduleUuid: string,
     tx: PrismaTransaction,
@@ -232,6 +227,39 @@ export class InspectorService {
     );
 
     if (invalidSlot) {
+      throw new ForbiddenException(
+        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      );
+    }
+  }
+
+  private async validateScheduleStatusByInspectorInTx(
+    inspector: InspectorWithSlots,
+    scheduleUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+        scheduleUuid,
+        tx,
+      );
+
+    if (schedule.status !== ScheduleStatus.DRAFT) {
+      throw new ForbiddenException(
+        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      );
+    }
+
+    const slotUuids = inspector.availableSlots.map(
+      (slot) => slot.inspectionSlot.uuid,
+    );
+    const slots = await this.inspectionSlotRepository.findSlotsWithScheduleInTx(
+      slotUuids,
+      tx,
+    );
+    const validSlot = slots.find((slot) => slot.scheduleUuid === scheduleUuid);
+
+    if (!validSlot) {
       throw new ForbiddenException(
         `Inspectors can only be managed when the schedule status is DRAFT.`,
       );

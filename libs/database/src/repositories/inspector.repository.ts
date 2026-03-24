@@ -97,25 +97,6 @@ export class InspectorRepository {
       });
   }
 
-  async deleteInspector(uuid: string): Promise<void> {
-    await this.databaseService.inspector
-      .delete({
-        where: { uuid },
-      })
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`Inspector not found: ${uuid}`);
-            throw new NotFoundException(`Inspector not found`);
-          }
-          this.logger.error(`deleteInspector prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`deleteInspector error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
-
   async findInspectorByUserInfo(
     email: string,
     name: string,
