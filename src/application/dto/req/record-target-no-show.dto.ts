@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
+import { IsIn } from 'class-validator';
 import { ApplicationStatus } from 'generated/prisma/enums';
 
 export class RecordTargetNoShowDto {
@@ -7,8 +7,8 @@ export class RecordTargetNoShowDto {
     description:
       'Application status. Only NO_SHOW and PENDING_NO_SHOW is allowed.',
     example: ApplicationStatus.NO_SHOW,
-    enum: ApplicationStatus,
+    enum: [ApplicationStatus.NO_SHOW, ApplicationStatus.PENDING_NO_SHOW],
   })
-  @IsEnum(ApplicationStatus)
+  @IsIn([ApplicationStatus.NO_SHOW, ApplicationStatus.PENDING_NO_SHOW])
   status: ApplicationStatus;
 }

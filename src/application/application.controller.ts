@@ -235,6 +235,7 @@ export class ApplicationController {
     description: 'Forbidden',
   })
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiConflictResponse({ description: 'Conflict' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('user')
   @UseGuards(UserGuard)
