@@ -46,6 +46,7 @@ import { ApplicationListResDto } from 'src/application/dto/res/application-res.d
 import { FileService } from '@lib/file';
 import { PDFDocument } from 'pdf-lib';
 import pLimit from 'p-limit';
+import { BulkUpdateRepairCheckDto } from './dto/req/bulk-update-repair-check.dto';
 
 @Loggable()
 @Injectable()
@@ -327,6 +328,50 @@ export class ScheduleService {
         scheduleUuid,
         uniqueTargetUuids,
         applyCleaningService,
+        tx,
+      );
+    });
+  }
+
+  async bulkUpdateRepairCheck(
+    scheduleUuid: string,
+    { targetUuids, applyRepairCheck }: BulkUpdateRepairCheckDto,
+  ): Promise<void> {
+    const uniqueTargetUuids = [...new Set(targetUuids)];
+
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      const schedule =
+        await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuidWithXLockInTx(
+          scheduleUuid,
+          tx,
+        );
+
+      if (
+        schedule.status !== ScheduleStatus.DRAFT &&
+        schedule.status !== ScheduleStatus.ACTIVE
+      ) {
+        throw new ForbiddenException(
+          'Repair check application can be modified only when the schedule status is DRAFT or ACTIVE.',
+        );
+      }
+
+      const count =
+        await this.inspectionTargetInfoRepository.countInspectionTargetsByScheduleAndUuidsInTx(
+          scheduleUuid,
+          uniqueTargetUuids,
+          tx,
+        );
+
+      if (count !== uniqueTargetUuids.length) {
+        throw new BadRequestException(
+          'Request contains invalid inspection target UUID(s).',
+        );
+      }
+
+      await this.inspectionTargetInfoRepository.updateApplyRepairCheckByScheduleAndUuidsInTx(
+        scheduleUuid,
+        uniqueTargetUuids,
+        applyRepairCheck,
         tx,
       );
     });

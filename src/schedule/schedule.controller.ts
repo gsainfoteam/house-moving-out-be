@@ -53,6 +53,7 @@ import { ApplicationListResDto } from 'src/application/dto/res/application-res.d
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
 import { EXCEL_VALIDATION_CONSTANTS } from '@lib/excel-parser/constants/room-assignment-parser.constants';
 import { UpdateScheduleStatusDto } from './dto/req/update-schedule-status.dto';
+import { BulkUpdateRepairCheckDto } from './dto/req/bulk-update-repair-check.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schedule')
@@ -313,7 +314,7 @@ export class ScheduleController {
   @ApiOperation({
     summary: 'Bulk update cleaning service for inspection targets',
     description:
-      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT.',
+      'Bulk update the external cleaning service application flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT or ACTIVE.',
   })
   @ApiNoContentResponse({
     description: 'Cleaning service flags successfully updated',
@@ -323,7 +324,7 @@ export class ScheduleController {
   })
   @ApiForbiddenResponse({
     description:
-      'Cleaning service flags can be modified only when the schedule status is DRAFT',
+      'Cleaning service flags can be modified only when the schedule status is DRAFT or ACTIVE.',
   })
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -337,6 +338,34 @@ export class ScheduleController {
     @Body() dto: BulkUpdateCleaningServiceDto,
   ): Promise<void> {
     await this.scheduleService.bulkUpdateCleaningService(scheduleUuid, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Bulk update repair check for inspection targets',
+    description:
+      'Bulk update the repair check flag for multiple inspection targets within a single schedule. Allowed only when the schedule status is DRAFT or ACTIVE.',
+  })
+  @ApiNoContentResponse({
+    description: 'Repair check flags successfully updated',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid/targets/repair-check')
+  @HttpCode(204)
+  async bulkUpdateRepair(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Body() dto: BulkUpdateRepairCheckDto,
+  ): Promise<void> {
+    await this.scheduleService.bulkUpdateRepairCheck(scheduleUuid, dto);
   }
 
   @ApiOperation({

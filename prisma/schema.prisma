@@ -176,6 +176,7 @@ model InspectionTargetInfo {
   student3Name          String?            @map("student3_name")
   student3StudentNumber String?            @map("student3_student_number")
   applyCleaningService  Boolean            @default(false) @map("apply_cleaning_service")
+  applyRepairCheck      Boolean            @default(false) @map("apply_repair_check")
   inspectionType        RoomInspectionType @map("inspection_type")
   inspectionCount       Int                @default(0) @map("inspection_count")
   createdAt             DateTime           @default(now()) @map("created_at")
@@ -190,13 +191,13 @@ model InspectionTargetInfo {
 }
 
 model InspectionSlot {
-  uuid                String   @id @default(uuid())
-  scheduleUuid        String   @map("schedule_uuid")
-  startTime           DateTime @map("start_time")
-  endTime             DateTime @map("end_time")
-  gender              Gender   @map("gender")
-  capacity            Int      @default(0) @map("capacity")
-  reservedCount       Int      @default(0) @map("reserved_count")
+  uuid          String   @id @default(uuid())
+  scheduleUuid  String   @map("schedule_uuid")
+  startTime     DateTime @map("start_time")
+  endTime       DateTime @map("end_time")
+  gender        Gender   @map("gender")
+  capacity      Int      @default(0) @map("capacity")
+  reservedCount Int      @default(0) @map("reserved_count")
 
   inspectionApplications InspectionApplication[]
   inspectors             InspectorAvailableSlot[]
