@@ -7,7 +7,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
-import { InspectionApplication, Prisma } from 'generated/prisma/client';
+import {
+  ApplicationStatus,
+  InspectionApplication,
+  Prisma,
+  User,
+} from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 import {
   ApplicationInfo,
@@ -154,16 +159,47 @@ export class InspectionApplicationRepository {
     uuid: string,
     tx: PrismaTransaction,
   ): Promise<ApplicationWithDetails> {
-    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} AND "is_passed" IS NULL AND "deleted_at" IS NULL FOR UPDATE`;
+    await tx.$executeRaw`SELECT 1 FROM "inspection_application" WHERE "uuid" = ${uuid} AND "deleted_at" IS NULL FOR UPDATE`;
 
     return this.findApplicationByUuidInTx(uuid, tx);
+  }
+
+  async updateApplicationStatusInTx(
+    applicationUuid: string,
+    status: ApplicationStatus,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplication & { user: User }> {
+    return await tx.inspectionApplication
+      .update({
+        where: { uuid: applicationUuid, deletedAt: null },
+        data: { status },
+        include: {
+          user: true,
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found for update status: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `updateApplicationStatusInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateApplicationStatusInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
   }
 
   async updateInspectionResultInTx(
     applicationUuid: string,
     itemResults: Prisma.InputJsonValue,
     additionalComment: string | null,
-    isPassed: boolean,
+    status: ApplicationStatus,
     document: string,
     isDocumentActive: boolean,
     tx: PrismaTransaction,
@@ -174,7 +210,7 @@ export class InspectionApplicationRepository {
         data: {
           itemResults,
           additionalComment,
-          isPassed,
+          status,
           document,
           isDocumentActive,
         },

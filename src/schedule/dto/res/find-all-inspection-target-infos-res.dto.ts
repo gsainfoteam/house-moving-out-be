@@ -1,5 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Gender, RoomInspectionType } from 'generated/prisma/client';
+import {
+  ApplicationStatus,
+  Gender,
+  RoomInspectionType,
+} from 'generated/prisma/client';
 
 class Resident {
   @ApiProperty({
@@ -70,11 +74,11 @@ export class InspectionTargetsGroupedByRoomResDto {
 
   @ApiProperty({
     description: 'Whether the inspection is passed',
-    example: true,
+    example: ApplicationStatus.PASSED,
     nullable: true,
-    type: Boolean,
+    enum: ApplicationStatus,
   })
-  isPassed: boolean | null;
+  status: ApplicationStatus | null;
 
   @ApiProperty({
     description: 'Gender of the room',

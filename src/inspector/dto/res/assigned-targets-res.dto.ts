@@ -1,6 +1,6 @@
 import { ApplicationWithDetails } from '@lib/database';
 import { ApiProperty } from '@nestjs/swagger';
-import { RoomInspectionType } from 'generated/prisma/client';
+import { ApplicationStatus, RoomInspectionType } from 'generated/prisma/client';
 
 class Resident {
   @ApiProperty({
@@ -57,11 +57,11 @@ export class AssignedTargetsResDto {
 
   @ApiProperty({
     description: 'Whether the inspection is passed',
-    example: true,
+    example: ApplicationStatus.PASSED,
     nullable: true,
-    type: Boolean,
+    enum: ApplicationStatus,
   })
-  isPassed: boolean | null;
+  status: ApplicationStatus | null;
 
   @ApiProperty({
     description: 'Inspection count',
@@ -105,7 +105,7 @@ export class AssignedTargetsResDto {
     ].filter((v): v is { studentNumber: string; name: string } => v !== null);
     this.inspectionTime = app.inspectionSlot.startTime;
     this.inspectionType = app.inspectionTargetInfo.inspectionType;
-    this.isPassed = app.isPassed;
+    this.status = app.status;
     this.inspectionCount = app.inspectionTargetInfo.inspectionCount;
     this.isDocumentActive = app.isDocumentActive;
   }

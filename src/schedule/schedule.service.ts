@@ -495,12 +495,9 @@ export class ScheduleService {
 
         let lastInspectionTime: Date | null = null;
 
-        if (latestApplication && latestApplication.isPassed !== null) {
+        if (latestApplication && latestApplication.status !== null) {
           lastInspectionTime = latestApplication.updatedAt;
-        } else if (
-          previousApplication &&
-          previousApplication.isPassed !== null
-        ) {
+        } else if (previousApplication && previousApplication.status !== null) {
           lastInspectionTime = previousApplication.updatedAt;
         }
 
@@ -513,7 +510,7 @@ export class ScheduleService {
           inspectionCount: target.inspectionCount,
           applyCleaningService: target.applyCleaningService,
           lastInspectionTime,
-          isPassed: latestApplication?.isPassed ?? null,
+          status: latestApplication?.status ?? null,
           gender: target.gender,
         };
       },

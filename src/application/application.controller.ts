@@ -40,6 +40,8 @@ import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationResDto } from './dto/res/application-res.dto';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { GetDocumentUploadUrlReqDto } from './dto/req/get-document-upload-url.dto';
+import { RecordTargetNoShowDto } from './dto/req/record-target-no-show.dto';
+import { TargetPhoneNumberResDto } from './dto/res/target-phone-number-res.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('application')
@@ -217,6 +219,33 @@ export class ApplicationController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
     return this.applicationService.cancelInspection(user, uuid);
+  }
+
+  @ApiOperation({
+    summary: 'Record Target No-Show',
+    description: 'Inspector records a no-show for the given application.',
+  })
+  @ApiOkResponse({
+    description: 'The no-show has been successfully recorded.',
+    type: TargetPhoneNumberResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiConflictResponse({ description: 'Conflict' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(UserGuard)
+  @Patch(':uuid/no-show')
+  async recordTargetNoShow(
+    @GetUser() user: User,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: RecordTargetNoShowDto,
+  ): Promise<TargetPhoneNumberResDto> {
+    return this.applicationService.recordTargetNoShow(user, uuid, dto.status);
   }
 
   @ApiOperation({

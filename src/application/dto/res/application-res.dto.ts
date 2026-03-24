@@ -8,6 +8,7 @@ import {
   InspectionTargetInfo,
   RoomInspectionType,
   Gender,
+  ApplicationStatus,
 } from 'generated/prisma/client';
 import { ApplicationInfo } from '@lib/database';
 
@@ -189,10 +190,10 @@ export class ApplicationResDto {
 
   @ApiProperty({
     description: 'Whether inspection is passed',
-    type: Boolean,
+    enum: ApplicationStatus,
     nullable: true,
   })
-  isPassed: boolean | null;
+  status: ApplicationStatus | null;
 
   @ApiProperty({
     description: 'Inspection item results',
@@ -232,7 +233,7 @@ export class ApplicationResDto {
     this.inspectionSlot = new SlotInfoResDto(partial.inspectionSlot);
     this.inspector = new InspectorInfoResDto(partial.inspector);
     this.targetInfo = new TargetInfoResDto(partial.inspectionTargetInfo);
-    this.isPassed = partial.isPassed;
+    this.status = partial.status;
     this.itemResults = partial.itemResults;
     this.additionalComment = partial.additionalComment;
     this.document = partial.isDocumentActive ? partial.document : null;

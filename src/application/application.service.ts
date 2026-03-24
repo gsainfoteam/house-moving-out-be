@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { DatabaseService, PrismaTransaction } from '@lib/database';
-import { User } from 'generated/prisma/client';
+import { ApplicationStatus, User } from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateApplicationDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
@@ -27,6 +27,7 @@ import {
   MoveOutScheduleRepository,
   InspectorRepository,
 } from '@lib/database';
+import { TargetPhoneNumberResDto } from './dto/res/target-phone-number-res.dto';
 
 @Loggable()
 @Injectable()
@@ -155,7 +156,7 @@ export class ApplicationService {
           tx,
         );
 
-      if (application.isPassed !== null) {
+      if (application.status !== null) {
         throw new BadRequestException(
           'Cannot update an application that has already executed.',
         );
@@ -244,7 +245,7 @@ export class ApplicationService {
             tx,
           );
 
-        if (application.isPassed !== null) {
+        if (application.status !== null) {
           throw new BadRequestException(
             'Cannot cancel an application that has already executed.',
           );
@@ -291,7 +292,7 @@ export class ApplicationService {
     return {
       uuid: application.uuid,
       inspectionSlot: { ...application.inspectionSlot },
-      isPassed: application.isPassed ?? undefined,
+      status: application.status ?? undefined,
       inspectionCount: application.inspectionCount,
       itemResults: application.itemResults,
     };
@@ -308,6 +309,65 @@ export class ApplicationService {
           ? null
           : await this.fileService.getUrl(application.document),
     });
+  }
+
+  async recordTargetNoShow(
+    { email, name, studentNumber }: User,
+    applicationUuid: string,
+    status: ApplicationStatus,
+  ): Promise<TargetPhoneNumberResDto> {
+    const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+      email,
+      name,
+      studentNumber,
+    );
+
+    return await this.databaseService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const application =
+          await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
+            applicationUuid,
+            tx,
+          );
+
+        if (application.inspectorUuid !== inspector.uuid) {
+          throw new ForbiddenException(
+            'The inspector is not assigned to this application.',
+          );
+        }
+
+        if (
+          application.status !== null &&
+          application.status !== ApplicationStatus.PENDING_NO_SHOW
+        ) {
+          throw new ConflictException(
+            'Inspection result has already been submitted and cannot be modified.',
+          );
+        }
+
+        if (
+          status === ApplicationStatus.NO_SHOW &&
+          application.status !== ApplicationStatus.PENDING_NO_SHOW
+        ) {
+          throw new ForbiddenException(
+            'Only PENDING_NO_SHOW status can be updated to NO_SHOW.',
+          );
+        }
+
+        const applicationWithUser =
+          await this.inspectionApplicationRepository.updateApplicationStatusInTx(
+            applicationUuid,
+            status,
+            tx,
+          );
+        return {
+          targetPhoneNumber:
+            status === ApplicationStatus.PENDING_NO_SHOW
+              ? applicationWithUser.user.phoneNumber
+              : undefined,
+        };
+      },
+    );
   }
 
   async submitInspectionResult(
@@ -360,7 +420,10 @@ export class ApplicationService {
           );
         }
 
-        if (application.isPassed !== null) {
+        if (
+          application.status !== null &&
+          application.status !== ApplicationStatus.PENDING_NO_SHOW
+        ) {
           throw new ConflictException(
             'Inspection result has already been submitted and cannot be modified.',
           );
@@ -370,7 +433,9 @@ export class ApplicationService {
           applicationUuid,
           { passed, failed },
           additionalComment ?? null,
-          failed.length === 0,
+          failed.length === 0
+            ? ApplicationStatus.PASSED
+            : ApplicationStatus.FAILED,
           key,
           false,
           tx,
@@ -402,7 +467,10 @@ export class ApplicationService {
       );
     }
 
-    if (application.isPassed === null) {
+    if (
+      application.status !== ApplicationStatus.PASSED &&
+      application.status !== ApplicationStatus.FAILED
+    ) {
       throw new BadRequestException(
         'Inspection result must be submitted before requesting document upload URL.',
       );
