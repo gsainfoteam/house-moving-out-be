@@ -287,7 +287,7 @@ export class InspectionSlotRepository {
       });
   }
 
-  async findSlotsWithScheduleInTx(
+  async findSlotsInTx(
     slotUuids: string[],
     tx: PrismaTransaction,
   ): Promise<InspectionSlot[]> {
@@ -297,12 +297,10 @@ export class InspectionSlotRepository {
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findScheduleBySlotUuid prisma error: ${error.message}`,
-          );
+          this.logger.error(`findSlotsInTx prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findScheduleBySlotUuid error: ${error}`);
+        this.logger.error(`findSlotsInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

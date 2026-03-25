@@ -203,8 +203,6 @@ export class InspectorService {
     scheduleUuid: string,
     tx: PrismaTransaction,
   ): Promise<void> {
-    if (slotUuids.length === 0) return;
-
     const schedule =
       await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
         scheduleUuid,
@@ -217,7 +215,9 @@ export class InspectorService {
       );
     }
 
-    const slots = await this.inspectionSlotRepository.findSlotsWithScheduleInTx(
+    if (slotUuids.length === 0) return;
+
+    const slots = await this.inspectionSlotRepository.findSlotsInTx(
       slotUuids,
       tx,
     );
@@ -253,7 +253,7 @@ export class InspectorService {
     const slotUuids = inspector.availableSlots.map(
       (slot) => slot.inspectionSlot.uuid,
     );
-    const slots = await this.inspectionSlotRepository.findSlotsWithScheduleInTx(
+    const slots = await this.inspectionSlotRepository.findSlotsInTx(
       slotUuids,
       tx,
     );
