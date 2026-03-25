@@ -120,6 +120,12 @@ class TargetInfoResDto {
   applyCleaningService: boolean;
 
   @ApiProperty({
+    description: 'Whether the applicant applied for repair check',
+    example: true,
+  })
+  applyRepairCheck: boolean;
+
+  @ApiProperty({
     description: 'Gender of the room',
     example: Gender.MALE,
     enum: Gender,
@@ -153,6 +159,7 @@ class TargetInfoResDto {
     );
     this.inspectionType = partial.inspectionType;
     this.applyCleaningService = partial.applyCleaningService;
+    this.applyRepairCheck = partial.applyRepairCheck;
     this.gender = partial.gender;
   }
 }
