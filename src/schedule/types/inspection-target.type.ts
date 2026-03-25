@@ -10,5 +10,6 @@ export type InspectionTargetStudent = {
     studentNumber: string;
   }[];
   applyCleaningService: boolean;
+  applyRepairCheck: boolean;
   inspectionType: RoomInspectionType;
 };
