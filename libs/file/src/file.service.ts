@@ -20,6 +20,7 @@ export class FileService {
       credentials: {
         accessKeyId: configService.getOrThrow('AWS_ACCESS_KEY_ID'),
         secretAccessKey: configService.getOrThrow('AWS_SECRET_ACCESS_KEY'),
+        sessionToken: configService.get('AWS_SESSION_TOKEN'),
       },
     });
   }
