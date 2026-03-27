@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ArrayUnique, IsArray, IsUUID } from 'class-validator';
+import { ArrayMinSize, ArrayUnique, IsArray, IsUUID } from 'class-validator';
 
 export class UpdateInspectorDto {
   @ApiProperty({
@@ -11,6 +11,7 @@ export class UpdateInspectorDto {
     type: [String],
   })
   @IsArray()
+  @ArrayMinSize(1)
   @IsUUID('all', { each: true })
   @ArrayUnique()
   availableSlotUuids: string[];
