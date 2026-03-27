@@ -73,8 +73,14 @@ export class InspectorService {
     });
   }
 
-  async getInspector(uuid: string): Promise<InspectorResDto> {
-    const inspector = await this.inspectorRepository.findInspector(uuid);
+  async getInspector(
+    scheduleUuid: string,
+    uuid: string,
+  ): Promise<InspectorResDto> {
+    const inspector = await this.inspectorRepository.findInspector(
+      uuid,
+      scheduleUuid,
+    );
     return new InspectorResDto(inspector);
   }
 
@@ -83,7 +89,10 @@ export class InspectorService {
     uuid: string,
     { availableSlotUuids }: UpdateInspectorDto,
   ): Promise<void> {
-    const inspector = await this.inspectorRepository.findInspector(uuid);
+    const inspector = await this.inspectorRepository.findInspector(
+      uuid,
+      scheduleUuid,
+    );
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       await this.validateScheduleStatusBySlotInTx(
         availableSlotUuids,
@@ -119,7 +128,10 @@ export class InspectorService {
   }
 
   async deleteInspector(scheduleUuid: string, uuid: string): Promise<void> {
-    const inspector = await this.inspectorRepository.findInspector(uuid);
+    const inspector = await this.inspectorRepository.findInspector(
+      uuid,
+      scheduleUuid,
+    );
 
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
       await this.validateScheduleStatusByInspectorInTx(

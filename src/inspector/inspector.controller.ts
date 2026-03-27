@@ -55,9 +55,9 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Get()
   async getInspectors(
-    @Query() { scheduleUuid }: InspectorQueryDto,
+    @Query() query: InspectorQueryDto,
   ): Promise<InspectorResDto[]> {
-    return await this.inspectorService.getInspectors(scheduleUuid);
+    return await this.inspectorService.getInspectors(query.scheduleUuid);
   }
 
   @ApiOperation({
@@ -102,10 +102,13 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Post()
   async createInspectors(
-    @Query() { scheduleUuid }: InspectorQueryDto,
+    @Query() query: InspectorQueryDto,
     @Body() dto: CreateInspectorsDto,
   ): Promise<void> {
-    return await this.inspectorService.createInspectors(scheduleUuid, dto);
+    return await this.inspectorService.createInspectors(
+      query.scheduleUuid,
+      dto,
+    );
   }
 
   @ApiOperation({
@@ -124,9 +127,10 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Get(':uuid')
   async getInspector(
+    @Query() query: InspectorQueryDto,
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<InspectorResDto> {
-    return await this.inspectorService.getInspector(uuid);
+    return await this.inspectorService.getInspector(query.scheduleUuid, uuid);
   }
 
   @ApiOperation({
@@ -144,11 +148,15 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Patch(':uuid')
   async updateInspector(
-    @Query() { scheduleUuid }: InspectorQueryDto,
+    @Query() query: InspectorQueryDto,
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() dto: UpdateInspectorDto,
   ): Promise<void> {
-    return await this.inspectorService.updateInspector(scheduleUuid, uuid, dto);
+    return await this.inspectorService.updateInspector(
+      query.scheduleUuid,
+      uuid,
+      dto,
+    );
   }
 
   @ApiOperation({
@@ -166,9 +174,12 @@ export class InspectorController {
   @UseGuards(AdminGuard)
   @Delete(':uuid')
   async deleteInspector(
-    @Query() { scheduleUuid }: InspectorQueryDto,
+    @Query() query: InspectorQueryDto,
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
-    return await this.inspectorService.deleteInspector(scheduleUuid, uuid);
+    return await this.inspectorService.deleteInspector(
+      query.scheduleUuid,
+      uuid,
+    );
   }
 }

@@ -74,12 +74,18 @@ export class InspectorRepository {
       });
   }
 
-  async findInspector(uuid: string): Promise<InspectorWithSlots> {
+  async findInspector(
+    uuid: string,
+    scheduleUuid: string,
+  ): Promise<InspectorWithSlots> {
     return await this.databaseService.inspector
       .findUniqueOrThrow({
         where: { uuid },
         include: {
           availableSlots: {
+            where: {
+              inspectionSlot: { scheduleUuid },
+            },
             include: {
               inspectionSlot: true,
             },
