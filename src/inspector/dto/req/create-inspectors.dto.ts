@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsEmail,
   IsEnum,
@@ -49,7 +51,9 @@ export class InspectorDto {
     type: [String],
   })
   @IsArray()
+  @ArrayMinSize(1)
   @IsUUID('all', { each: true })
+  @ArrayUnique()
   availableSlotUuids: string[];
 }
 
