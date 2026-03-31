@@ -357,7 +357,10 @@ export class ApplicationService {
         }
 
         if (!targetApplicationUuid) {
-          if (inspector.applications.length == 2) {
+          if (
+            inspector.applications.length ==
+            this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
+          ) {
             throw new ConflictException(
               'The inspector is already assigned to too many applications.',
             );
