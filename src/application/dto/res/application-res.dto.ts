@@ -120,6 +120,12 @@ class TargetInfoResDto {
   applyCleaningService: boolean;
 
   @ApiProperty({
+    description: 'Whether the applicant applied for repair check',
+    example: true,
+  })
+  applyRepairCheck: boolean;
+
+  @ApiProperty({
     description: 'Gender of the room',
     example: Gender.MALE,
     enum: Gender,
@@ -153,6 +159,7 @@ class TargetInfoResDto {
     );
     this.inspectionType = partial.inspectionType;
     this.applyCleaningService = partial.applyCleaningService;
+    this.applyRepairCheck = partial.applyRepairCheck;
     this.gender = partial.gender;
   }
 }
@@ -188,14 +195,14 @@ export class ApplicationResDto {
   @Type(() => TargetInfoResDto)
   targetInfo: TargetInfoResDto;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Whether inspection is passed',
     enum: ApplicationStatus,
     nullable: true,
   })
   status: ApplicationStatus | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Inspection item results',
     type: ItemResultsResDto,
     nullable: true,
@@ -203,7 +210,7 @@ export class ApplicationResDto {
   @Type(() => ItemResultsResDto)
   itemResults: ItemResultsResDto | JsonValue;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Additional comment about the inspection result',
     example: 'The door is damaged.',
     type: String,
@@ -211,7 +218,7 @@ export class ApplicationResDto {
   })
   additionalComment: string | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Inspection document URL (Expires in 10 minutes)',
     type: String,
     nullable: true,

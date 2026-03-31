@@ -515,6 +515,7 @@ export class ScheduleService {
           inspectionType: target.inspectionType,
           inspectionCount: target.inspectionCount,
           applyCleaningService: target.applyCleaningService,
+          applyRepairCheck: target.applyRepairCheck,
           lastInspectionTime,
           status: latestApplication?.status ?? null,
           gender: target.gender,
@@ -580,6 +581,7 @@ export class ScheduleService {
           students: [],
           inspectionType: RoomInspectionType.EMPTY,
           applyCleaningService: false,
+          applyRepairCheck: false,
         });
         continue;
       }
@@ -593,6 +595,7 @@ export class ScheduleService {
           students: leavingStudents.slice(0, 3),
           inspectionType: RoomInspectionType.FULL,
           applyCleaningService: false,
+          applyRepairCheck: false,
         });
         continue;
       }
@@ -610,6 +613,7 @@ export class ScheduleService {
             students: [student1],
             inspectionType: RoomInspectionType.SOLO,
             applyCleaningService: false,
+            applyRepairCheck: false,
           });
         }
 
@@ -622,6 +626,7 @@ export class ScheduleService {
             students: [student2],
             inspectionType: RoomInspectionType.SOLO,
             applyCleaningService: false,
+            applyRepairCheck: false,
           });
         }
         continue;
@@ -636,6 +641,7 @@ export class ScheduleService {
           students: leavingStudents.slice(0, 1),
           inspectionType: RoomInspectionType.SOLO,
           applyCleaningService: false,
+          applyRepairCheck: false,
         });
         continue;
       }
@@ -648,6 +654,7 @@ export class ScheduleService {
         students: leavingStudents.slice(0, 3),
         inspectionType: RoomInspectionType.FULL,
         applyCleaningService: false,
+        applyRepairCheck: false,
       });
     }
 

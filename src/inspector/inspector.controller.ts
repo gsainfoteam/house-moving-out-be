@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -33,6 +34,7 @@ import { InspectorResDto } from './dto/res/inspector-res.dto';
 import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
+import { InspectorQueryDto } from './dto/req/inspector-query.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -52,8 +54,10 @@ export class InspectorController {
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Get()
-  async getInspectors(): Promise<InspectorResDto[]> {
-    return await this.inspectorService.getInspectors();
+  async getInspectors(
+    @Query() query: InspectorQueryDto,
+  ): Promise<InspectorResDto[]> {
+    return await this.inspectorService.getInspectors(query.scheduleUuid);
   }
 
   @ApiOperation({
@@ -97,8 +101,14 @@ export class InspectorController {
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Post()
-  async createInspectors(@Body() dto: CreateInspectorsDto): Promise<void> {
-    return await this.inspectorService.createInspectors(dto);
+  async createInspectors(
+    @Query() query: InspectorQueryDto,
+    @Body() dto: CreateInspectorsDto,
+  ): Promise<void> {
+    return await this.inspectorService.createInspectors(
+      query.scheduleUuid,
+      dto,
+    );
   }
 
   @ApiOperation({
@@ -115,11 +125,12 @@ export class InspectorController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Get(':id')
+  @Get(':uuid')
   async getInspector(
-    @Param('id', ParseUUIDPipe) uuid: string,
+    @Query() query: InspectorQueryDto,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<InspectorResDto> {
-    return await this.inspectorService.getInspector(uuid);
+    return await this.inspectorService.getInspector(query.scheduleUuid, uuid);
   }
 
   @ApiOperation({
@@ -135,14 +146,16 @@ export class InspectorController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Patch(':id')
+  @Patch(':uuid')
   async updateInspector(
-    @Param('id', ParseUUIDPipe) uuid: string,
-    @Body() updateInspectorDto: UpdateInspectorDto,
+    @Query() query: InspectorQueryDto,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: UpdateInspectorDto,
   ): Promise<void> {
     return await this.inspectorService.updateInspector(
+      query.scheduleUuid,
       uuid,
-      updateInspectorDto,
+      dto,
     );
   }
 
@@ -159,10 +172,14 @@ export class InspectorController {
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
-  @Delete(':id')
+  @Delete(':uuid')
   async deleteInspector(
-    @Param('id', ParseUUIDPipe) uuid: string,
+    @Query() query: InspectorQueryDto,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
-    return await this.inspectorService.deleteInspector(uuid);
+    return await this.inspectorService.deleteInspector(
+      query.scheduleUuid,
+      uuid,
+    );
   }
 }

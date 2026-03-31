@@ -154,7 +154,6 @@ model MoveOutSchedule {
   currentSemester Semester @relation("ScheduleCurrentSemester", fields: [currentSemesterUuid], references: [uuid], onDelete: Cascade)
   nextSemester    Semester @relation("ScheduleNextSemester", fields: [nextSemesterUuid], references: [uuid], onDelete: Cascade)
 
-  @@unique([currentSemesterUuid, nextSemesterUuid])
   @@map("move_out_schedule")
 }
 

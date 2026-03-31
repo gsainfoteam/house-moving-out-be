@@ -112,6 +112,7 @@ export class InspectionTargetInfoRepository {
           student3Name: target.students[2]?.studentName,
           student3StudentNumber: target.students[2]?.studentNumber,
           applyCleaningService: target.applyCleaningService ?? false,
+          applyRepairCheck: target.applyRepairCheck ?? false,
           inspectionType: target.inspectionType,
         })),
       })

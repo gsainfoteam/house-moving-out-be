@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ApplicationStatus,
   Gender,
@@ -65,6 +65,12 @@ export class InspectionTargetsGroupedByRoomResDto {
   applyCleaningService: boolean;
 
   @ApiProperty({
+    description: 'Whether repair check is applied for this room',
+    example: false,
+  })
+  applyRepairCheck: boolean;
+
+  @ApiPropertyOptional({
     description: 'Last inspection time',
     example: '2026-01-22T03:00:00.000Z',
     nullable: true,

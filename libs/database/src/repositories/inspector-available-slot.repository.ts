@@ -43,11 +43,17 @@ export class InspectorAvailableSlotRepository {
 
   async deleteInspectorAvailableSlotsInTx(
     inspectorUuid: string,
+    scheduleUuid: string,
     tx: PrismaTransaction,
   ): Promise<void> {
     await tx.inspectorAvailableSlot
       .deleteMany({
-        where: { inspectorUuid },
+        where: {
+          inspectorUuid,
+          inspectionSlot: {
+            scheduleUuid,
+          },
+        },
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {

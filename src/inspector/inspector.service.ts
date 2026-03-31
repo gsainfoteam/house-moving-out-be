@@ -14,6 +14,7 @@ import {
   InspectionSlotRepository,
   MoveOutScheduleRepository,
   PrismaTransaction,
+  InspectorWithSlots,
 } from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { Gender, ScheduleStatus, User } from 'generated/prisma/client';
@@ -31,16 +32,24 @@ export class InspectorService {
     private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
   ) {}
 
-  async getInspectors(): Promise<InspectorResDto[]> {
-    const inspectors = await this.inspectorRepository.findAllInspectors();
+  async getInspectors(scheduleUuid: string): Promise<InspectorResDto[]> {
+    const inspectors =
+      await this.inspectorRepository.findAllInspectors(scheduleUuid);
     return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
-  async createInspectors({ inspectors }: CreateInspectorsDto): Promise<void> {
-    const allSlotUuids = inspectors.flatMap((i) => i.availableSlotUuids);
-    await this.validateScheduleStatus(allSlotUuids);
-
+  async createInspectors(
+    scheduleUuid: string,
+    { inspectors }: CreateInspectorsDto,
+  ): Promise<void> {
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      const allSlotUuids = inspectors.flatMap((i) => i.availableSlotUuids);
+      await this.validateScheduleStatusBySlotInTx(
+        allSlotUuids,
+        scheduleUuid,
+        tx,
+      );
+
       for (const { availableSlotUuids, ...inspector } of inspectors) {
         const { uuid } = await this.inspectorRepository.createInspectorsInTx(
           inspector,
@@ -64,23 +73,38 @@ export class InspectorService {
     });
   }
 
-  async getInspector(uuid: string): Promise<InspectorResDto> {
-    const inspector = await this.inspectorRepository.findInspector(uuid);
+  async getInspector(
+    scheduleUuid: string,
+    uuid: string,
+  ): Promise<InspectorResDto> {
+    const inspector = await this.inspectorRepository.findInspector(
+      uuid,
+      scheduleUuid,
+    );
     return new InspectorResDto(inspector);
   }
 
   async updateInspector(
+    scheduleUuid: string,
     uuid: string,
     { availableSlotUuids }: UpdateInspectorDto,
   ): Promise<void> {
-    const inspector = await this.inspectorRepository.findInspector(uuid);
-    const currentSlotUuids = inspector.availableSlots.map(
-      (slot) => slot.inspectionSlot.uuid,
+    const inspector = await this.inspectorRepository.findInspector(
+      uuid,
+      scheduleUuid,
     );
-    await this.validateScheduleStatus([
-      ...new Set([...currentSlotUuids, ...availableSlotUuids]),
-    ]);
     await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      await this.validateScheduleStatusBySlotInTx(
+        availableSlotUuids,
+        scheduleUuid,
+        tx,
+      );
+      await this.validateScheduleStatusByInspectorInTx(
+        inspector,
+        scheduleUuid,
+        tx,
+      );
+
       if (availableSlotUuids.length > 0) {
         await this.validateInspectorSlotGenderInTx(
           inspector.gender,
@@ -91,6 +115,7 @@ export class InspectorService {
 
       await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
         uuid,
+        scheduleUuid,
         tx,
       );
 
@@ -102,15 +127,25 @@ export class InspectorService {
     });
   }
 
-  async deleteInspector(uuid: string): Promise<void> {
-    const inspector = await this.inspectorRepository.findInspector(uuid);
-    const slotUuids = inspector.availableSlots.map(
-      (slot) => slot.inspectionSlot.uuid,
+  async deleteInspector(scheduleUuid: string, uuid: string): Promise<void> {
+    const inspector = await this.inspectorRepository.findInspector(
+      uuid,
+      scheduleUuid,
     );
 
-    await this.validateScheduleStatus(slotUuids);
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      await this.validateScheduleStatusByInspectorInTx(
+        inspector,
+        scheduleUuid,
+        tx,
+      );
 
-    await this.inspectorRepository.deleteInspector(uuid);
+      await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
+        uuid,
+        scheduleUuid,
+        tx,
+      );
+    });
   }
 
   async getMyAssignedTargets({
@@ -175,17 +210,68 @@ export class InspectorService {
     }
   }
 
-  private async validateScheduleStatus(slotUuids: string[]): Promise<void> {
+  private async validateScheduleStatusBySlotInTx(
+    slotUuids: string[],
+    scheduleUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+        scheduleUuid,
+        tx,
+      );
+
+    if (schedule.status !== ScheduleStatus.DRAFT) {
+      throw new ForbiddenException(
+        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      );
+    }
+
     if (slotUuids.length === 0) return;
 
-    const slots =
-      await this.inspectionSlotRepository.findSlotsWithSchedule(slotUuids);
-
-    const invalidSchedule = slots.find(
-      (slot) => slot.schedule.status !== ScheduleStatus.DRAFT,
+    const slots = await this.inspectionSlotRepository.findSlotsInTx(
+      slotUuids,
+      tx,
     );
 
-    if (invalidSchedule) {
+    const invalidSlot = slots.find(
+      (slot) => slot.scheduleUuid !== scheduleUuid,
+    );
+
+    if (invalidSlot) {
+      throw new ForbiddenException(
+        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      );
+    }
+  }
+
+  private async validateScheduleStatusByInspectorInTx(
+    inspector: InspectorWithSlots,
+    scheduleUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+        scheduleUuid,
+        tx,
+      );
+
+    if (schedule.status !== ScheduleStatus.DRAFT) {
+      throw new ForbiddenException(
+        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      );
+    }
+
+    const slotUuids = inspector.availableSlots.map(
+      (slot) => slot.inspectionSlot.uuid,
+    );
+    const slots = await this.inspectionSlotRepository.findSlotsInTx(
+      slotUuids,
+      tx,
+    );
+    const validSlot = slots.find((slot) => slot.scheduleUuid === scheduleUuid);
+
+    if (!validSlot) {
       throw new ForbiddenException(
         `Inspectors can only be managed when the schedule status is DRAFT.`,
       );
