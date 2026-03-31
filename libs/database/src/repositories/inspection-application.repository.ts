@@ -294,6 +294,8 @@ export class InspectionApplicationRepository {
     offset: number,
     limit: number,
     scheduleUuid: string,
+    inspectorUuid?: string,
+    slotUuid?: string,
   ): Promise<ApplicationInfo[]> {
     return await this.databaseService.inspectionApplication
       .findMany({
@@ -301,6 +303,8 @@ export class InspectionApplicationRepository {
           inspectionSlot: {
             scheduleUuid,
           },
+          inspectorUuid,
+          inspectionSlotUuid: slotUuid,
           deletedAt: null,
         },
         include: {
@@ -353,13 +357,19 @@ export class InspectionApplicationRepository {
       });
   }
 
-  async countApplications(scheduleUuid: string): Promise<number> {
+  async countApplications(
+    scheduleUuid: string,
+    inspectorUuid?: string,
+    slotUuid?: string,
+  ): Promise<number> {
     return await this.databaseService.inspectionApplication
       .count({
         where: {
           inspectionSlot: {
             scheduleUuid,
           },
+          inspectorUuid,
+          inspectionSlotUuid: slotUuid,
           deletedAt: null,
         },
       })

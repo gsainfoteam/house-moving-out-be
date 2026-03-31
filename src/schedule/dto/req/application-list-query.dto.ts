@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsInt, IsOptional, IsUUID, Min } from 'class-validator';
 
 export class ApplicationListQueryDto {
   @ApiPropertyOptional({
@@ -22,4 +22,20 @@ export class ApplicationListQueryDto {
   @Min(1)
   @Type(() => Number)
   limit?: number;
+
+  @ApiPropertyOptional({
+    description: 'Filter by inspector UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  inspectorUuid?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by inspection slot UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsOptional()
+  @IsUUID()
+  slotUuid?: string;
 }

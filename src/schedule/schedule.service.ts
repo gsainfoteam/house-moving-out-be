@@ -193,7 +193,7 @@ export class ScheduleService {
   }
 
   async findApplicationsByScheduleUuid(
-    { offset, limit }: ApplicationListQueryDto,
+    { offset, limit, inspectorUuid, slotUuid }: ApplicationListQueryDto,
     scheduleUuid: string,
   ): Promise<ApplicationListResDto> {
     const [applications, totalCount] = await Promise.all([
@@ -201,8 +201,14 @@ export class ScheduleService {
         offset ?? 0,
         limit ?? 20,
         scheduleUuid,
+        inspectorUuid,
+        slotUuid,
       ),
-      this.inspectionApplicationRepository.countApplications(scheduleUuid),
+      this.inspectionApplicationRepository.countApplications(
+        scheduleUuid,
+        inspectorUuid,
+        slotUuid,
+      ),
     ]);
     return new ApplicationListResDto(
       await Promise.all(
