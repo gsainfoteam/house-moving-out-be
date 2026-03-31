@@ -134,6 +134,7 @@ export class ApplicationService {
 
           if (
             inspector.email !== user.email &&
+            inspector.gender === inspectionTargetInfo.gender &&
             isSlotAvailable &&
             assignedCountInSlot <
               this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
