@@ -3,11 +3,10 @@ import { ApplicationService } from './application.service';
 import { ApplicationController } from './application.controller';
 import { FileModule } from '@lib/file';
 import { InspectorModule } from 'src/inspector/inspector.module';
-import { ScheduleModule } from '../schedule/schedule.module';
 import { DatabaseModule } from '@lib/database';
 
 @Module({
-  imports: [InspectorModule, FileModule, ScheduleModule, DatabaseModule],
+  imports: [InspectorModule, FileModule, DatabaseModule],
   controllers: [ApplicationController],
   providers: [ApplicationService],
 })

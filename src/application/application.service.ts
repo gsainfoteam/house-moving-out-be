@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { Loggable } from '@lib/logger';
 import { DatabaseService, PrismaTransaction } from '@lib/database';
-import { ApplicationStatus, User } from 'generated/prisma/client';
+import {
+  ApplicationStatus,
+  ScheduleStatus,
+  User,
+} from 'generated/prisma/client';
 import { ApplyInspectionDto } from './dto/req/apply-inspection.dto';
 import { UpdateApplicationDto } from './dto/req/update-inspection.dto';
 import { InspectionResDto } from './dto/res/inspection-res.dto';
@@ -17,7 +21,6 @@ import { FileService } from '@lib/file';
 import * as crypto from 'crypto';
 import { RegisterResultResDto } from './dto/res/register-result-res.dto';
 import { ApplicationResDto } from './dto/res/application-res.dto';
-import { ScheduleService } from '../schedule/schedule.service';
 import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { GetDocumentUploadUrlReqDto } from './dto/req/get-document-upload-url.dto';
 import {
@@ -28,6 +31,7 @@ import {
   InspectorRepository,
 } from '@lib/database';
 import { TargetPhoneNumberResDto } from './dto/res/target-phone-number-res.dto';
+import { ChangeAssignedInspectorDto } from './dto/req/change-assigned-inspector.dto';
 
 @Loggable()
 @Injectable()
@@ -35,7 +39,6 @@ export class ApplicationService {
   private readonly APPLICATION_UPDATE_DEADLINE = ms('1h');
   private readonly INSPECTION_COUNT_LIMIT = 3;
   constructor(
-    private readonly scheduleService: ScheduleService,
     private readonly databaseService: DatabaseService,
     private readonly fileService: FileService,
     private readonly inspectorRepository: InspectorRepository,
@@ -277,6 +280,91 @@ export class ApplicationService {
           application.uuid,
           tx,
         );
+      },
+    );
+  }
+
+  async changeAssignedInspector(
+    applicationUuid: string,
+    { inspectorUuid, targetApplicationUuid }: ChangeAssignedInspectorDto,
+  ): Promise<void> {
+    return await this.databaseService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const inspector = await this.inspectorRepository.findInspectorInTx(
+          inspectorUuid,
+          tx,
+        );
+        const application =
+          await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
+            applicationUuid,
+            tx,
+          );
+
+        if (
+          inspector.availableSlots.every(
+            (slot) =>
+              slot.inspectionSlotUuid !== application.inspectionSlotUuid,
+          )
+        ) {
+          throw new ForbiddenException(
+            "The inspector is not available for the application's inspection slot.",
+          );
+        }
+
+        const schedule =
+          await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuid(
+            application.inspectionSlot.scheduleUuid,
+          );
+
+        if (schedule.status !== ScheduleStatus.ACTIVE) {
+          throw new ForbiddenException(
+            'Can only change assigned inspector for active schedules.',
+          );
+        }
+
+        if (!targetApplicationUuid) {
+          if (inspector.applications.length == 2) {
+            throw new ConflictException(
+              'The inspector is already assigned to too many applications.',
+            );
+          }
+          await this.inspectionApplicationRepository.updateAssignedInspectorInTx(
+            applicationUuid,
+            inspectorUuid,
+            tx,
+          );
+        } else {
+          const targetApplication =
+            await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
+              targetApplicationUuid,
+              tx,
+            );
+
+          if (
+            targetApplication.inspectionSlotUuid !==
+            application.inspectionSlotUuid
+          ) {
+            throw new ForbiddenException(
+              'The target application is not in the same inspection slot.',
+            );
+          }
+          if (targetApplication.inspectorUuid !== inspectorUuid) {
+            throw new ForbiddenException(
+              'The target application is not assigned to the specified inspector.',
+            );
+          }
+
+          await this.inspectionApplicationRepository.updateAssignedInspectorInTx(
+            targetApplicationUuid,
+            application.inspectorUuid,
+            tx,
+          );
+          await this.inspectionApplicationRepository.updateAssignedInspectorInTx(
+            applicationUuid,
+            inspectorUuid,
+            tx,
+          );
+        }
       },
     );
   }

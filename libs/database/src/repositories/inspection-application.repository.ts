@@ -294,6 +294,8 @@ export class InspectionApplicationRepository {
     offset: number,
     limit: number,
     scheduleUuid: string,
+    inspectorUuid?: string,
+    slotUuid?: string,
   ): Promise<ApplicationInfo[]> {
     return await this.databaseService.inspectionApplication
       .findMany({
@@ -301,6 +303,8 @@ export class InspectionApplicationRepository {
           inspectionSlot: {
             scheduleUuid,
           },
+          inspectorUuid,
+          inspectionSlotUuid: slotUuid,
           deletedAt: null,
         },
         include: {
@@ -353,13 +357,19 @@ export class InspectionApplicationRepository {
       });
   }
 
-  async countApplications(scheduleUuid: string): Promise<number> {
+  async countApplications(
+    scheduleUuid: string,
+    inspectorUuid?: string,
+    slotUuid?: string,
+  ): Promise<number> {
     return await this.databaseService.inspectionApplication
       .count({
         where: {
           inspectionSlot: {
             scheduleUuid,
           },
+          inspectorUuid,
+          inspectionSlotUuid: slotUuid,
           deletedAt: null,
         },
       })
@@ -397,6 +407,35 @@ export class InspectionApplicationRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`findApplicationsByInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  /** 해당 함수에서 inspector이 가능한 slot 당 application이 최대 2개임을 보장하지는 않음 */
+  async updateAssignedInspectorInTx(
+    applicationUuid: string,
+    inspectorUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<InspectionApplication> {
+    return await tx.inspectionApplication
+      .update({
+        where: { uuid: applicationUuid, status: null, deletedAt: null },
+        data: { inspectorUuid },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found for update assigned inspector: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `updateAssignedInspectorInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateAssignedInspectorInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
