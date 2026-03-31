@@ -121,6 +121,8 @@ export class InspectorRepository {
       availableSlots: InspectorAvailableSlot[];
     }
   > {
+    await tx.$executeRaw`SELECT 1 FROM "inspector" WHERE "uuid" = ${uuid} FOR UPDATE`;
+
     return await tx.inspector
       .findUniqueOrThrow({
         where: { uuid },
