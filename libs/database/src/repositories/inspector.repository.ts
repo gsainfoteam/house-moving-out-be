@@ -22,7 +22,7 @@ import { InspectorWithSlots } from '../types/inspector.type';
 @Injectable()
 export class InspectorRepository {
   private readonly logger = new Logger(InspectorRepository.name);
-  private readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
+  public readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
   constructor(private readonly databaseService: DatabaseService) {}
 
   async findAllInspectors(scheduleUuid: string): Promise<InspectorWithSlots[]> {

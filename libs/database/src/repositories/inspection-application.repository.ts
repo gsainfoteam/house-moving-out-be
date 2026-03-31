@@ -439,4 +439,32 @@ export class InspectionApplicationRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+
+  async findApplicationsByUser(
+    userUuid: string,
+  ): Promise<InspectionApplication[]> {
+    return await this.databaseService.inspectionApplication
+      .findMany({
+        where: {
+          userUuid,
+          deletedAt: null,
+        },
+        include: {
+          inspectionSlot: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `findApplicationsByUser prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findApplicationsByUser error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }
