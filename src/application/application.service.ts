@@ -301,9 +301,9 @@ export class ApplicationService {
           );
 
         if (
-          !inspector.availableSlots.find(
+          inspector.availableSlots.every(
             (slot) =>
-              slot.inspectionSlotUuid === application.inspectionSlotUuid,
+              slot.inspectionSlotUuid !== application.inspectionSlotUuid,
           )
         ) {
           throw new ForbiddenException(

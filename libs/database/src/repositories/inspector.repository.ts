@@ -125,7 +125,9 @@ export class InspectorRepository {
       .findUniqueOrThrow({
         where: { uuid },
         include: {
-          applications: true,
+          applications: {
+            where: { deletedAt: null },
+          },
           availableSlots: true,
         },
       })

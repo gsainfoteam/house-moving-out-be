@@ -411,6 +411,7 @@ export class InspectionApplicationRepository {
       });
   }
 
+  // 해당 함수에서 inspector이 가능한 slot 당 application이 최대 2개임을 보장하지는 않음
   async updateAssignedInspectorInTx(
     applicationUuid: string,
     inspectorUuid: string,

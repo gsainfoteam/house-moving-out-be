@@ -237,10 +237,10 @@ export class ApplicationController {
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiConflictResponse({ description: 'Conflict' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('user')
+  @ApiBearerAuth('admin')
   @UseGuards(AdminGuard)
   @Patch(':uuid/inspector')
-  async changeAssignedInspecor(
+  async changeAssignedInspector(
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() dto: ChangeAssignedInspectorDto,
   ): Promise<any> {
