@@ -113,8 +113,8 @@ export class ApplicationService {
         }
 
         const applications =
-          await this.inspectionApplicationRepository.findApplicationsByUser(
-            user.uuid,
+          await this.inspectionApplicationRepository.findApplicationsByTarget(
+            inspectionTargetInfo.uuid,
           );
 
         let assignedInspector: Inspector | undefined;

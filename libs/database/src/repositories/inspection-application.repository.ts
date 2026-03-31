@@ -440,13 +440,13 @@ export class InspectionApplicationRepository {
       });
   }
 
-  async findApplicationsByUser(
-    userUuid: string,
+  async findApplicationsByTarget(
+    targetUuid: string,
   ): Promise<InspectionApplication[]> {
     return await this.databaseService.inspectionApplication
       .findMany({
         where: {
-          userUuid,
+          inspectionTargetInfoUuid: targetUuid,
           deletedAt: null,
         },
         include: {
