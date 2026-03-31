@@ -42,6 +42,7 @@ import { MyInspectionTypeResDto } from './dto/res/my-inspection-type-res.dto';
 import { GetDocumentUploadUrlReqDto } from './dto/req/get-document-upload-url.dto';
 import { RecordTargetNoShowDto } from './dto/req/record-target-no-show.dto';
 import { TargetPhoneNumberResDto } from './dto/res/target-phone-number-res.dto';
+import { ChangeAssignedInspectorDto } from './dto/req/change-assigned-inspector.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('application')
@@ -219,6 +220,31 @@ export class ApplicationController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
     return this.applicationService.cancelInspection(user, uuid);
+  }
+
+  @ApiOperation({
+    summary: 'Change Assigned Inspector',
+    description: 'Change the assigned inspector for the given application.',
+  })
+  @ApiOkResponse({
+    description: 'The assigned inspector has been successfully changed.',
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiConflictResponse({ description: 'Conflict' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('user')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid/inspector')
+  async changeAssignedInspecor(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: ChangeAssignedInspectorDto,
+  ): Promise<any> {
+    return this.applicationService.changeAssignedInspector(uuid, dto);
   }
 
   @ApiOperation({

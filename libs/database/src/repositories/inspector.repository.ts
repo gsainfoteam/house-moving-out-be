@@ -8,7 +8,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
-import { Gender, Inspector, Prisma } from 'generated/prisma/client';
+import {
+  Gender,
+  InspectionApplication,
+  Inspector,
+  InspectorAvailableSlot,
+  Prisma,
+} from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 import { InspectorWithSlots } from '../types/inspector.type';
 
@@ -68,6 +74,37 @@ export class InspectorRepository {
               inspectionSlot: true,
             },
           },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`Inspector not found: ${uuid}`);
+            throw new NotFoundException(`Inspector not found`);
+          }
+          this.logger.error(`findInspector prisma error: ${error.message}`);
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findInspectorInTx(
+    uuid: string,
+    tx: PrismaTransaction,
+  ): Promise<
+    Inspector & {
+      applications: InspectionApplication[];
+      availableSlots: InspectorAvailableSlot[];
+    }
+  > {
+    return await tx.inspector
+      .findUniqueOrThrow({
+        where: { uuid },
+        include: {
+          applications: true,
+          availableSlots: true,
         },
       })
       .catch((error) => {
