@@ -357,8 +357,11 @@ export class ApplicationService {
         }
 
         if (!targetApplicationUuid) {
+          const applicationsInSlot = inspector.applications.filter(
+            (app) => app.inspectionSlotUuid === application.inspectionSlotUuid,
+          );
           if (
-            inspector.applications.length ==
+            applicationsInSlot.length >=
             this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
           ) {
             throw new ConflictException(
