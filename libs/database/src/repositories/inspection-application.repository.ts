@@ -70,7 +70,7 @@ export class InspectionApplicationRepository {
     return await tx.inspectionApplication
       .update({
         where: { uuid: applicationUuid, deletedAt: null },
-        data: { status, deletedAt: new Date() },
+        data: { status },
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
