@@ -35,6 +35,12 @@ class UserInfoResDto {
 
 class SlotInfoResDto {
   @ApiProperty({
+    description: 'Inspection Slot UUID',
+    example: '12345678-0000-0000-a456-aaaaaabbbbbb',
+  })
+  uuid: string;
+
+  @ApiProperty({
     description: 'Slot Start Time',
     example: '2026-02-18T09:00:00Z',
   })
@@ -47,12 +53,19 @@ class SlotInfoResDto {
   endTime: Date;
 
   constructor(partial: InspectionSlot) {
+    this.uuid = partial.uuid;
     this.startTime = partial.startTime;
     this.endTime = partial.endTime;
   }
 }
 
 class InspectorInfoResDto {
+  @ApiProperty({
+    description: 'Inspector UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  uuid: string;
+
   @ApiProperty({ description: 'Inspector Name', example: 'Jane Doe' })
   name: string;
 
@@ -66,6 +79,7 @@ class InspectorInfoResDto {
   studentNumber: string;
 
   constructor(partial: Inspector) {
+    this.uuid = partial.uuid;
     this.name = partial.name;
     this.email = partial.email;
     this.studentNumber = partial.studentNumber;

@@ -8,6 +8,7 @@ import { Loggable } from '@lib/logger';
 import { DatabaseService, PrismaTransaction } from '@lib/database';
 import {
   ApplicationStatus,
+  Inspector,
   ScheduleStatus,
   User,
 } from 'generated/prisma/client';
@@ -111,20 +112,53 @@ export class ApplicationService {
           throw new ConflictException('Slot capacity is already full.');
         }
 
-        const inspector =
-          await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
-            user.email,
-            inspectionSlotUuid,
-            inspectionTargetInfo.gender,
+        const applications =
+          await this.inspectionApplicationRepository.findApplicationsByTarget(
+            inspectionTargetInfo.uuid,
+          );
+
+        let assignedInspector: Inspector | undefined;
+
+        for (const application of applications) {
+          const inspector = await this.inspectorRepository.findInspectorInTx(
+            application.inspectorUuid,
             tx,
           );
+
+          const isSlotAvailable = inspector.availableSlots.some(
+            (slot) => slot.inspectionSlotUuid === inspectionSlotUuid,
+          );
+          const assignedCountInSlot = inspector.applications.filter(
+            (app) => app.inspectionSlotUuid === inspectionSlotUuid,
+          ).length;
+
+          if (
+            inspector.email !== user.email &&
+            inspector.gender === inspectionTargetInfo.gender &&
+            isSlotAvailable &&
+            assignedCountInSlot <
+              this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
+          ) {
+            assignedInspector = inspector;
+            break;
+          }
+        }
+        if (!assignedInspector) {
+          assignedInspector =
+            await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
+              user.email,
+              inspectionSlotUuid,
+              inspectionTargetInfo.gender,
+              tx,
+            );
+        }
 
         const application =
           await this.inspectionApplicationRepository.createInspectionApplicationInTx(
             user.uuid,
             inspectionTargetInfo.uuid,
             inspectionSlotUuid,
-            inspector.uuid,
+            assignedInspector.uuid,
             updatedTargetInfo.inspectionCount,
             tx,
           );
@@ -323,7 +357,13 @@ export class ApplicationService {
         }
 
         if (!targetApplicationUuid) {
-          if (inspector.applications.length == 2) {
+          const applicationsInSlot = inspector.applications.filter(
+            (app) => app.inspectionSlotUuid === application.inspectionSlotUuid,
+          );
+          if (
+            applicationsInSlot.length >=
+            this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
+          ) {
             throw new ConflictException(
               'The inspector is already assigned to too many applications.',
             );
