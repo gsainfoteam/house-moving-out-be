@@ -298,29 +298,27 @@ export class ApplicationService {
         const now = new Date();
         const timeDiff =
           application.inspectionSlot.startTime.getTime() - now.getTime();
+        const isCancelable = timeDiff >= this.APPLICATION_UPDATE_DEADLINE;
+
+        if (isCancelable) {
+          await this.inspectionTargetInfoRepository.decrementInspectionCountInTx(
+            application.inspectionTargetInfo.uuid,
+            tx,
+          );
+        }
 
         await this.inspectionSlotRepository.decrementSlotReservedCountInTx(
           application.inspectionSlotUuid,
           tx,
         );
 
-        if (timeDiff >= this.APPLICATION_UPDATE_DEADLINE) {
-          await this.inspectionTargetInfoRepository.decrementInspectionCountInTx(
-            application.inspectionTargetInfo.uuid,
-            tx,
-          );
-          await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
-            application.uuid,
-            ApplicationStatus.CANCELED,
-            tx,
-          );
-        } else {
-          await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
-            application.uuid,
-            ApplicationStatus.NO_SHOW_CANCELED,
-            tx,
-          );
-        }
+        await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
+          application.uuid,
+          isCancelable
+            ? ApplicationStatus.CANCELED
+            : ApplicationStatus.NO_SHOW_CANCELED,
+          tx,
+        );
       },
     );
   }
