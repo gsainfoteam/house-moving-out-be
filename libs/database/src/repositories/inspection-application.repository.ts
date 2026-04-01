@@ -62,7 +62,9 @@ export class InspectionApplicationRepository {
 
   async deleteInspectionApplicationInTx(
     applicationUuid: string,
-    status: ApplicationStatus,
+    status:
+      | typeof ApplicationStatus.CANCELED
+      | typeof ApplicationStatus.NO_SHOW_CANCELED,
     tx: PrismaTransaction,
   ) {
     return await tx.inspectionApplication
