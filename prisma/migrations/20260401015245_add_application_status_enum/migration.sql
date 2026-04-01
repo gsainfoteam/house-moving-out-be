@@ -8,6 +8,3 @@
 
 ALTER TYPE "application_status" ADD VALUE 'CANCELED';
 ALTER TYPE "application_status" ADD VALUE 'NO_SHOW_CANCELED';
-
-UPDATE inspection_application SET status = 'CANCELED' WHERE deleted_at IS NOT NULL AND status IS NULL;
-UPDATE inspection_application SET deleted_at = NULL;
