@@ -211,6 +211,7 @@ export class ApplicationService {
 
       await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
         applicationUuid,
+        ApplicationStatus.CANCELED,
         tx,
       );
 
@@ -298,22 +299,28 @@ export class ApplicationService {
         const timeDiff =
           application.inspectionSlot.startTime.getTime() - now.getTime();
 
-        if (timeDiff >= this.APPLICATION_UPDATE_DEADLINE) {
-          await this.inspectionTargetInfoRepository.decrementInspectionCountInTx(
-            application.inspectionTargetInfo.uuid,
-            tx,
-          );
-        }
-
         await this.inspectionSlotRepository.decrementSlotReservedCountInTx(
           application.inspectionSlotUuid,
           tx,
         );
 
-        await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
-          application.uuid,
-          tx,
-        );
+        if (timeDiff >= this.APPLICATION_UPDATE_DEADLINE) {
+          await this.inspectionTargetInfoRepository.decrementInspectionCountInTx(
+            application.inspectionTargetInfo.uuid,
+            tx,
+          );
+          await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
+            application.uuid,
+            ApplicationStatus.CANCELED,
+            tx,
+          );
+        } else {
+          await this.inspectionApplicationRepository.deleteInspectionApplicationInTx(
+            application.uuid,
+            ApplicationStatus.NO_SHOW_CANCELED,
+            tx,
+          );
+        }
       },
     );
   }

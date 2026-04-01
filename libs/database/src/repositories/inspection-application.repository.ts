@@ -62,12 +62,13 @@ export class InspectionApplicationRepository {
 
   async deleteInspectionApplicationInTx(
     applicationUuid: string,
+    status: ApplicationStatus,
     tx: PrismaTransaction,
   ) {
     return await tx.inspectionApplication
       .update({
         where: { uuid: applicationUuid, deletedAt: null },
-        data: { deletedAt: new Date() },
+        data: { status, deletedAt: new Date() },
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {

@@ -73,6 +73,8 @@ enum ApplicationStatus {
   FAILED
   PENDING_NO_SHOW
   NO_SHOW
+  CANCELED
+  NO_SHOW_CANCELED
 
   @@map("application_status")
 }
