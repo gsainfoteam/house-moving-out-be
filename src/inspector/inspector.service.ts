@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -241,8 +242,8 @@ export class InspectorService {
     );
 
     if (invalidSlot) {
-      throw new ForbiddenException(
-        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      throw new BadRequestException(
+        'Inspection slots must belong to the given schedule.',
       );
     }
   }
@@ -274,8 +275,8 @@ export class InspectorService {
     const validSlot = slots.find((slot) => slot.scheduleUuid === scheduleUuid);
 
     if (!validSlot) {
-      throw new ForbiddenException(
-        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      throw new BadRequestException(
+        'Inspector does not belong to the given schedule.',
       );
     }
   }
