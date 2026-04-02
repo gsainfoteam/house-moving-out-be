@@ -422,9 +422,15 @@ export class ApplicationService {
 
   async findMyInspection(user: User): Promise<InspectionResDto> {
     const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
+    const inspectionTargetInfo =
+      await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
+        user.studentNumber,
+        user.name,
+        schedule.uuid,
+      );
     const application =
-      await this.inspectionApplicationRepository.findApplicationByUserAndSchedule(
-        user.uuid,
+      await this.inspectionApplicationRepository.findApplicationByTargetAndSchedule(
+        inspectionTargetInfo.uuid,
         schedule.uuid,
       );
 

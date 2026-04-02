@@ -90,14 +90,14 @@ export class InspectionApplicationRepository {
       });
   }
 
-  async findApplicationByUserAndSchedule(
-    userUuid: string,
+  async findApplicationByTargetAndSchedule(
+    inspectionTargetInfoUuid: string,
     scheduleUuid: string,
   ): Promise<ApplicationWithDetails> {
     return await this.databaseService.inspectionApplication
       .findFirstOrThrow({
         where: {
-          userUuid,
+          inspectionTargetInfoUuid,
           inspectionTargetInfo: {
             scheduleUuid,
           },
@@ -118,11 +118,11 @@ export class InspectionApplicationRepository {
             throw new NotFoundException('Not Found Error');
           }
           this.logger.error(
-            `findApplicationByUserAndSchedule prisma error: ${error.message}`,
+            `findApplicationByTargetAndSchedule prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findApplicationByUserAndSchedule error: ${error}`);
+        this.logger.error(`findApplicationByTargetAndSchedule error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
