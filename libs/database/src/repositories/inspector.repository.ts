@@ -176,6 +176,41 @@ export class InspectorRepository {
       });
   }
 
+  async existsInspectorInScheduleByUserInfo(
+    email: string,
+    name: string,
+    studentNumber: string,
+    scheduleUuid: string,
+  ): Promise<boolean> {
+    return await this.databaseService.inspector
+      .findFirst({
+        where: {
+          email,
+          name,
+          studentNumber,
+          availableSlots: {
+            some: {
+              inspectionSlot: { scheduleUuid },
+            },
+          },
+        },
+        select: { uuid: true },
+      })
+      .then((inspector) => !!inspector)
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `existsInspectorInScheduleByUserInfo prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(
+          `existsInspectorInScheduleByUserInfo error: ${error}`,
+        );
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async findAvailableInspectorBySlotUuidInTx(
     userEmail: string,
     inspectionSlotUuid: string,

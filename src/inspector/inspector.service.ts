@@ -174,14 +174,16 @@ export class InspectorService {
 
   async checkInspectorByUserInfo(user: User): Promise<boolean> {
     try {
-      const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+      const schedule =
+        await this.moveOutScheduleRepository.findActiveSchedule();
+      return await this.inspectorRepository.existsInspectorInScheduleByUserInfo(
         user.email,
         user.name,
         user.studentNumber,
+        schedule.uuid,
       );
-      return !!inspector;
     } catch (error) {
-      if (error instanceof ForbiddenException) return false;
+      if (error instanceof NotFoundException) return false;
       throw error;
     }
   }
