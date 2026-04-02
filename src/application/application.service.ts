@@ -61,6 +61,12 @@ export class ApplicationService {
             tx,
           );
 
+        if (schedule.status !== ScheduleStatus.ACTIVE) {
+          throw new ForbiddenException(
+            'Can only apply for inspection during active schedules.',
+          );
+        }
+
         const now = new Date();
         if (now < schedule.applicationStartTime) {
           throw new ForbiddenException(
