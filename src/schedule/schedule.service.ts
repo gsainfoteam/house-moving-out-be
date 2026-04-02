@@ -750,7 +750,11 @@ export class ScheduleService {
   ): InspectionTargetCount {
     const counts: InspectionTargetCount = { male: 0, female: 0 };
 
-    for (const { gender } of inspectionTargets) {
+    for (const { gender, inspectionType } of inspectionTargets) {
+      if (inspectionType === RoomInspectionType.EMPTY) {
+        continue;
+      }
+
       if (gender === Gender.MALE) {
         counts.male += 1;
       } else {
