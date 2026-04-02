@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -104,6 +106,11 @@ export class InspectorService {
         scheduleUuid,
         tx,
       );
+      await this.validateNoAssignedApplicationsOnRemovedSlots(
+        inspector,
+        scheduleUuid,
+        availableSlotUuids,
+      );
 
       if (availableSlotUuids.length > 0) {
         await this.validateInspectorSlotGenderInTx(
@@ -138,6 +145,11 @@ export class InspectorService {
         inspector,
         scheduleUuid,
         tx,
+      );
+      await this.validateNoAssignedApplicationsOnRemovedSlots(
+        inspector,
+        scheduleUuid,
+        [],
       );
 
       await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
@@ -174,14 +186,16 @@ export class InspectorService {
 
   async checkInspectorByUserInfo(user: User): Promise<boolean> {
     try {
-      const inspector = await this.inspectorRepository.findInspectorByUserInfo(
+      const schedule =
+        await this.moveOutScheduleRepository.findActiveSchedule();
+      return await this.inspectorRepository.existsInspectorInScheduleByUserInfo(
         user.email,
         user.name,
         user.studentNumber,
+        schedule.uuid,
       );
-      return !!inspector;
     } catch (error) {
-      if (error instanceof ForbiddenException) return false;
+      if (error instanceof NotFoundException) return false;
       throw error;
     }
   }
@@ -239,8 +253,8 @@ export class InspectorService {
     );
 
     if (invalidSlot) {
-      throw new ForbiddenException(
-        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      throw new BadRequestException(
+        'Inspection slots must belong to the given schedule.',
       );
     }
   }
@@ -272,8 +286,36 @@ export class InspectorService {
     const validSlot = slots.find((slot) => slot.scheduleUuid === scheduleUuid);
 
     if (!validSlot) {
-      throw new ForbiddenException(
-        `Inspectors can only be managed when the schedule status is DRAFT.`,
+      throw new BadRequestException(
+        'Inspector does not belong to the given schedule.',
+      );
+    }
+  }
+
+  private async validateNoAssignedApplicationsOnRemovedSlots(
+    inspector: InspectorWithSlots,
+    scheduleUuid: string,
+    nextSlotUuids: string[],
+  ): Promise<void> {
+    const nextSlotUuidSet = new Set(nextSlotUuids);
+    const removedSlotUuids = inspector.availableSlots
+      .map((slot) => slot.inspectionSlot.uuid)
+      .filter((slotUuid) => !nextSlotUuidSet.has(slotUuid));
+
+    if (removedSlotUuids.length === 0) return;
+
+    const applications =
+      await this.inspectionApplicationRepository.findApplicationsByInspector(
+        inspector.uuid,
+        scheduleUuid,
+      );
+    const hasAssignedApplications = applications.some((application) =>
+      removedSlotUuids.includes(application.inspectionSlotUuid),
+    );
+
+    if (hasAssignedApplications) {
+      throw new ConflictException(
+        'Cannot remove inspector slots with assigned applications.',
       );
     }
   }
