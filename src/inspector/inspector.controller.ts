@@ -141,6 +141,9 @@ export class InspectorController {
     description: 'Inspector information has been successfully updated.',
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiConflictResponse({
+    description: 'Conflict - Assigned applications exist on removed slots',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
@@ -167,6 +170,9 @@ export class InspectorController {
     description: 'Deleted Successfully',
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiConflictResponse({
+    description: 'Conflict - Assigned applications exist on removed slots',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })

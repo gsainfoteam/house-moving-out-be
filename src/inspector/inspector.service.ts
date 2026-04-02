@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -105,6 +106,11 @@ export class InspectorService {
         scheduleUuid,
         tx,
       );
+      await this.validateNoAssignedApplicationsOnRemovedSlots(
+        inspector,
+        scheduleUuid,
+        availableSlotUuids,
+      );
 
       if (availableSlotUuids.length > 0) {
         await this.validateInspectorSlotGenderInTx(
@@ -139,6 +145,11 @@ export class InspectorService {
         inspector,
         scheduleUuid,
         tx,
+      );
+      await this.validateNoAssignedApplicationsOnRemovedSlots(
+        inspector,
+        scheduleUuid,
+        [],
       );
 
       await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
@@ -277,6 +288,34 @@ export class InspectorService {
     if (!validSlot) {
       throw new BadRequestException(
         'Inspector does not belong to the given schedule.',
+      );
+    }
+  }
+
+  private async validateNoAssignedApplicationsOnRemovedSlots(
+    inspector: InspectorWithSlots,
+    scheduleUuid: string,
+    nextSlotUuids: string[],
+  ): Promise<void> {
+    const nextSlotUuidSet = new Set(nextSlotUuids);
+    const removedSlotUuids = inspector.availableSlots
+      .map((slot) => slot.inspectionSlot.uuid)
+      .filter((slotUuid) => !nextSlotUuidSet.has(slotUuid));
+
+    if (removedSlotUuids.length === 0) return;
+
+    const applications =
+      await this.inspectionApplicationRepository.findApplicationsByInspector(
+        inspector.uuid,
+        scheduleUuid,
+      );
+    const hasAssignedApplications = applications.some((application) =>
+      removedSlotUuids.includes(application.inspectionSlotUuid),
+    );
+
+    if (hasAssignedApplications) {
+      throw new ConflictException(
+        'Cannot remove inspector slots with assigned applications.',
       );
     }
   }
