@@ -8,6 +8,7 @@ import { Loggable } from '@lib/logger';
 import { DatabaseService, PrismaTransaction } from '@lib/database';
 import {
   ApplicationStatus,
+  InspectionTargetInfo,
   Inspector,
   ScheduleStatus,
   User,
@@ -123,6 +124,9 @@ export class ApplicationService {
             inspectionTargetInfo.uuid,
           );
 
+        const residentStudentNumbers =
+          this.getResidentStudentNumbers(inspectionTargetInfo);
+
         let assignedInspector: Inspector | undefined;
 
         for (const application of applications) {
@@ -139,7 +143,10 @@ export class ApplicationService {
           ).length;
 
           if (
-            inspector.email !== user.email &&
+            !this.isInspectorInTargetResidents(
+              inspector.studentNumber,
+              residentStudentNumbers,
+            ) &&
             inspector.gender === inspectionTargetInfo.gender &&
             isSlotAvailable &&
             assignedCountInSlot <
@@ -149,10 +156,11 @@ export class ApplicationService {
             break;
           }
         }
+
         if (!assignedInspector) {
           assignedInspector =
             await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
-              user.email,
+              residentStudentNumbers,
               inspectionSlotUuid,
               inspectionTargetInfo.gender,
               tx,
@@ -257,10 +265,13 @@ export class ApplicationService {
       if (updatedSlot.reservedCount > updatedSlot.capacity) {
         throw new ConflictException('Slot capacity is already full.');
       }
+      const residentStudentNumbers = this.getResidentStudentNumbers(
+        application.inspectionTargetInfo,
+      );
 
       const inspector =
         await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
-          user.email,
+          residentStudentNumbers,
           inspectionSlotUuid,
           application.inspectionTargetInfo.gender,
           tx,
@@ -355,6 +366,16 @@ export class ApplicationService {
             "The inspector is not available for the application's inspection slot.",
           );
         }
+        if (
+          this.isInspectorInTargetResidents(
+            inspector.studentNumber,
+            this.getResidentStudentNumbers(application.inspectionTargetInfo),
+          )
+        ) {
+          throw new ForbiddenException(
+            'Cannot assign an inspector who is included in the inspection target.',
+          );
+        }
 
         const schedule =
           await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuid(
@@ -422,9 +443,15 @@ export class ApplicationService {
 
   async findMyInspection(user: User): Promise<InspectionResDto> {
     const schedule = await this.moveOutScheduleRepository.findActiveSchedule();
+    const inspectionTargetInfo =
+      await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
+        user.studentNumber,
+        user.name,
+        schedule.uuid,
+      );
     const application =
-      await this.inspectionApplicationRepository.findApplicationByUserAndSchedule(
-        user.uuid,
+      await this.inspectionApplicationRepository.findApplicationByTargetAndSchedule(
+        inspectionTargetInfo.uuid,
         schedule.uuid,
       );
 
@@ -667,5 +694,22 @@ export class ApplicationService {
       applicationUuid,
       true,
     );
+  }
+
+  private getResidentStudentNumbers(
+    targetInfo: InspectionTargetInfo,
+  ): string[] {
+    return [
+      targetInfo.student1StudentNumber,
+      targetInfo.student2StudentNumber,
+      targetInfo.student3StudentNumber,
+    ].filter((studentNumber): studentNumber is string => !!studentNumber);
+  }
+
+  private isInspectorInTargetResidents(
+    inspectorStudentNumber: string,
+    residentStudentNumbers: string[],
+  ): boolean {
+    return residentStudentNumbers.includes(inspectorStudentNumber);
   }
 }

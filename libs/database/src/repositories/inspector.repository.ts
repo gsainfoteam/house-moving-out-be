@@ -212,17 +212,22 @@ export class InspectorRepository {
   }
 
   async findAvailableInspectorBySlotUuidInTx(
-    userEmail: string,
+    studentNumbersToExclude: string[],
     inspectionSlotUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
   ): Promise<Inspector> {
+    const inspectorExclusionCondition =
+      studentNumbersToExclude.length > 0
+        ? Prisma.sql`AND i.student_number NOT IN (${Prisma.join(studentNumbersToExclude)})`
+        : Prisma.empty;
+
     const inspectors = await tx.$queryRaw<Inspector[]>`
       SELECT i.*
       FROM inspector AS i
       LEFT JOIN inspector_available_slot AS ias ON ias.inspector_uuid = i.uuid
-      WHERE i.email != ${userEmail}
-        AND i.gender = ${gender}
+      WHERE i.gender = ${gender}
+        ${inspectorExclusionCondition}
         AND ias.inspection_slot_uuid = ${inspectionSlotUuid}
         AND (
           SELECT COUNT(*) 
