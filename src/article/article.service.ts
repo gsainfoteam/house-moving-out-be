@@ -10,20 +10,13 @@ import { Article, Role, User } from 'generated/prisma/client';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
 import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
-import {
-  DatabaseService,
-  ArticleRepository,
-  PrismaTransaction,
-} from '@lib/database';
+import { ArticleRepository } from '@lib/database';
 import { CreateArticleType } from './types/create-article.type';
 
 @Loggable()
 @Injectable()
 export class ArticleService {
-  constructor(
-    private readonly articleRepository: ArticleRepository,
-    private readonly databaseService: DatabaseService,
-  ) {}
+  constructor(private readonly articleRepository: ArticleRepository) {}
 
   async createArticle(
     createArticleReqDto: CreateArticleReqDto,
@@ -70,16 +63,7 @@ export class ArticleService {
     const createArticleType =
       this.extractMultilingualContent(createArticleReqDto);
 
-    return await this.databaseService.$transaction(
-      async (tx: PrismaTransaction) => {
-        await this.articleRepository.deleteArticleInTx(uuid, tx);
-
-        return await this.articleRepository.createArticleInTx(
-          createArticleType,
-          tx,
-        );
-      },
-    );
+    return await this.articleRepository.updateArticle(uuid, createArticleType);
   }
 
   async changeArticleVisibility(
