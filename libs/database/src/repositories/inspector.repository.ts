@@ -214,6 +214,7 @@ export class InspectorRepository {
   async findAvailableInspectorBySlotUuidInTx(
     studentNumbersToExclude: string[],
     inspectionSlotUuid: string,
+    scheduleUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
   ): Promise<Inspector> {
@@ -225,10 +226,12 @@ export class InspectorRepository {
     const inspectors = await tx.$queryRaw<Inspector[]>`
       SELECT i.*
       FROM inspector AS i
-      LEFT JOIN inspector_available_slot AS ias ON ias.inspector_uuid = i.uuid
+      INNER JOIN inspector_available_slot AS ias ON ias.inspector_uuid = i.uuid
+      INNER JOIN inspection_slot AS ins
+        ON ins.uuid = ias.inspection_slot_uuid AND ins.schedule_uuid = ${scheduleUuid}
       WHERE i.gender = ${gender}
         ${inspectorExclusionCondition}
-        AND ias.inspection_slot_uuid = ${inspectionSlotUuid}
+        AND ins.uuid = ${inspectionSlotUuid}
         AND (
           SELECT COUNT(*) 
           FROM inspection_application AS ia
@@ -238,9 +241,11 @@ export class InspectorRepository {
         ) < ${this.MAX_APPLICATIONS_PER_INSPECTOR}
       ORDER BY (
         SELECT COUNT(*) 
-        FROM inspection_application AS ia 
+        FROM inspection_application AS ia
+        INNER JOIN inspection_slot AS slot ON slot.uuid = ia.inspection_slot_uuid
         WHERE ia.inspector_uuid = i.uuid
-            AND ia.deleted_at IS NULL
+          AND ia.deleted_at IS NULL
+          AND slot.schedule_uuid = ${scheduleUuid}
       ) ASC
       LIMIT 1
       FOR UPDATE
