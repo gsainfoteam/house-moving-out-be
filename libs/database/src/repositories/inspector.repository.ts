@@ -246,7 +246,7 @@ export class InspectorRepository {
         WHERE ia.inspector_uuid = i.uuid
           AND ia.deleted_at IS NULL
           AND slot.schedule_uuid = ${scheduleUuid}
-      ) ASC
+      ) ASC, random()
       LIMIT 1
       FOR UPDATE
     `.catch((error) => {
