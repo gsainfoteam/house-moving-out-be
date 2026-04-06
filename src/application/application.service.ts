@@ -162,6 +162,7 @@ export class ApplicationService {
             await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
               residentStudentNumbers,
               inspectionSlotUuid,
+              schedule.uuid,
               inspectionTargetInfo.gender,
               tx,
             );
@@ -273,6 +274,7 @@ export class ApplicationService {
         await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
           residentStudentNumbers,
           inspectionSlotUuid,
+          updatedSlot.scheduleUuid,
           application.inspectionTargetInfo.gender,
           tx,
         );
