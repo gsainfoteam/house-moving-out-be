@@ -387,7 +387,7 @@ export class ScheduleController {
   @UseGuards(AdminGuard)
   @Get(':uuid/documents')
   async downloadInspectionDocuments(
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
   ): Promise<StreamableFile> {
     const { pages, buffer } =
