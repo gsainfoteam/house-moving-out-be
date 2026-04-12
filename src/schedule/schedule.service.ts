@@ -857,7 +857,9 @@ export class ScheduleService {
     }
   }
 
-  async downloadInspectionDocuments(scheduleUuid: string): Promise<Buffer> {
+  async downloadInspectionDocuments(
+    scheduleUuid: string,
+  ): Promise<{ pages: number; buffer: Buffer }> {
     const schedule =
       await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(
         scheduleUuid,
@@ -885,6 +887,9 @@ export class ScheduleService {
       }
     }
     const out = await merged.save();
-    return Buffer.from(out);
+    return {
+      pages: documents.length,
+      buffer: Buffer.from(out),
+    };
   }
 }
