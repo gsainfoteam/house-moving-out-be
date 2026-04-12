@@ -138,9 +138,6 @@ export class ApplicationService {
           const isSlotAvailable = inspector.availableSlots.some(
             (slot) => slot.inspectionSlotUuid === inspectionSlotUuid,
           );
-          const assignedCountInSlot = inspector.applications.filter(
-            (app) => app.inspectionSlotUuid === inspectionSlotUuid,
-          ).length;
 
           if (
             !this.isInspectorInTargetResidents(
@@ -148,9 +145,7 @@ export class ApplicationService {
               residentStudentNumbers,
             ) &&
             inspector.gender === inspectionTargetInfo.gender &&
-            isSlotAvailable &&
-            assignedCountInSlot <
-              this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
+            isSlotAvailable
           ) {
             assignedInspector = inspector;
             break;
