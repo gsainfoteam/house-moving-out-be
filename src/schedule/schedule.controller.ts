@@ -14,6 +14,7 @@ import {
   UseInterceptors,
   Query,
   StreamableFile,
+  Res,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -54,6 +55,7 @@ import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-q
 import { EXCEL_VALIDATION_CONSTANTS } from '@lib/excel-parser/constants/room-assignment-parser.constants';
 import { UpdateScheduleStatusDto } from './dto/req/update-schedule-status.dto';
 import { BulkUpdateRepairCheckDto } from './dto/req/bulk-update-repair-check.dto';
+import { type Response } from 'express';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schedule')
@@ -385,14 +387,16 @@ export class ScheduleController {
   @UseGuards(AdminGuard)
   @Get(':uuid/documents')
   async downloadInspectionDocuments(
+    @Res() res: Response,
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
   ): Promise<StreamableFile> {
-    return new StreamableFile(
-      await this.scheduleService.downloadInspectionDocuments(scheduleUuid),
-      {
-        type: 'application/pdf',
-        disposition: 'attachment',
-      },
-    );
+    const { pages, buffer } =
+      await this.scheduleService.downloadInspectionDocuments(scheduleUuid);
+    res.setHeader('Content-Length', buffer.length.toString());
+    res.setHeader('X-Total-Pages', pages.toString());
+    return new StreamableFile(buffer, {
+      type: 'application/pdf',
+      disposition: 'attachment',
+    });
   }
 }
