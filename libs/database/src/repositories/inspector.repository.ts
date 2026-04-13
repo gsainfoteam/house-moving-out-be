@@ -30,11 +30,7 @@ export class InspectorRepository {
     return await this.databaseService.inspector
       .findMany({
         where: {
-          availableSlots: {
-            some: {
-              inspectionSlot: { scheduleUuid },
-            },
-          },
+          schedules: { some: { scheduleUuid } },
         },
         include: {
           availableSlots: {
@@ -88,7 +84,7 @@ export class InspectorRepository {
   ): Promise<InspectorWithSlots> {
     return await this.databaseService.inspector
       .findUniqueOrThrow({
-        where: { uuid },
+        where: { uuid, schedules: { some: { scheduleUuid } } },
         include: {
           availableSlots: {
             where: {
@@ -130,7 +126,7 @@ export class InspectorRepository {
 
     return await tx.inspector
       .findUniqueOrThrow({
-        where: { uuid },
+        where: { uuid, schedules: { some: { scheduleUuid } } },
         include: {
           applications: {
             where: { deletedAt: null },
