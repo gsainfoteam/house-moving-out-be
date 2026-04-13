@@ -1,10 +1,8 @@
--- AlterTable
-ALTER TABLE "inspector" ADD COLUMN     "is_temporary" BOOLEAN NOT NULL DEFAULT false;
-
 -- CreateTable
 CREATE TABLE "move_out_schedule_on_inspector" (
     "schedule_uuid" TEXT NOT NULL,
     "inspector_uuid" TEXT NOT NULL,
+    "is_temporary" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "move_out_schedule_on_inspector_pkey" PRIMARY KEY ("schedule_uuid","inspector_uuid")
 );
