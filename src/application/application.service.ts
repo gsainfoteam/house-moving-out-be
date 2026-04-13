@@ -368,7 +368,7 @@ export class ApplicationService {
         );
 
         if (
-          inspector.schedules[0].isTemporary ||
+          !inspector.schedules[0].isTemporary &&
           inspector.availableSlots.every(
             (slot) =>
               slot.inspectionSlotUuid !== application.inspectionSlotUuid,

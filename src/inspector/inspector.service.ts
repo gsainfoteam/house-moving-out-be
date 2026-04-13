@@ -215,9 +215,12 @@ export class InspectorService {
           scheduleUuid,
           tx,
         );
-      if (schedule.status !== ScheduleStatus.ACTIVE) {
+      if (
+        schedule.status !== ScheduleStatus.ACTIVE &&
+        schedule.status !== ScheduleStatus.DRAFT
+      ) {
         throw new ForbiddenException(
-          `Inspectors can only be updated to temporary status when the schedule status is ACTIVE.`,
+          `Inspectors can only be updated to temporary status when the schedule status is ACTIVE or DRAFT.`,
         );
       }
       await this.moveOutScheduleOnInspectorRepository.updateInspectorToTemporaryInTx(

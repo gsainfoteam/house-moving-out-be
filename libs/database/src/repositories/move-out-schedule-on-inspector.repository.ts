@@ -5,7 +5,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { DatabaseService } from '../database.service';
 import { Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 
@@ -15,8 +14,6 @@ export class MoveOutScheduleOnInspectorRepository {
   private readonly logger = new Logger(
     MoveOutScheduleOnInspectorRepository.name,
   );
-  public readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
-  constructor(private readonly databaseService: DatabaseService) {}
 
   async connectScheduleAndInspectorInTx(
     scheduleUuid: string,
