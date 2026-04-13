@@ -217,10 +217,14 @@ export class InspectorService {
         );
       if (schedule.status !== ScheduleStatus.ACTIVE) {
         throw new ForbiddenException(
-          `Inspectors can only be updated to temporary status when the schedule status is DRAFT or ACTIVE.`,
+          `Inspectors can only be updated to temporary status when the schedule status is ACTIVE.`,
         );
       }
-      await this.inspectorRepository.updateInspectorToTemporaryInTx(uuid, tx);
+      await this.moveOutScheduleOnInspectorRepository.updateInspectorToTemporaryInTx(
+        scheduleUuid,
+        uuid,
+        tx,
+      );
     });
   }
 

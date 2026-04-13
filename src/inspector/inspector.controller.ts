@@ -35,6 +35,7 @@ import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 import { InspectorQueryDto } from './dto/req/inspector-query.dto';
+import { CreateTemporaryInspectorsDto } from './dto/req/create-temporary-inspectors.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -127,7 +128,7 @@ export class InspectorController {
   @Post('temporary')
   async createTemporaryInspectors(
     @Query() query: InspectorQueryDto,
-    @Body() dto: CreateInspectorsDto,
+    @Body() dto: CreateTemporaryInspectorsDto,
   ): Promise<void> {
     return await this.inspectorService.createTemporaryInspectors(
       query.scheduleUuid,

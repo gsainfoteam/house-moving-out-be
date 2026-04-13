@@ -307,29 +307,4 @@ export class InspectorRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
-
-  async updateInspectorToTemporaryInTx(
-    uuid: string,
-    tx: PrismaTransaction,
-  ): Promise<void> {
-    await tx.inspector
-      .update({
-        where: { uuid },
-        data: { isTemporary: true },
-      })
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          if (error.code === 'P2025') {
-            this.logger.debug(`Inspector not found: ${uuid}`);
-            throw new NotFoundException(`Inspector not found`);
-          }
-          this.logger.error(
-            `updateInspectorToTemporary prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`updateInspectorToTemporary error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
 }

@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import { Prisma } from 'generated/prisma/client';
@@ -46,6 +47,37 @@ export class MoveOutScheduleOnInspectorRepository {
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(`connectScheduleAndInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async updateInspectorToTemporaryInTx(
+    scheduleUuid: string,
+    inspectorUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    await tx.moveOutScheduleOnInspector
+      .update({
+        where: {
+          scheduleUuid_inspectorUuid: {
+            scheduleUuid,
+            inspectorUuid,
+          },
+        },
+        data: { isTemporary: true },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`Inspector not found: ${inspectorUuid}`);
+            throw new NotFoundException(`Inspector not found`);
+          }
+          this.logger.error(
+            `updateInspectorToTemporary prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectorToTemporary error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }
