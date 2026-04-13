@@ -22,6 +22,7 @@ import {
 import { Loggable } from '@lib/logger';
 import { Gender, ScheduleStatus, User } from 'generated/prisma/client';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
+import { CreateTemporaryInspectorsDto } from './dto/req/create-temporary-inspectors.dto';
 
 @Loggable()
 @Injectable()
@@ -63,7 +64,7 @@ export class InspectorService {
         await this.moveOutScheduleOnInspectorRepository.connectScheduleAndInspectorInTx(
           scheduleUuid,
           uuid,
-          inspector.isTemporary,
+          false,
           tx,
         );
 
@@ -78,6 +79,41 @@ export class InspectorService {
         await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
           uuid,
           availableSlotUuids,
+          tx,
+        );
+      }
+    });
+  }
+
+  async createTemporaryInspectors(
+    scheduleUuid: string,
+    { inspectors }: CreateTemporaryInspectorsDto,
+  ): Promise<void> {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      for (const inspector of inspectors) {
+        const schedule =
+          await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+            scheduleUuid,
+            tx,
+          );
+        if (
+          schedule.status !== ScheduleStatus.DRAFT &&
+          schedule.status !== ScheduleStatus.ACTIVE
+        ) {
+          throw new ForbiddenException(
+            `Temporary inspectors can only be created when the schedule status is DRAFT or ACTIVE.`,
+          );
+        }
+
+        const { uuid } = await this.inspectorRepository.createInspectorsInTx(
+          inspector,
+          tx,
+        );
+
+        await this.moveOutScheduleOnInspectorRepository.connectScheduleAndInspectorInTx(
+          scheduleUuid,
+          uuid,
+          true,
           tx,
         );
       }

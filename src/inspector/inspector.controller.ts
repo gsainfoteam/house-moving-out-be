@@ -88,8 +88,8 @@ export class InspectorController {
   }
 
   @ApiOperation({
-    summary: 'Register Inspectors',
-    description: 'Register Inspectors in bulk.',
+    summary: 'Register General Inspectors',
+    description: 'Register General Inspectors in bulk.',
   })
   @ApiCreatedResponse({
     description: 'Success',
@@ -106,6 +106,30 @@ export class InspectorController {
     @Body() dto: CreateInspectorsDto,
   ): Promise<void> {
     return await this.inspectorService.createInspectors(
+      query.scheduleUuid,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Register Temporary Inspectors',
+    description: 'Register Temporary Inspectors in bulk.',
+  })
+  @ApiCreatedResponse({
+    description: 'Success',
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiConflictResponse({ description: 'Conflict' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Post('temporary')
+  async createTemporaryInspectors(
+    @Query() query: InspectorQueryDto,
+    @Body() dto: CreateInspectorsDto,
+  ): Promise<void> {
+    return await this.inspectorService.createTemporaryInspectors(
       query.scheduleUuid,
       dto,
     );
