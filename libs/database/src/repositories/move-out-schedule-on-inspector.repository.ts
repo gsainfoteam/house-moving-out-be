@@ -81,4 +81,38 @@ export class MoveOutScheduleOnInspectorRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+
+  async findMoveOutScheduleOnInspectorInTx(
+    scheduleUuid: string,
+    inspectorUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.moveOutScheduleOnInspector
+      .findUniqueOrThrow({
+        where: {
+          scheduleUuid_inspectorUuid: {
+            scheduleUuid,
+            inspectorUuid,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `MoveOutScheduleOnInspector not found: ${scheduleUuid}, ${inspectorUuid}`,
+            );
+            throw new NotFoundException(
+              `Inspector is not registered for the schedule`,
+            );
+          }
+          this.logger.error(
+            `findMoveOutScheduleOnInspector prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findMoveOutScheduleOnInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }

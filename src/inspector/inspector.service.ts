@@ -344,20 +344,11 @@ export class InspectorService {
       );
     }
 
-    const slotUuids = inspector.availableSlots.map(
-      (slot) => slot.inspectionSlot.uuid,
-    );
-    const slots = await this.inspectionSlotRepository.findSlotsInTx(
-      slotUuids,
+    await this.moveOutScheduleOnInspectorRepository.findMoveOutScheduleOnInspectorInTx(
+      scheduleUuid,
+      inspector.uuid,
       tx,
     );
-    const validSlot = slots.find((slot) => slot.scheduleUuid === scheduleUuid);
-
-    if (!validSlot) {
-      throw new BadRequestException(
-        'Inspector does not belong to the given schedule.',
-      );
-    }
   }
 
   private async validateNoAssignedApplicationsOnRemovedSlots(
