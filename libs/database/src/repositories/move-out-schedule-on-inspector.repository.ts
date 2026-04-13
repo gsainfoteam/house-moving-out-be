@@ -112,4 +112,36 @@ export class MoveOutScheduleOnInspectorRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+
+  async deleteMoveOutScheduleOnInspectorInTx(
+    scheduleUuid: string,
+    inspectorUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    await tx.moveOutScheduleOnInspector
+      .delete({
+        where: {
+          scheduleUuid_inspectorUuid: {
+            scheduleUuid,
+            inspectorUuid,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `MoveOutScheduleOnInspector not found: ${scheduleUuid}, ${inspectorUuid}`,
+            );
+            return;
+          }
+          this.logger.error(
+            `deleteMoveOutScheduleOnInspector prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteMoveOutScheduleOnInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }

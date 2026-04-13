@@ -202,6 +202,12 @@ export class InspectorService {
         scheduleUuid,
         tx,
       );
+
+      await this.moveOutScheduleOnInspectorRepository.deleteMoveOutScheduleOnInspectorInTx(
+        scheduleUuid,
+        uuid,
+        tx,
+      );
     });
   }
 
