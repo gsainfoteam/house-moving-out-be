@@ -20,6 +20,7 @@ export class MoveOutScheduleOnInspectorRepository {
   async connectScheduleAndInspectorInTx(
     scheduleUuid: string,
     inspectorUuid: string,
+    isTemporary: boolean,
     tx: PrismaTransaction,
   ): Promise<void> {
     await tx.moveOutScheduleOnInspector
@@ -33,6 +34,7 @@ export class MoveOutScheduleOnInspectorRepository {
         create: {
           scheduleUuid,
           inspectorUuid,
+          isTemporary,
         },
         update: {},
       })

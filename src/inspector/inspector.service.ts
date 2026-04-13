@@ -63,6 +63,7 @@ export class InspectorService {
         await this.moveOutScheduleOnInspectorRepository.connectScheduleAndInspectorInTx(
           scheduleUuid,
           uuid,
+          inspector.isTemporary,
           tx,
         );
 
@@ -165,6 +166,25 @@ export class InspectorService {
         scheduleUuid,
         tx,
       );
+    });
+  }
+
+  async updateInspectorToTemporary(
+    scheduleUuid: string,
+    uuid: string,
+  ): Promise<void> {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      const schedule =
+        await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+          scheduleUuid,
+          tx,
+        );
+      if (schedule.status !== ScheduleStatus.ACTIVE) {
+        throw new ForbiddenException(
+          `Inspectors can only be updated to temporary status when the schedule status is DRAFT or ACTIVE.`,
+        );
+      }
+      await this.inspectorRepository.updateInspectorToTemporaryInTx(uuid, tx);
     });
   }
 

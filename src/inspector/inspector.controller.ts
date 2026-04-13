@@ -163,6 +163,30 @@ export class InspectorController {
   }
 
   @ApiOperation({
+    summary: 'Update Inspector to Temporary',
+    description: 'Update an inspector to temporary by ID.',
+  })
+  @ApiOkResponse({
+    description: 'Inspector has been successfully updated to temporary.',
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid/temporary')
+  async updateInspectorToTemporary(
+    @Query() query: InspectorQueryDto,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    return await this.inspectorService.updateInspectorToTemporary(
+      query.scheduleUuid,
+      uuid,
+    );
+  }
+
+  @ApiOperation({
     summary: 'Delete Inspector',
     description: 'Delete an inspector by ID.',
   })

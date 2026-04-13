@@ -161,8 +161,9 @@ model MoveOutSchedule {
 }
 
 model MoveOutScheduleOnInspector {
-  scheduleUuid  String @map("schedule_uuid")
-  inspectorUuid String @map("inspector_uuid")
+  scheduleUuid  String  @map("schedule_uuid")
+  inspectorUuid String  @map("inspector_uuid")
+  isTemporary   Boolean @default(false) @map("is_temporary")
 
   schedule  MoveOutSchedule @relation(fields: [scheduleUuid], references: [uuid], onDelete: Cascade)
   inspector Inspector       @relation(fields: [inspectorUuid], references: [uuid], onDelete: Cascade)
@@ -272,7 +273,6 @@ model Inspector {
   email         String @unique
   studentNumber String @map("student_number")
   gender        Gender
-  isTemporary   Boolean @default(false) @map("is_temporary")
 
   availableSlots InspectorAvailableSlot[]
   applications   InspectionApplication[]
