@@ -53,5 +53,8 @@ export class InspectorResDto {
 
   constructor(partial: InspectorWithSlots) {
     Object.assign(this, partial);
+    if (partial.schedules && partial.schedules.length > 0) {
+      this.isTemporary = partial.schedules[0].isTemporary;
+    }
   }
 }

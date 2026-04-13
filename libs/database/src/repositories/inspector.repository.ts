@@ -45,6 +45,7 @@ export class InspectorRepository {
               inspectionSlot: true,
             },
           },
+          schedules: true,
         },
       })
       .catch((error) => {
@@ -97,6 +98,7 @@ export class InspectorRepository {
               inspectionSlot: true,
             },
           },
+          schedules: { where: { scheduleUuid } },
         },
       })
       .catch((error) => {
@@ -294,6 +296,7 @@ export class InspectorRepository {
               inspectionSlot: true,
             },
           },
+          schedules: { where: { scheduleUuid: uuid } },
         },
       })
       .catch((error) => {
