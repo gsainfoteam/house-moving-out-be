@@ -37,6 +37,12 @@ export class InspectorResDto {
   gender: Gender;
 
   @ApiProperty({
+    example: false,
+    description: 'Is temporary inspector',
+  })
+  isTemporary: boolean;
+
+  @ApiProperty({
     description: 'Available inspection times',
     type: [InspectionSlotResDto],
   })

@@ -17,6 +17,7 @@ import {
   MoveOutScheduleRepository,
   PrismaTransaction,
   InspectorWithSlots,
+  MoveOutScheduleOnInspectorRepository,
 } from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { Gender, ScheduleStatus, User } from 'generated/prisma/client';
@@ -32,6 +33,7 @@ export class InspectorService {
     private readonly inspectionApplicationRepository: InspectionApplicationRepository,
     private readonly inspectionSlotRepository: InspectionSlotRepository,
     private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
+    private readonly moveOutScheduleOnInspectorRepository: MoveOutScheduleOnInspectorRepository,
   ) {}
 
   async getInspectors(scheduleUuid: string): Promise<InspectorResDto[]> {
@@ -55,6 +57,12 @@ export class InspectorService {
       for (const { availableSlotUuids, ...inspector } of inspectors) {
         const { uuid } = await this.inspectorRepository.createInspectorsInTx(
           inspector,
+          tx,
+        );
+
+        await this.moveOutScheduleOnInspectorRepository.connectScheduleAndInspectorInTx(
+          scheduleUuid,
+          uuid,
           tx,
         );
 

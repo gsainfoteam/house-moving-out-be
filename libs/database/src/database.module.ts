@@ -13,6 +13,7 @@ import { UserRepository } from './repositories/user.repository';
 import { ArticleRepository } from './repositories/article.repository';
 import { DatabaseService } from './database.service';
 import { ConfigModule } from '@nestjs/config';
+import { MoveOutScheduleOnInspectorRepository } from './repositories';
 
 @Module({
   imports: [ConfigModule],
@@ -30,6 +31,7 @@ import { ConfigModule } from '@nestjs/config';
     UserRefreshTokenRepository,
     UserRepository,
     ArticleRepository,
+    MoveOutScheduleOnInspectorRepository,
   ],
   exports: [
     DatabaseService,
@@ -45,6 +47,7 @@ import { ConfigModule } from '@nestjs/config';
     UserRefreshTokenRepository,
     UserRepository,
     ArticleRepository,
+    MoveOutScheduleOnInspectorRepository,
   ],
 })
 export class DatabaseModule {}

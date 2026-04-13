@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsString,
@@ -43,6 +44,13 @@ export class InspectorDto {
   gender: Gender;
 
   @ApiProperty({
+    example: false,
+    description: 'Is temporary inspector',
+  })
+  @IsBoolean()
+  isTemporary: boolean;
+
+  @ApiProperty({
     example: [
       'd3b07384-d9a1-4f5c-8e2e-1234567890ab',
       'e4d909c2-7d2a-4f5c-9e3e-0987654321ba',
@@ -51,7 +59,6 @@ export class InspectorDto {
     type: [String],
   })
   @IsArray()
-  @ArrayMinSize(1)
   @IsUUID('all', { each: true })
   @ArrayUnique()
   availableSlotUuids: string[];
