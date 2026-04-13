@@ -132,6 +132,7 @@ export class ApplicationService {
         for (const application of applications) {
           const inspector = await this.inspectorRepository.findInspectorInTx(
             application.inspectorUuid,
+            schedule.uuid,
             tx,
           );
 
@@ -343,17 +344,31 @@ export class ApplicationService {
   ): Promise<void> {
     return await this.databaseService.$transaction(
       async (tx: PrismaTransaction) => {
-        const inspector = await this.inspectorRepository.findInspectorInTx(
-          inspectorUuid,
-          tx,
-        );
         const application =
           await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
             applicationUuid,
             tx,
           );
 
+        const schedule =
+          await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuid(
+            application.inspectionSlot.scheduleUuid,
+          );
+
+        if (schedule.status !== ScheduleStatus.ACTIVE) {
+          throw new ForbiddenException(
+            'Can only change assigned inspector for active schedules.',
+          );
+        }
+
+        const inspector = await this.inspectorRepository.findInspectorInTx(
+          inspectorUuid,
+          schedule.uuid,
+          tx,
+        );
+
         if (
+          inspector.schedules[0].isTemporary ||
           inspector.availableSlots.every(
             (slot) =>
               slot.inspectionSlotUuid !== application.inspectionSlotUuid,
@@ -374,28 +389,20 @@ export class ApplicationService {
           );
         }
 
-        const schedule =
-          await this.moveOutScheduleRepository.findMoveOutScheduleWithSlotsByUuid(
-            application.inspectionSlot.scheduleUuid,
-          );
-
-        if (schedule.status !== ScheduleStatus.ACTIVE) {
-          throw new ForbiddenException(
-            'Can only change assigned inspector for active schedules.',
-          );
-        }
-
         if (!targetApplicationUuid) {
-          const applicationsInSlot = inspector.applications.filter(
-            (app) => app.inspectionSlotUuid === application.inspectionSlotUuid,
-          );
-          if (
-            applicationsInSlot.length >=
-            this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
-          ) {
-            throw new ConflictException(
-              'The inspector is already assigned to too many applications.',
+          if (!inspector.schedules[0].isTemporary) {
+            const applicationsInSlot = inspector.applications.filter(
+              (app) =>
+                app.inspectionSlotUuid === application.inspectionSlotUuid,
             );
+            if (
+              applicationsInSlot.length >=
+              this.inspectorRepository.MAX_APPLICATIONS_PER_INSPECTOR
+            ) {
+              throw new ConflictException(
+                'The inspector is already assigned to too many applications.',
+              );
+            }
           }
           await this.inspectionApplicationRepository.updateAssignedInspectorInTx(
             applicationUuid,

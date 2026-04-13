@@ -13,6 +13,7 @@ import {
   InspectionApplication,
   Inspector,
   InspectorAvailableSlot,
+  MoveOutScheduleOnInspector,
   Prisma,
 } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
@@ -114,11 +115,13 @@ export class InspectorRepository {
 
   async findInspectorInTx(
     uuid: string,
+    scheduleUuid: string,
     tx: PrismaTransaction,
   ): Promise<
     Inspector & {
       applications: InspectionApplication[];
       availableSlots: InspectorAvailableSlot[];
+      schedules: MoveOutScheduleOnInspector[];
     }
   > {
     await tx.$executeRaw`SELECT 1 FROM "inspector" WHERE "uuid" = ${uuid} FOR UPDATE`;
@@ -131,6 +134,9 @@ export class InspectorRepository {
             where: { deletedAt: null },
           },
           availableSlots: true,
+          schedules: {
+            where: { scheduleUuid },
+          },
         },
       })
       .catch((error) => {
