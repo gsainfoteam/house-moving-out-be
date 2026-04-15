@@ -894,6 +894,16 @@ export class ScheduleService {
   }
 
   async removeMoveOutSchedule(uuid: string): Promise<void> {
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(uuid);
+    if (
+      schedule.status !== ScheduleStatus.CANCELED &&
+      schedule.status !== ScheduleStatus.COMPLETED
+    ) {
+      throw new ForbiddenException(
+        'Move out schedule can be removed only when the status is CANCELED or COMPLETED.',
+      );
+    }
     await this.moveOutScheduleRepository.deleteMoveOutScheduleByUuid(uuid);
   }
 }
