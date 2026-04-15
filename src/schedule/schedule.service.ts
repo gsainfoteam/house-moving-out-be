@@ -892,4 +892,8 @@ export class ScheduleService {
       buffer: Buffer.from(out),
     };
   }
+
+  async removeMoveOutSchedule(uuid: string): Promise<void> {
+    await this.moveOutScheduleRepository.deleteMoveOutScheduleByUuid(uuid);
+  }
 }

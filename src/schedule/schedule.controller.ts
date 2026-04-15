@@ -15,6 +15,7 @@ import {
   Query,
   StreamableFile,
   Res,
+  Delete,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -398,5 +399,25 @@ export class ScheduleController {
       type: 'application/pdf',
       disposition: 'attachment',
     });
+  }
+
+  @ApiOperation({
+    summary: 'Remove Move Out Schedule',
+    description: 'Remove a specific move out schedule by UUID.',
+  })
+  @ApiNoContentResponse({
+    description: 'The move out schedule has been successfully removed.',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Delete(':uuid')
+  async removeMoveOutSchedule(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    return await this.scheduleService.removeMoveOutSchedule(uuid);
   }
 }
