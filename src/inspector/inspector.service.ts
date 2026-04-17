@@ -17,10 +17,12 @@ import {
   MoveOutScheduleRepository,
   PrismaTransaction,
   InspectorWithSlots,
+  MoveOutScheduleOnInspectorRepository,
 } from '@lib/database';
 import { Loggable } from '@lib/logger';
 import { Gender, ScheduleStatus, User } from 'generated/prisma/client';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
+import { CreateTemporaryInspectorsDto } from './dto/req/create-temporary-inspectors.dto';
 
 @Loggable()
 @Injectable()
@@ -32,6 +34,7 @@ export class InspectorService {
     private readonly inspectionApplicationRepository: InspectionApplicationRepository,
     private readonly inspectionSlotRepository: InspectionSlotRepository,
     private readonly moveOutScheduleRepository: MoveOutScheduleRepository,
+    private readonly moveOutScheduleOnInspectorRepository: MoveOutScheduleOnInspectorRepository,
   ) {}
 
   async getInspectors(scheduleUuid: string): Promise<InspectorResDto[]> {
@@ -58,6 +61,13 @@ export class InspectorService {
           tx,
         );
 
+        await this.moveOutScheduleOnInspectorRepository.connectScheduleAndInspectorInTx(
+          scheduleUuid,
+          uuid,
+          false,
+          tx,
+        );
+
         if (availableSlotUuids.length > 0) {
           await this.validateInspectorSlotGenderInTx(
             inspector.gender,
@@ -69,6 +79,41 @@ export class InspectorService {
         await this.inspectorAvailableSlotRepository.connectInspectorAndSlotsInTx(
           uuid,
           availableSlotUuids,
+          tx,
+        );
+      }
+    });
+  }
+
+  async createTemporaryInspectors(
+    scheduleUuid: string,
+    { inspectors }: CreateTemporaryInspectorsDto,
+  ): Promise<void> {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      for (const inspector of inspectors) {
+        const schedule =
+          await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+            scheduleUuid,
+            tx,
+          );
+        if (
+          schedule.status !== ScheduleStatus.DRAFT &&
+          schedule.status !== ScheduleStatus.ACTIVE
+        ) {
+          throw new ForbiddenException(
+            `Temporary inspectors can only be created when the schedule status is DRAFT or ACTIVE.`,
+          );
+        }
+
+        const { uuid } = await this.inspectorRepository.createInspectorsInTx(
+          inspector,
+          tx,
+        );
+
+        await this.moveOutScheduleOnInspectorRepository.connectScheduleAndInspectorInTx(
+          scheduleUuid,
+          uuid,
+          true,
           tx,
         );
       }
@@ -155,6 +200,38 @@ export class InspectorService {
       await this.inspectorAvailableSlotRepository.deleteInspectorAvailableSlotsInTx(
         uuid,
         scheduleUuid,
+        tx,
+      );
+
+      await this.moveOutScheduleOnInspectorRepository.deleteMoveOutScheduleOnInspectorInTx(
+        scheduleUuid,
+        uuid,
+        tx,
+      );
+    });
+  }
+
+  async updateInspectorToTemporary(
+    scheduleUuid: string,
+    uuid: string,
+  ): Promise<void> {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      const schedule =
+        await this.moveOutScheduleRepository.findMoveOutScheduleByUuidWithXLockInTx(
+          scheduleUuid,
+          tx,
+        );
+      if (
+        schedule.status !== ScheduleStatus.ACTIVE &&
+        schedule.status !== ScheduleStatus.DRAFT
+      ) {
+        throw new ForbiddenException(
+          `Inspectors can only be updated to temporary status when the schedule status is ACTIVE or DRAFT.`,
+        );
+      }
+      await this.moveOutScheduleOnInspectorRepository.updateInspectorToTemporaryInTx(
+        scheduleUuid,
+        uuid,
         tx,
       );
     });
@@ -276,20 +353,11 @@ export class InspectorService {
       );
     }
 
-    const slotUuids = inspector.availableSlots.map(
-      (slot) => slot.inspectionSlot.uuid,
-    );
-    const slots = await this.inspectionSlotRepository.findSlotsInTx(
-      slotUuids,
+    await this.moveOutScheduleOnInspectorRepository.findMoveOutScheduleOnInspectorInTx(
+      scheduleUuid,
+      inspector.uuid,
       tx,
     );
-    const validSlot = slots.find((slot) => slot.scheduleUuid === scheduleUuid);
-
-    if (!validSlot) {
-      throw new BadRequestException(
-        'Inspector does not belong to the given schedule.',
-      );
-    }
   }
 
   private async validateNoAssignedApplicationsOnRemovedSlots(

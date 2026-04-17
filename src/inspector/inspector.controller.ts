@@ -35,6 +35,7 @@ import { UpdateInspectorDto } from './dto/req/update-inspector.dto';
 import { ErrorDto } from 'src/common/dto/error.dto';
 import { AssignedTargetsResDto } from './dto/res/assigned-targets-res.dto';
 import { InspectorQueryDto } from './dto/req/inspector-query.dto';
+import { CreateTemporaryInspectorsDto } from './dto/req/create-temporary-inspectors.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('inspector')
@@ -88,8 +89,8 @@ export class InspectorController {
   }
 
   @ApiOperation({
-    summary: 'Register Inspectors',
-    description: 'Register Inspectors in bulk.',
+    summary: 'Register General Inspectors',
+    description: 'Register General Inspectors in bulk.',
   })
   @ApiCreatedResponse({
     description: 'Success',
@@ -106,6 +107,30 @@ export class InspectorController {
     @Body() dto: CreateInspectorsDto,
   ): Promise<void> {
     return await this.inspectorService.createInspectors(
+      query.scheduleUuid,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Register Temporary Inspectors',
+    description: 'Register Temporary Inspectors in bulk.',
+  })
+  @ApiCreatedResponse({
+    description: 'Success',
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiConflictResponse({ description: 'Conflict' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Post('temporary')
+  async createTemporaryInspectors(
+    @Query() query: InspectorQueryDto,
+    @Body() dto: CreateTemporaryInspectorsDto,
+  ): Promise<void> {
+    return await this.inspectorService.createTemporaryInspectors(
       query.scheduleUuid,
       dto,
     );
@@ -159,6 +184,30 @@ export class InspectorController {
       query.scheduleUuid,
       uuid,
       dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Update Inspector to Temporary',
+    description: 'Update an inspector to temporary by ID.',
+  })
+  @ApiOkResponse({
+    description: 'Inspector has been successfully updated to temporary.',
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid/temporary')
+  async updateInspectorToTemporary(
+    @Query() query: InspectorQueryDto,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    return await this.inspectorService.updateInspectorToTemporary(
+      query.scheduleUuid,
+      uuid,
     );
   }
 

@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { Gender, InspectionSlot } from 'generated/prisma/client';
 import { InspectorWithSlots } from '@lib/database';
@@ -36,6 +36,12 @@ export class InspectorResDto {
   })
   gender: Gender;
 
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Is temporary inspector',
+  })
+  isTemporary?: boolean;
+
   @ApiProperty({
     description: 'Available inspection times',
     type: [InspectionSlotResDto],
@@ -47,5 +53,8 @@ export class InspectorResDto {
 
   constructor(partial: InspectorWithSlots) {
     Object.assign(this, partial);
+    if (partial.schedules && partial.schedules.length > 0) {
+      this.isTemporary = partial.schedules[0].isTemporary;
+    }
   }
 }

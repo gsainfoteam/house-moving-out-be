@@ -1,0 +1,147 @@
+import { Loggable } from '@lib/logger';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
+import { PrismaTransaction } from '../types';
+
+@Loggable()
+@Injectable()
+export class MoveOutScheduleOnInspectorRepository {
+  private readonly logger = new Logger(
+    MoveOutScheduleOnInspectorRepository.name,
+  );
+
+  async connectScheduleAndInspectorInTx(
+    scheduleUuid: string,
+    inspectorUuid: string,
+    isTemporary: boolean,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    await tx.moveOutScheduleOnInspector
+      .upsert({
+        where: {
+          scheduleUuid_inspectorUuid: {
+            scheduleUuid,
+            inspectorUuid,
+          },
+        },
+        create: {
+          scheduleUuid,
+          inspectorUuid,
+          isTemporary,
+        },
+        update: {},
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          this.logger.error(
+            `connectScheduleAndInspector prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`connectScheduleAndInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async updateInspectorToTemporaryInTx(
+    scheduleUuid: string,
+    inspectorUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    await tx.moveOutScheduleOnInspector
+      .update({
+        where: {
+          scheduleUuid_inspectorUuid: {
+            scheduleUuid,
+            inspectorUuid,
+          },
+        },
+        data: { isTemporary: true },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(`Inspector not found: ${inspectorUuid}`);
+            throw new NotFoundException(`Inspector not found`);
+          }
+          this.logger.error(
+            `updateInspectorToTemporary prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectorToTemporary error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async findMoveOutScheduleOnInspectorInTx(
+    scheduleUuid: string,
+    inspectorUuid: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.moveOutScheduleOnInspector
+      .findUniqueOrThrow({
+        where: {
+          scheduleUuid_inspectorUuid: {
+            scheduleUuid,
+            inspectorUuid,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `MoveOutScheduleOnInspector not found: ${scheduleUuid}, ${inspectorUuid}`,
+            );
+            throw new NotFoundException(
+              `Inspector is not registered for the schedule`,
+            );
+          }
+          this.logger.error(
+            `findMoveOutScheduleOnInspector prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`findMoveOutScheduleOnInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
+  async deleteMoveOutScheduleOnInspectorInTx(
+    scheduleUuid: string,
+    inspectorUuid: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    await tx.moveOutScheduleOnInspector
+      .delete({
+        where: {
+          scheduleUuid_inspectorUuid: {
+            scheduleUuid,
+            inspectorUuid,
+          },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `MoveOutScheduleOnInspector not found: ${scheduleUuid}, ${inspectorUuid}`,
+            );
+            return;
+          }
+          this.logger.error(
+            `deleteMoveOutScheduleOnInspector prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`deleteMoveOutScheduleOnInspector error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+}

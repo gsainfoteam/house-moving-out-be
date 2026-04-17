@@ -13,6 +13,7 @@ import {
   InspectionApplication,
   Inspector,
   InspectorAvailableSlot,
+  MoveOutScheduleOnInspector,
   Prisma,
 } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
@@ -29,11 +30,7 @@ export class InspectorRepository {
     return await this.databaseService.inspector
       .findMany({
         where: {
-          availableSlots: {
-            some: {
-              inspectionSlot: { scheduleUuid },
-            },
-          },
+          schedules: { some: { scheduleUuid } },
         },
         include: {
           availableSlots: {
@@ -44,6 +41,7 @@ export class InspectorRepository {
               inspectionSlot: true,
             },
           },
+          schedules: { where: { scheduleUuid } },
         },
       })
       .catch((error) => {
@@ -86,7 +84,7 @@ export class InspectorRepository {
   ): Promise<InspectorWithSlots> {
     return await this.databaseService.inspector
       .findUniqueOrThrow({
-        where: { uuid },
+        where: { uuid, schedules: { some: { scheduleUuid } } },
         include: {
           availableSlots: {
             where: {
@@ -96,6 +94,7 @@ export class InspectorRepository {
               inspectionSlot: true,
             },
           },
+          schedules: { where: { scheduleUuid } },
         },
       })
       .catch((error) => {
@@ -114,23 +113,28 @@ export class InspectorRepository {
 
   async findInspectorInTx(
     uuid: string,
+    scheduleUuid: string,
     tx: PrismaTransaction,
   ): Promise<
     Inspector & {
       applications: InspectionApplication[];
       availableSlots: InspectorAvailableSlot[];
+      schedules: MoveOutScheduleOnInspector[];
     }
   > {
     await tx.$executeRaw`SELECT 1 FROM "inspector" WHERE "uuid" = ${uuid} FOR UPDATE`;
 
     return await tx.inspector
       .findUniqueOrThrow({
-        where: { uuid },
+        where: { uuid, schedules: { some: { scheduleUuid } } },
         include: {
           applications: {
             where: { deletedAt: null },
           },
           availableSlots: true,
+          schedules: {
+            where: { scheduleUuid },
+          },
         },
       })
       .catch((error) => {
@@ -288,6 +292,7 @@ export class InspectorRepository {
               inspectionSlot: true,
             },
           },
+          schedules: { where: { scheduleUuid: uuid } },
         },
       })
       .catch((error) => {
