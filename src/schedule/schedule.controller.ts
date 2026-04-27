@@ -246,7 +246,6 @@ export class ScheduleController {
   })
   @ApiOkResponse({
     description: 'Inspection applications successfully downloaded',
-    type: ApplicationListResDto,
   })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
