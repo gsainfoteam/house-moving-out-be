@@ -192,11 +192,7 @@ export class InspectorRepository {
           email,
           name,
           studentNumber,
-          availableSlots: {
-            some: {
-              inspectionSlot: { scheduleUuid },
-            },
-          },
+          schedules: { some: { scheduleUuid } },
         },
         select: { uuid: true },
       })
