@@ -224,6 +224,50 @@ export class ScheduleService {
     );
   }
 
+  async downloadInspectionApplications(scheduleUuid: string): Promise<Buffer> {
+    const LIMIT = 100;
+    const count =
+      await this.inspectionApplicationRepository.countApplications(
+        scheduleUuid,
+      );
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('applications');
+    ws.addRow([
+      '호실',
+      '학번',
+      '이름',
+      '신청 일시',
+      '검사 일시',
+      '검사 횟수',
+      '검사위원',
+      '결과',
+      '추가 코멘트',
+    ]);
+    for (let offset = 0; offset < count; offset += LIMIT) {
+      const applications =
+        await this.inspectionApplicationRepository.findApplicationsByScheduleUuid(
+          offset,
+          LIMIT,
+          scheduleUuid,
+        );
+      ws.addRows(
+        applications.map((app) => [
+          app.inspectionTargetInfo.roomNumber,
+          app.user.studentNumber,
+          app.user.name,
+          app.createdAt,
+          app.inspectionSlot.startTime,
+          app.inspectionCount,
+          app.inspector.name,
+          app.status,
+          app.additionalComment,
+        ]),
+      );
+    }
+    const buffer = await wb.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
   async updateInspectionTargetsAndUpdateSlotCapacities(
     currentSemesterFile: Express.Multer.File,
     nextSemesterFile: Express.Multer.File,

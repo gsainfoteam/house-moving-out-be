@@ -241,6 +241,34 @@ export class ScheduleController {
   }
 
   @ApiOperation({
+    summary: 'Download Inspection Applications by Schedule Uuid',
+    description: 'Download inspection applications by Inspection Schedule Uuid',
+  })
+  @ApiOkResponse({
+    description: 'Inspection applications successfully downloaded',
+    type: ApplicationListResDto,
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Get(':uuid/applications/download')
+  async downloadInspectionApplications(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const buffer =
+      await this.scheduleService.downloadInspectionApplications(scheduleUuid);
+    res.setHeader('Content-Length', buffer.length.toString());
+    return new StreamableFile(buffer, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      disposition: 'attachment',
+    });
+  }
+
+  @ApiOperation({
     summary: 'Replace Inspection Targets and Update Slot Capacities',
     description:
       'Upload Excel files(2 files: current/next semester). Replaces inspection targets for the given schedule and recalculates all slot capacities. Allowed only before the schedule application period has started.',
