@@ -224,6 +224,63 @@ export class ScheduleService {
     );
   }
 
+  async downloadInspectionApplications(scheduleUuid: string): Promise<Buffer> {
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(
+        scheduleUuid,
+      );
+    const LIMIT = 100;
+    const count = await this.inspectionApplicationRepository.countApplications(
+      schedule.uuid,
+    );
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('applications');
+    ws.columns = [
+      { header: '호실', key: 'room' },
+      { header: '학번', key: 'studentNumber' },
+      { header: '이름', key: 'name' },
+      {
+        header: '신청 일시',
+        key: 'createdAt',
+        style: { numFmt: 'yyyy-mm-dd hh:mm' },
+        width: 15,
+      },
+      {
+        header: '검사 일시',
+        key: 'slotStart',
+        style: { numFmt: 'yyyy-mm-dd hh:mm' },
+        width: 15,
+      },
+      { header: '검사 횟수', key: 'inspectionCount' },
+      { header: '검사위원', key: 'inspector' },
+      { header: '결과', key: 'status' },
+      { header: '추가 코멘트', key: 'additionalComment', width: 20 },
+    ];
+    for (let offset = 0; offset < count; offset += LIMIT) {
+      const applications =
+        await this.inspectionApplicationRepository.findApplicationsByScheduleUuid(
+          offset,
+          LIMIT,
+          schedule.uuid,
+        );
+      ws.addRows(
+        applications.map((app) => ({
+          room: app.inspectionTargetInfo.roomNumber,
+          studentNumber: app.user.studentNumber,
+          name: app.user.name,
+          createdAt: app.createdAt,
+          slotStart: app.inspectionSlot.startTime,
+          inspectionCount: app.inspectionCount,
+          inspector: app.inspector.name,
+          status: app.status,
+          additionalComment: app.additionalComment,
+        })),
+      );
+    }
+    const buffer = await wb.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
   async updateInspectionTargetsAndUpdateSlotCapacities(
     currentSemesterFile: Express.Multer.File,
     nextSemesterFile: Express.Multer.File,
