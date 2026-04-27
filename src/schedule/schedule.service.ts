@@ -225,11 +225,14 @@ export class ScheduleService {
   }
 
   async downloadInspectionApplications(scheduleUuid: string): Promise<Buffer> {
-    const LIMIT = 100;
-    const count =
-      await this.inspectionApplicationRepository.countApplications(
+    const schedule =
+      await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(
         scheduleUuid,
       );
+    const LIMIT = 100;
+    const count = await this.inspectionApplicationRepository.countApplications(
+      schedule.uuid,
+    );
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('applications');
     ws.addRow([
