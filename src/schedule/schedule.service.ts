@@ -251,7 +251,7 @@ export class ScheduleService {
         await this.inspectionApplicationRepository.findApplicationsByScheduleUuid(
           offset,
           LIMIT,
-          scheduleUuid,
+          schedule.uuid,
         );
       ws.addRows(
         applications.map((app) => [
