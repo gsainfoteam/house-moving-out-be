@@ -252,7 +252,7 @@ export class ScheduleController {
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
+  // @UseGuards(AdminGuard)
   @Get(':uuid/applications/download')
   async downloadInspectionApplications(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,

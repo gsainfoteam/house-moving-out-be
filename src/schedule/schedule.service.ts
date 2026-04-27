@@ -235,17 +235,27 @@ export class ScheduleService {
     );
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('applications');
-    ws.addRow([
-      '호실',
-      '학번',
-      '이름',
-      '신청 일시',
-      '검사 일시',
-      '검사 횟수',
-      '검사위원',
-      '결과',
-      '추가 코멘트',
-    ]);
+    ws.columns = [
+      { header: '호실', key: 'room' },
+      { header: '학번', key: 'studentNumber' },
+      { header: '이름', key: 'name' },
+      {
+        header: '신청 일시',
+        key: 'createdAt',
+        style: { numFmt: 'yyyy-mm-dd hh:mm' },
+        width: 15,
+      },
+      {
+        header: '검사 일시',
+        key: 'slotStart',
+        style: { numFmt: 'yyyy-mm-dd hh:mm' },
+        width: 15,
+      },
+      { header: '검사 횟수', key: 'inspectionCount' },
+      { header: '검사위원', key: 'inspector' },
+      { header: '결과', key: 'status' },
+      { header: '추가 코멘트', key: 'additionalComment', width: 20 },
+    ];
     for (let offset = 0; offset < count; offset += LIMIT) {
       const applications =
         await this.inspectionApplicationRepository.findApplicationsByScheduleUuid(
@@ -254,17 +264,17 @@ export class ScheduleService {
           schedule.uuid,
         );
       ws.addRows(
-        applications.map((app) => [
-          app.inspectionTargetInfo.roomNumber,
-          app.user.studentNumber,
-          app.user.name,
-          app.createdAt,
-          app.inspectionSlot.startTime,
-          app.inspectionCount,
-          app.inspector.name,
-          app.status,
-          app.additionalComment,
-        ]),
+        applications.map((app) => ({
+          room: app.inspectionTargetInfo.roomNumber,
+          studentNumber: app.user.studentNumber,
+          name: app.user.name,
+          createdAt: app.createdAt,
+          slotStart: app.inspectionSlot.startTime,
+          inspectionCount: app.inspectionCount,
+          inspector: app.inspector.name,
+          status: app.status,
+          additionalComment: app.additionalComment,
+        })),
       );
     }
     const buffer = await wb.xlsx.writeBuffer();
