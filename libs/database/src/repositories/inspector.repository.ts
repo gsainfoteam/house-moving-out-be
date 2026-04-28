@@ -266,40 +266,4 @@ export class InspectorRepository {
 
     return inspectors[0];
   }
-
-  async findInspectorByScheduleUuid(
-    uuid: string,
-  ): Promise<InspectorWithSlots[]> {
-    return await this.databaseService.inspector
-      .findMany({
-        where: {
-          availableSlots: {
-            some: {
-              inspectionSlot: { scheduleUuid: uuid },
-            },
-          },
-        },
-        include: {
-          availableSlots: {
-            where: {
-              inspectionSlot: { scheduleUuid: uuid },
-            },
-            include: {
-              inspectionSlot: true,
-            },
-          },
-          schedules: { where: { scheduleUuid: uuid } },
-        },
-      })
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findInspectorByScheduleUuid prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findInspectorByScheduleUuid error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
-  }
 }

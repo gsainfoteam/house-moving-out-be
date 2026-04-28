@@ -37,7 +37,6 @@ import {
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { UserGuard } from 'src/auth/guard/user.guard';
 import { ErrorDto } from 'src/common/dto/error.dto';
-import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { ScheduleService } from './schedule.service';
@@ -192,26 +191,6 @@ export class ScheduleController {
     @Body() dto: UpdateScheduleStatusDto,
   ): Promise<void> {
     return await this.scheduleService.updateStatus(uuid, dto.status);
-  }
-
-  @ApiOperation({
-    summary: 'Get Inspectors using schedule uuid',
-    description:
-      'Get available inspectors for a move out schedule using schedule UUID.',
-  })
-  @ApiOkResponse({
-    description: 'The available inspectors has been successfully retrieved.',
-    type: [InspectorResDto],
-  })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Get(':uuid/inspector')
-  async findInspectorsByScheduleUuid(
-    @Param('uuid', ParseUUIDPipe) uuid: string,
-  ): Promise<InspectorResDto[]> {
-    return await this.scheduleService.findInspectorsByScheduleUuid(uuid);
   }
 
   @ApiOperation({
