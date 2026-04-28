@@ -31,6 +31,7 @@ import {
   InspectorRepository,
   PrismaTransaction,
 } from '@lib/database';
+import { User } from 'generated/prisma/client';
 import {
   CreateMoveOutScheduleWithTargetsDto,
   InspectionTimeRange,
