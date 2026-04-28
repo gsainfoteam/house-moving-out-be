@@ -31,8 +31,6 @@ import {
   InspectorRepository,
   PrismaTransaction,
 } from '@lib/database';
-import { User } from 'generated/prisma/client';
-import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import {
   CreateMoveOutScheduleWithTargetsDto,
   InspectionTimeRange,
@@ -184,12 +182,6 @@ export class ScheduleService {
 
   async findActiveMoveOutScheduleWithSlots(): Promise<MoveOutScheduleWithSlots> {
     return await this.moveOutScheduleRepository.findActiveMoveOutScheduleWithSlots();
-  }
-
-  async findInspectorsByScheduleUuid(uuid: string): Promise<InspectorResDto[]> {
-    const inspectors =
-      await this.inspectorRepository.findInspectorByScheduleUuid(uuid);
-    return inspectors.map((inspector) => new InspectorResDto(inspector));
   }
 
   async findApplicationsByScheduleUuid(
