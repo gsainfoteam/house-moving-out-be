@@ -251,7 +251,9 @@ model InspectionApplication {
   inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
   inspector            Inspector            @relation(fields: [inspectorUuid], references: [uuid])
 
-  // isPass === null, deleteAt === null인 row에 대해 InspectionTargetInfoUuid에 Unique 조건을 걸어두어, 한 target에 대해 활성화된 Application이 하나가 되도록 함
+  // status가 null 또는 PENDING_NO_SHOW이고 deletedAt이 null인 row에 대해
+  // inspectionTargetInfoUuid 유니크 인덱스를 두어 한 target당 활성 Application 1개만 허용
+  // add_unique_active_application_status 데이터베이스 마이그레이션 파일 참고
   @@index([inspectionSlotUuid])
   @@map("inspection_application")
 }
