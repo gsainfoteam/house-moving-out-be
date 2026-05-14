@@ -463,7 +463,7 @@ export class InspectionApplicationRepository {
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
-            `findApplicationsByUser prisma error: ${error.message}`,
+            `findApplicationByTargetInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
