@@ -24,26 +24,22 @@ export class EncryptionService implements OnModuleInit {
   private key!: Buffer;
   private pepper!: string;
   private isInitialized = false;
+  private readonly secretName: string;
   private readonly secretsManager: SecretsManagerClient;
 
   constructor(private readonly configService: ConfigService) {
+    this.secretName = this.configService.getOrThrow<string>(
+      'AWS_SECRET_MANAGER_NAME',
+    );
     this.secretsManager = new SecretsManagerClient({
       region: this.configService.getOrThrow<string>('AWS_S3_REGION'),
     });
   }
 
   async onModuleInit() {
-    await this.loadSecrets();
-  }
-
-  private async loadSecrets() {
-    const secretName = this.configService.getOrThrow<string>(
-      'AWS_SECRET_MANAGER_NAME',
-    );
-
     try {
       const response = await this.secretsManager.send(
-        new GetSecretValueCommand({ SecretId: secretName }),
+        new GetSecretValueCommand({ SecretId: this.secretName }),
       );
 
       if (response.SecretString) {

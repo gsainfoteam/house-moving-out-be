@@ -115,22 +115,22 @@ export class InspectionTargetInfoRepository {
             roomNumber: target.roomNumber,
             roomCapacity: target.roomCapacity,
             student1Name: this.encryptionService.encrypt(
-              target.students[0].studentName,
+              target.students[0]?.studentName,
             ),
             student1StudentNumber: this.encryptionService.encrypt(
-              target.students[0].studentNumber,
+              target.students[0]?.studentNumber,
             ),
             student2Name: this.encryptionService.encrypt(
-              target.students[1].studentName,
+              target.students[1]?.studentName,
             ),
             student2StudentNumber: this.encryptionService.encrypt(
-              target.students[1].studentNumber,
+              target.students[1]?.studentNumber,
             ),
             student3Name: this.encryptionService.encrypt(
-              target.students[2].studentName,
+              target.students[2]?.studentName,
             ),
             student3StudentNumber: this.encryptionService.encrypt(
-              target.students[2].studentNumber,
+              target.students[2]?.studentNumber,
             ),
             studentHashes,
             applyCleaningService: target.applyCleaningService ?? false,
