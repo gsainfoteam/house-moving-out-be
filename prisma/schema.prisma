@@ -80,12 +80,15 @@ enum ApplicationStatus {
 }
 
 model User {
-  uuid          String @id
-  name          String
-  email         String @unique
-  phoneNumber   String @map("phone_number")
-  studentNumber String @map("student_number")
-  role          Role   @default(USER)
+  uuid              String @id
+  name              String
+  nameHash          String @map("name_hash")
+  email             String
+  emailHash         String @unique @map("email_hash")
+  phoneNumber       String @map("phone_number")
+  studentNumber     String @map("student_number")
+  studentNumberHash String @unique @map("student_number_hash")
+  role              Role   @default(USER)
 
   deletedAt DateTime? @map("deleted_at")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -96,6 +99,7 @@ model User {
   inspectionApplications InspectionApplication[]
   auditLogs              AuditLog[]
 
+  @@index([nameHash])
   @@map("user")
 }
 
@@ -198,6 +202,7 @@ model InspectionTargetInfo {
   student2StudentNumber String?            @map("student2_student_number")
   student3Name          String?            @map("student3_name")
   student3StudentNumber String?            @map("student3_student_number")
+  studentHashes         String[]           @map("student_hashes")
   applyCleaningService  Boolean            @default(false) @map("apply_cleaning_service")
   applyRepairCheck      Boolean            @default(false) @map("apply_repair_check")
   inspectionType        RoomInspectionType @map("inspection_type")
@@ -268,18 +273,23 @@ model InspectorAvailableSlot {
 }
 
 model Inspector {
-  uuid          String @id @default(uuid())
-  name          String
-  email         String @unique
-  studentNumber String @map("student_number")
-  gender        Gender
+  uuid              String @id @default(uuid())
+  name              String
+  nameHash          String @map("name_hash")
+  email             String
+  emailHash         String @unique @map("email_hash")
+  studentNumber     String @map("student_number")
+  studentNumberHash String @unique @map("student_number_hash")
+  gender            Gender
 
   availableSlots InspectorAvailableSlot[]
   applications   InspectionApplication[]
   schedules      MoveOutScheduleOnInspector[]
 
+  @@index([nameHash])
   @@map("inspector")
 }
+
 
 model Article {
   uuid      String      @id @default(uuid())

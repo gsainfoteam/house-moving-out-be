@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
+import { EncryptionService } from '../encryption.service';
 import {
   Gender,
   InspectionApplication,
@@ -24,7 +25,10 @@ import { InspectorWithSlots } from '../types/inspector.type';
 export class InspectorRepository {
   private readonly logger = new Logger(InspectorRepository.name);
   public readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   async findAllInspectors(scheduleUuid: string): Promise<InspectorWithSlots[]> {
     return await this.databaseService.inspector
@@ -44,6 +48,13 @@ export class InspectorRepository {
           schedules: { where: { scheduleUuid } },
         },
       })
+      .then((inspectors) =>
+        inspectors.map((inspector) => ({
+          ...this.encryptionService.decryptInspector(inspector),
+          availableSlots: inspector.availableSlots,
+          schedules: inspector.schedules,
+        })),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`findAllInspectors prisma error: ${error.message}`);
@@ -58,11 +69,38 @@ export class InspectorRepository {
     inspector: Prisma.InspectorCreateInput,
     tx: PrismaTransaction,
   ) {
+    const encryptedName = this.encryptionService.encrypt(inspector.name)!;
+    const nameHash = this.encryptionService.hash(inspector.name);
+    const encryptedEmail = this.encryptionService.encrypt(inspector.email)!;
+    const emailHash = this.encryptionService.hash(inspector.email);
+    const encryptedStudentNumber = this.encryptionService.encrypt(
+      inspector.studentNumber,
+    )!;
+    const studentNumberHash = this.encryptionService.hash(
+      inspector.studentNumber,
+    );
+
     return await tx.inspector
       .upsert({
-        where: { email: inspector.email },
-        create: inspector,
-        update: inspector,
+        where: { emailHash },
+        create: {
+          ...inspector,
+          name: encryptedName,
+          nameHash,
+          email: encryptedEmail,
+          emailHash,
+          studentNumber: encryptedStudentNumber,
+          studentNumberHash,
+        },
+        update: {
+          ...inspector,
+          name: encryptedName,
+          nameHash,
+          email: encryptedEmail,
+          emailHash,
+          studentNumber: encryptedStudentNumber,
+          studentNumberHash,
+        },
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -97,6 +135,11 @@ export class InspectorRepository {
           schedules: { where: { scheduleUuid } },
         },
       })
+      .then((inspector) => ({
+        ...this.encryptionService.decryptInspector(inspector),
+        availableSlots: inspector.availableSlots,
+        schedules: inspector.schedules,
+      }))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -137,6 +180,12 @@ export class InspectorRepository {
           },
         },
       })
+      .then((inspector) => ({
+        ...this.encryptionService.decryptInspector(inspector),
+        applications: inspector.applications,
+        availableSlots: inspector.availableSlots,
+        schedules: inspector.schedules,
+      }))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -156,14 +205,19 @@ export class InspectorRepository {
     name: string,
     studentNumber: string,
   ): Promise<Inspector> {
+    const emailHash = this.encryptionService.hash(email);
+    const nameHash = this.encryptionService.hash(name);
+    const studentNumberHash = this.encryptionService.hash(studentNumber);
+
     return await this.databaseService.inspector
-      .findUniqueOrThrow({
+      .findFirstOrThrow({
         where: {
-          email,
-          name,
-          studentNumber,
+          emailHash,
+          nameHash,
+          studentNumberHash,
         },
       })
+      .then((inspector) => this.encryptionService.decryptInspector(inspector))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -186,19 +240,22 @@ export class InspectorRepository {
     studentNumber: string,
     scheduleUuid: string,
   ): Promise<boolean> {
+    const emailHash = this.encryptionService.hash(email);
+    const nameHash = this.encryptionService.hash(name);
+    const studentNumberHash = this.encryptionService.hash(studentNumber);
+
     return await this.databaseService.inspector
       .findFirst({
         where: {
-          email,
-          name,
-          studentNumber,
+          emailHash,
+          nameHash,
+          studentNumberHash,
           availableSlots: {
             some: {
               inspectionSlot: { scheduleUuid },
             },
           },
         },
-        select: { uuid: true },
       })
       .then((inspector) => !!inspector)
       .catch((error) => {
@@ -222,9 +279,13 @@ export class InspectorRepository {
     gender: Gender,
     tx: PrismaTransaction,
   ): Promise<Inspector> {
+    const studentNumberHashesToExclude = studentNumbersToExclude.map(
+      (studentNumber) => this.encryptionService.hash(studentNumber),
+    );
+
     const inspectorExclusionCondition =
-      studentNumbersToExclude.length > 0
-        ? Prisma.sql`AND i.student_number NOT IN (${Prisma.join(studentNumbersToExclude)})`
+      studentNumberHashesToExclude.length > 0
+        ? Prisma.sql`AND i.student_number_hash NOT IN (${Prisma.join(studentNumberHashesToExclude)})`
         : Prisma.empty;
 
     const inspectors = await tx.$queryRaw<Inspector[]>`
@@ -268,7 +329,7 @@ export class InspectorRepository {
       throw new NotFoundException('No available inspector found.');
     }
 
-    return inspectors[0];
+    return this.encryptionService.decryptInspector(inspectors[0]);
   }
 
   async findInspectorByScheduleUuid(
@@ -295,6 +356,13 @@ export class InspectorRepository {
           schedules: { where: { scheduleUuid: uuid } },
         },
       })
+      .then((inspectors) =>
+        inspectors.map((i) => ({
+          ...this.encryptionService.decryptInspector(i),
+          availableSlots: i.availableSlots,
+          schedules: i.schedules,
+        })),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(

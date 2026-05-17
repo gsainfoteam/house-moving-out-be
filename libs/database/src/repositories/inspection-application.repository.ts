@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
+import { EncryptionService } from '../encryption.service';
 import {
   ApplicationStatus,
   InspectionApplication,
@@ -23,7 +24,10 @@ import {
 @Injectable()
 export class InspectionApplicationRepository {
   private readonly logger = new Logger(InspectionApplicationRepository.name);
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   async createInspectionApplicationInTx(
     userUuid: string,
@@ -66,8 +70,8 @@ export class InspectionApplicationRepository {
       | typeof ApplicationStatus.CANCELED
       | typeof ApplicationStatus.NO_SHOW_CANCELED,
     tx: PrismaTransaction,
-  ) {
-    return await tx.inspectionApplication
+  ): Promise<void> {
+    await tx.inspectionApplication
       .update({
         where: { uuid: applicationUuid, deletedAt: null },
         data: { status },
@@ -111,6 +115,12 @@ export class InspectionApplicationRepository {
           createdAt: 'desc',
         },
       })
+      .then((app) => ({
+        ...app,
+        inspectionTargetInfo: this.encryptionService.decryptTarget(
+          app.inspectionTargetInfo,
+        ),
+      }))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -142,6 +152,12 @@ export class InspectionApplicationRepository {
           inspectionTargetInfo: true,
         },
       })
+      .then((app) => ({
+        ...app,
+        inspectionTargetInfo: this.encryptionService.decryptTarget(
+          app.inspectionTargetInfo,
+        ),
+      }))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -180,6 +196,10 @@ export class InspectionApplicationRepository {
           user: true,
         },
       })
+      .then((app) => ({
+        ...app,
+        user: this.encryptionService.decryptUser(app.user),
+      }))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -206,8 +226,8 @@ export class InspectionApplicationRepository {
     document: string,
     isDocumentActive: boolean,
     tx: PrismaTransaction,
-  ): Promise<InspectionApplication> {
-    return await tx.inspectionApplication
+  ): Promise<void> {
+    await tx.inspectionApplication
       .update({
         where: { uuid: applicationUuid, deletedAt: null },
         data: {
@@ -277,6 +297,14 @@ export class InspectionApplicationRepository {
           inspectionTargetInfo: true,
         },
       })
+      .then((app) => ({
+        ...app,
+        user: this.encryptionService.decryptUser(app.user),
+        inspector: this.encryptionService.decryptInspector(app.inspector),
+        inspectionTargetInfo: this.encryptionService.decryptTarget(
+          app.inspectionTargetInfo,
+        ),
+      }))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -322,6 +350,16 @@ export class InspectionApplicationRepository {
           createdAt: 'desc',
         },
       })
+      .then((apps) =>
+        apps.map((app) => ({
+          ...app,
+          user: this.encryptionService.decryptUser(app.user),
+          inspector: this.encryptionService.decryptInspector(app.inspector),
+          inspectionTargetInfo: this.encryptionService.decryptTarget(
+            app.inspectionTargetInfo,
+          ),
+        })),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
@@ -402,6 +440,14 @@ export class InspectionApplicationRepository {
           inspectionTargetInfo: true,
         },
       })
+      .then((apps) =>
+        apps.map((app) => ({
+          ...app,
+          inspectionTargetInfo: this.encryptionService.decryptTarget(
+            app.inspectionTargetInfo,
+          ),
+        })),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(

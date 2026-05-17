@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
+import { EncryptionService } from '../encryption.service';
 import { Prisma, User } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 
@@ -13,7 +14,10 @@ import { PrismaTransaction } from '../types';
 @Injectable()
 export class UserRepository {
   private readonly logger = new Logger(UserRepository.name);
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   async findUser(uuid: string): Promise<User> {
     return await this.databaseService.user
@@ -23,6 +27,7 @@ export class UserRepository {
           deletedAt: null,
         },
       })
+      .then((user) => this.encryptionService.decryptUser(user))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -47,23 +52,39 @@ export class UserRepository {
     }: Pick<User, 'uuid' | 'name' | 'email' | 'phoneNumber' | 'studentNumber'>,
     tx: PrismaTransaction,
   ): Promise<User> {
+    const encryptedName = this.encryptionService.encrypt(name)!;
+    const nameHash = this.encryptionService.hash(name);
+    const encryptedEmail = this.encryptionService.encrypt(email)!;
+    const emailHash = this.encryptionService.hash(email);
+    const encryptedPhoneNumber = this.encryptionService.encrypt(phoneNumber)!;
+    const encryptedStudentNumber =
+      this.encryptionService.encrypt(studentNumber)!;
+    const studentNumberHash = this.encryptionService.hash(studentNumber);
+
     return await tx.user
       .upsert({
         where: { uuid },
         create: {
           uuid,
-          name,
-          email,
-          phoneNumber,
-          studentNumber,
+          name: encryptedName,
+          nameHash,
+          email: encryptedEmail,
+          emailHash,
+          phoneNumber: encryptedPhoneNumber,
+          studentNumber: encryptedStudentNumber,
+          studentNumberHash,
         },
         update: {
-          name,
-          email,
-          phoneNumber,
-          studentNumber,
+          name: encryptedName,
+          nameHash,
+          email: encryptedEmail,
+          emailHash,
+          phoneNumber: encryptedPhoneNumber,
+          studentNumber: encryptedStudentNumber,
+          studentNumberHash,
         },
       })
+      .then((user) => this.encryptionService.decryptUser(user))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`upsertUserInTx prisma error: ${error.message}`);

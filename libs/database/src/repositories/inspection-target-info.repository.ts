@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
+import { EncryptionService } from '../encryption.service';
 import { InspectionTargetInfo, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 import { InspectionTargetStudent } from 'src/schedule/types/inspection-target.type';
@@ -17,7 +18,10 @@ import { InspectionTargetInfoWithApplication } from '../types/inspection-target-
 @Injectable()
 export class InspectionTargetInfoRepository {
   private readonly logger = new Logger(InspectionTargetInfoRepository.name);
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   async countInspectionTargetsByScheduleAndUuids(
     scheduleUuid: string,
@@ -99,22 +103,41 @@ export class InspectionTargetInfoRepository {
   ): Promise<{ count: number }> {
     return await tx.inspectionTargetInfo
       .createMany({
-        data: inspectionTargetInfos.map((target) => ({
-          scheduleUuid,
-          houseName: target.houseName,
-          gender: target.gender,
-          roomNumber: target.roomNumber,
-          roomCapacity: target.roomCapacity,
-          student1Name: target.students[0]?.studentName,
-          student1StudentNumber: target.students[0]?.studentNumber,
-          student2Name: target.students[1]?.studentName,
-          student2StudentNumber: target.students[1]?.studentNumber,
-          student3Name: target.students[2]?.studentName,
-          student3StudentNumber: target.students[2]?.studentNumber,
-          applyCleaningService: target.applyCleaningService ?? false,
-          applyRepairCheck: target.applyRepairCheck ?? false,
-          inspectionType: target.inspectionType,
-        })),
+        data: inspectionTargetInfos.map((target) => {
+          const studentHashes = target.students.map((s) =>
+            this.encryptionService.hash(`${s.studentNumber}:${s.studentName}`),
+          );
+
+          return {
+            scheduleUuid,
+            houseName: target.houseName,
+            gender: target.gender,
+            roomNumber: target.roomNumber,
+            roomCapacity: target.roomCapacity,
+            student1Name: this.encryptionService.encrypt(
+              target.students[0].studentName,
+            ),
+            student1StudentNumber: this.encryptionService.encrypt(
+              target.students[0].studentNumber,
+            ),
+            student2Name: this.encryptionService.encrypt(
+              target.students[1].studentName,
+            ),
+            student2StudentNumber: this.encryptionService.encrypt(
+              target.students[1].studentNumber,
+            ),
+            student3Name: this.encryptionService.encrypt(
+              target.students[2].studentName,
+            ),
+            student3StudentNumber: this.encryptionService.encrypt(
+              target.students[2].studentNumber,
+            ),
+            studentHashes,
+            applyCleaningService: target.applyCleaningService ?? false,
+            applyRepairCheck: target.applyRepairCheck ?? false,
+            inspectionType: target.inspectionType,
+          };
+        }),
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -221,24 +244,15 @@ export class InspectionTargetInfoRepository {
     studentName: string,
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
-    return await this.databaseService.inspectionTargetInfo
+    const studentHash = this.encryptionService.hash(
+      `${studentNumber}:${studentName}`,
+    );
+
+    const target = await this.databaseService.inspectionTargetInfo
       .findFirstOrThrow({
         where: {
           scheduleUuid,
-          OR: [
-            {
-              student1StudentNumber: studentNumber,
-              student1Name: studentName,
-            },
-            {
-              student2StudentNumber: studentNumber,
-              student2Name: studentName,
-            },
-            {
-              student3StudentNumber: studentNumber,
-              student3Name: studentName,
-            },
-          ],
+          studentHashes: { has: studentHash },
         },
       })
       .catch((error) => {
@@ -254,6 +268,8 @@ export class InspectionTargetInfoRepository {
         this.logger.error(`findInspectionTargetInfoByUserInfo error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
+
+    return this.encryptionService.decryptTarget(target);
   }
 
   async findInspectionTargetInfoByUserInfoInTx(
@@ -262,24 +278,15 @@ export class InspectionTargetInfoRepository {
     scheduleUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionTargetInfo> {
-    return await tx.inspectionTargetInfo
+    const studentHash = this.encryptionService.hash(
+      `${studentNumber}:${studentName}`,
+    );
+
+    const target = await tx.inspectionTargetInfo
       .findFirstOrThrow({
         where: {
           scheduleUuid,
-          OR: [
-            {
-              student1StudentNumber: studentNumber,
-              student1Name: studentName,
-            },
-            {
-              student2StudentNumber: studentNumber,
-              student2Name: studentName,
-            },
-            {
-              student3StudentNumber: studentNumber,
-              student3Name: studentName,
-            },
-          ],
+          studentHashes: { has: studentHash },
         },
       })
       .catch((error) => {
@@ -297,6 +304,8 @@ export class InspectionTargetInfoRepository {
         );
         throw new InternalServerErrorException('Unknown Error');
       });
+
+    return this.encryptionService.decryptTarget(target);
   }
 
   async incrementInspectionCountInTx(
@@ -310,6 +319,7 @@ export class InspectionTargetInfoRepository {
           inspectionCount: { increment: 1 },
         },
       })
+      .then((target) => this.encryptionService.decryptTarget(target))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -329,8 +339,8 @@ export class InspectionTargetInfoRepository {
   async decrementInspectionCountInTx(
     targetUuid: string,
     tx: PrismaTransaction,
-  ): Promise<InspectionTargetInfo> {
-    return await tx.inspectionTargetInfo
+  ): Promise<void> {
+    await tx.inspectionTargetInfo
       .update({
         where: { uuid: targetUuid },
         data: {
@@ -373,6 +383,12 @@ export class InspectionTargetInfoRepository {
         },
         orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
       })
+      .then((targets) =>
+        targets.map((target) => ({
+          ...this.encryptionService.decryptTarget(target),
+          inspectionApplication: target.inspectionApplication,
+        })),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(

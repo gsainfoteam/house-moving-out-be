@@ -12,6 +12,7 @@ import { UserRefreshTokenRepository } from './repositories/user-refresh-token.re
 import { UserRepository } from './repositories/user.repository';
 import { ArticleRepository } from './repositories/article.repository';
 import { DatabaseService } from './database.service';
+import { EncryptionService } from './encryption.service';
 import { ConfigModule } from '@nestjs/config';
 import { MoveOutScheduleOnInspectorRepository } from './repositories';
 
@@ -19,6 +20,7 @@ import { MoveOutScheduleOnInspectorRepository } from './repositories';
   imports: [ConfigModule],
   providers: [
     DatabaseService,
+    EncryptionService,
     AuditLogRepository,
     InspectionApplicationRepository,
     InspectionSlotRepository,
@@ -35,6 +37,7 @@ import { MoveOutScheduleOnInspectorRepository } from './repositories';
   ],
   exports: [
     DatabaseService,
+    EncryptionService,
     AuditLogRepository,
     InspectionApplicationRepository,
     InspectionSlotRepository,
