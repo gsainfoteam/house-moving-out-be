@@ -19,6 +19,8 @@ import {
 } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 import { InspectorWithSlots } from '../types/inspector.type';
+import { InspectorDto } from 'src/inspector/dto/req/create-inspectors.dto';
+import { TemporaryInspectorDto } from 'src/inspector/dto/req/create-temporary-inspectors.dto';
 
 @Loggable()
 @Injectable()
@@ -66,7 +68,7 @@ export class InspectorRepository {
   }
 
   async createInspectorsInTx(
-    inspector: Prisma.InspectorCreateInput,
+    inspector: InspectorDto | TemporaryInspectorDto,
     tx: PrismaTransaction,
   ) {
     const encryptedName = this.encryptionService.encrypt(inspector.name)!;
