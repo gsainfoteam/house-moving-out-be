@@ -80,15 +80,13 @@ enum ApplicationStatus {
 }
 
 model User {
-  uuid              String @id
-  name              String
-  nameHash          String @map("name_hash")
-  email             String
-  emailHash         String @unique @map("email_hash")
-  phoneNumber       String @map("phone_number")
-  studentNumber     String @map("student_number")
-  studentNumberHash String @unique @map("student_number_hash")
-  role              Role   @default(USER)
+  uuid          String @id
+  studentHash   String @unique @map("hash")
+  name          String
+  email         String
+  phoneNumber   String @map("phone_number")
+  studentNumber String @map("student_number")
+  role          Role   @default(USER)
 
   deletedAt DateTime? @map("deleted_at")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -99,7 +97,6 @@ model User {
   inspectionApplications InspectionApplication[]
   auditLogs              AuditLog[]
 
-  @@index([nameHash])
   @@map("user")
 }
 
@@ -273,23 +270,19 @@ model InspectorAvailableSlot {
 }
 
 model Inspector {
-  uuid              String @id @default(uuid())
-  name              String
-  nameHash          String @map("name_hash")
-  email             String
-  emailHash         String @unique @map("email_hash")
-  studentNumber     String @map("student_number")
-  studentNumberHash String @unique @map("student_number_hash")
-  gender            Gender
+  uuid          String @id @default(uuid())
+  studentHash   String @unique @map("hash")
+  name          String
+  email         String
+  studentNumber String @map("student_number")
+  gender        Gender
 
   availableSlots InspectorAvailableSlot[]
   applications   InspectionApplication[]
   schedules      MoveOutScheduleOnInspector[]
 
-  @@index([nameHash])
   @@map("inspector")
 }
-
 
 model Article {
   uuid      String      @id @default(uuid())

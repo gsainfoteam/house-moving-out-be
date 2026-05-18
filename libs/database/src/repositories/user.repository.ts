@@ -14,6 +14,7 @@ import { PrismaTransaction } from '../types';
 @Injectable()
 export class UserRepository {
   private readonly logger = new Logger(UserRepository.name);
+
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly encryptionService: EncryptionService,
@@ -52,36 +53,37 @@ export class UserRepository {
     }: Pick<User, 'uuid' | 'name' | 'email' | 'phoneNumber' | 'studentNumber'>,
     tx: PrismaTransaction,
   ): Promise<User> {
-    const encryptedName = this.encryptionService.encrypt(name)!;
-    const nameHash = this.encryptionService.hash(name);
-    const encryptedEmail = this.encryptionService.encrypt(email)!;
-    const emailHash = this.encryptionService.hash(email);
-    const encryptedPhoneNumber = this.encryptionService.encrypt(phoneNumber)!;
-    const encryptedStudentNumber =
-      this.encryptionService.encrypt(studentNumber)!;
-    const studentNumberHash = this.encryptionService.hash(studentNumber);
+    const encryptedName = this.encryptionService.encrypt(name, 'user', uuid)!;
+    const encryptedEmail = this.encryptionService.encrypt(email, 'user', uuid)!;
+    const encryptedPhoneNumber = this.encryptionService.encrypt(
+      phoneNumber,
+      'user',
+      uuid,
+    )!;
+    const encryptedStudentNumber = this.encryptionService.encrypt(
+      studentNumber,
+      'user',
+      uuid,
+    )!;
+    const studentHash = this.encryptionService.hash(name, studentNumber);
 
     return await tx.user
       .upsert({
         where: { uuid },
         create: {
           uuid,
+          studentHash,
           name: encryptedName,
-          nameHash,
           email: encryptedEmail,
-          emailHash,
           phoneNumber: encryptedPhoneNumber,
           studentNumber: encryptedStudentNumber,
-          studentNumberHash,
         },
         update: {
           name: encryptedName,
-          nameHash,
+          studentHash,
           email: encryptedEmail,
-          emailHash,
           phoneNumber: encryptedPhoneNumber,
           studentNumber: encryptedStudentNumber,
-          studentNumberHash,
         },
       })
       .then((user) => this.encryptionService.decryptUser(user))

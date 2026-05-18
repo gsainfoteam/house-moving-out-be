@@ -69,12 +69,19 @@ export class EncryptionService implements OnModuleInit {
     }
   }
 
-  encrypt(text: string | null | undefined): string | null {
+  encrypt(
+    text: string | null | undefined,
+    purpose: string,
+    uuid: string,
+  ): string | null {
     if (!text) return text as null;
     this.ensureInitialized();
 
     const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+    const derivedKey = Buffer.from(
+      crypto.hkdfSync('sha256', this.key, purpose, uuid, 32),
+    );
+    const cipher = crypto.createCipheriv(this.algorithm, derivedKey, iv);
 
     let encrypted = cipher.update(text, 'utf8', 'base64');
     encrypted += cipher.final('base64');
@@ -85,7 +92,11 @@ export class EncryptionService implements OnModuleInit {
     return result.toString('base64');
   }
 
-  decrypt(encryptedData: string | null | undefined): string | null {
+  decrypt(
+    encryptedData: string | null | undefined,
+    purpose: string,
+    uuid: string,
+  ): string | null {
     if (!encryptedData) return encryptedData as null;
     this.ensureInitialized();
 
@@ -98,8 +109,10 @@ export class EncryptionService implements OnModuleInit {
       const iv = buffer.subarray(0, 12);
       const tag = buffer.subarray(buffer.length - 16);
       const ciphertext = buffer.subarray(12, buffer.length - 16);
-
-      const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
+      const derivedKey = Buffer.from(
+        crypto.hkdfSync('sha256', this.key, purpose, uuid, 32),
+      );
+      const decipher = crypto.createDecipheriv(this.algorithm, derivedKey, iv);
       decipher.setAuthTag(tag);
 
       let decrypted = decipher.update(
@@ -117,12 +130,12 @@ export class EncryptionService implements OnModuleInit {
     }
   }
 
-  hash(text: string): string {
+  hash(name: string, studentNumber: string): string {
     this.ensureInitialized();
 
     return crypto
       .createHmac('sha256', this.pepper)
-      .update(text.toLowerCase().trim())
+      .update(`${name.toLowerCase().trim()}:${studentNumber}`)
       .digest('hex');
   }
 
@@ -130,10 +143,10 @@ export class EncryptionService implements OnModuleInit {
     if (!user) return user;
     return {
       ...user,
-      name: this.decrypt(user.name)!,
-      email: this.decrypt(user.email)!,
-      phoneNumber: this.decrypt(user.phoneNumber)!,
-      studentNumber: this.decrypt(user.studentNumber)!,
+      name: this.decrypt(user.name, 'user', user.uuid)!,
+      email: this.decrypt(user.email, 'user', user.uuid)!,
+      phoneNumber: this.decrypt(user.phoneNumber, 'user', user.uuid)!,
+      studentNumber: this.decrypt(user.studentNumber, 'user', user.uuid)!,
     };
   }
 
@@ -141,9 +154,13 @@ export class EncryptionService implements OnModuleInit {
     if (!inspector) return inspector;
     return {
       ...inspector,
-      name: this.decrypt(inspector.name)!,
-      email: this.decrypt(inspector.email)!,
-      studentNumber: this.decrypt(inspector.studentNumber)!,
+      name: this.decrypt(inspector.name, 'inspector', inspector.uuid)!,
+      email: this.decrypt(inspector.email, 'inspector', inspector.uuid)!,
+      studentNumber: this.decrypt(
+        inspector.studentNumber,
+        'inspector',
+        inspector.uuid,
+      )!,
     };
   }
 
@@ -151,12 +168,24 @@ export class EncryptionService implements OnModuleInit {
     if (!target) return target;
     return {
       ...target,
-      student1Name: this.decrypt(target.student1Name),
-      student1StudentNumber: this.decrypt(target.student1StudentNumber),
-      student2Name: this.decrypt(target.student2Name),
-      student2StudentNumber: this.decrypt(target.student2StudentNumber),
-      student3Name: this.decrypt(target.student3Name),
-      student3StudentNumber: this.decrypt(target.student3StudentNumber),
+      student1Name: this.decrypt(target.student1Name, 'target', target.uuid)!,
+      student1StudentNumber: this.decrypt(
+        target.student1StudentNumber,
+        'target',
+        target.uuid,
+      )!,
+      student2Name: this.decrypt(target.student2Name, 'target', target.uuid)!,
+      student2StudentNumber: this.decrypt(
+        target.student2StudentNumber,
+        'target',
+        target.uuid,
+      )!,
+      student3Name: this.decrypt(target.student3Name, 'target', target.uuid)!,
+      student3StudentNumber: this.decrypt(
+        target.student3StudentNumber,
+        'target',
+        target.uuid,
+      )!,
     };
   }
 }

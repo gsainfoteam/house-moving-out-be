@@ -104,38 +104,47 @@ export class InspectionTargetInfoRepository {
     return await tx.inspectionTargetInfo
       .createMany({
         data: inspectionTargetInfos.map((target) => {
+          const uuid = crypto.randomUUID();
           const studentHashes = target.students.map((s) =>
-            this.encryptionService.hash(`${s.studentNumber}:${s.studentName}`),
+            this.encryptionService.hash(s.studentName, s.studentNumber),
           );
 
           return {
             scheduleUuid,
-            houseName: target.houseName,
-            gender: target.gender,
-            roomNumber: target.roomNumber,
-            roomCapacity: target.roomCapacity,
+            ...target,
             student1Name: this.encryptionService.encrypt(
               target.students[0]?.studentName,
+              'target',
+              uuid,
             ),
             student1StudentNumber: this.encryptionService.encrypt(
               target.students[0]?.studentNumber,
+              'target',
+              uuid,
             ),
             student2Name: this.encryptionService.encrypt(
               target.students[1]?.studentName,
+              'target',
+              uuid,
             ),
             student2StudentNumber: this.encryptionService.encrypt(
               target.students[1]?.studentNumber,
+              'target',
+              uuid,
             ),
             student3Name: this.encryptionService.encrypt(
               target.students[2]?.studentName,
+              'target',
+              uuid,
             ),
             student3StudentNumber: this.encryptionService.encrypt(
               target.students[2]?.studentNumber,
+              'target',
+              uuid,
             ),
             studentHashes,
             applyCleaningService: target.applyCleaningService ?? false,
             applyRepairCheck: target.applyRepairCheck ?? false,
-            inspectionType: target.inspectionType,
           };
         }),
       })
@@ -244,9 +253,7 @@ export class InspectionTargetInfoRepository {
     studentName: string,
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
-    const studentHash = this.encryptionService.hash(
-      `${studentNumber}:${studentName}`,
-    );
+    const studentHash = this.encryptionService.hash(studentName, studentNumber);
 
     const target = await this.databaseService.inspectionTargetInfo
       .findFirstOrThrow({
@@ -278,9 +285,7 @@ export class InspectionTargetInfoRepository {
     scheduleUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionTargetInfo> {
-    const studentHash = this.encryptionService.hash(
-      `${studentNumber}:${studentName}`,
-    );
+    const studentHash = this.encryptionService.hash(studentName, studentNumber);
 
     const target = await tx.inspectionTargetInfo
       .findFirstOrThrow({

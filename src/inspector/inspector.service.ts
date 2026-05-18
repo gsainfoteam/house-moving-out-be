@@ -238,12 +238,10 @@ export class InspectorService {
   }
 
   async getMyAssignedTargets({
-    email,
     name,
     studentNumber,
   }: User): Promise<AssignedTargetsResDto[]> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      email,
       name,
       studentNumber,
     );
@@ -266,7 +264,6 @@ export class InspectorService {
       const schedule =
         await this.moveOutScheduleRepository.findActiveSchedule();
       return await this.inspectorRepository.existsInspectorInScheduleByUserInfo(
-        user.email,
         user.name,
         user.studentNumber,
         schedule.uuid,

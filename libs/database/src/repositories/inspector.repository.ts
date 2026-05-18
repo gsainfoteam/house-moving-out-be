@@ -71,37 +71,44 @@ export class InspectorRepository {
     inspector: InspectorDto | TemporaryInspectorDto,
     tx: PrismaTransaction,
   ) {
-    const encryptedName = this.encryptionService.encrypt(inspector.name)!;
-    const nameHash = this.encryptionService.hash(inspector.name);
-    const encryptedEmail = this.encryptionService.encrypt(inspector.email)!;
-    const emailHash = this.encryptionService.hash(inspector.email);
+    const uuid = crypto.randomUUID();
+    const encryptedName = this.encryptionService.encrypt(
+      inspector.name,
+      'inspector',
+      uuid,
+    )!;
+    const encryptedEmail = this.encryptionService.encrypt(
+      inspector.email,
+      'inspector',
+      uuid,
+    )!;
     const encryptedStudentNumber = this.encryptionService.encrypt(
       inspector.studentNumber,
+      'inspector',
+      uuid,
     )!;
-    const studentNumberHash = this.encryptionService.hash(
+    const studentHash = this.encryptionService.hash(
+      inspector.name,
       inspector.studentNumber,
     );
 
     return await tx.inspector
       .upsert({
-        where: { emailHash },
+        where: { studentHash },
         create: {
+          uuid,
           ...inspector,
           name: encryptedName,
-          nameHash,
           email: encryptedEmail,
-          emailHash,
           studentNumber: encryptedStudentNumber,
-          studentNumberHash,
+          studentHash,
         },
         update: {
+          uuid,
           ...inspector,
           name: encryptedName,
-          nameHash,
           email: encryptedEmail,
-          emailHash,
           studentNumber: encryptedStudentNumber,
-          studentNumberHash,
         },
       })
       .catch((error) => {
@@ -203,20 +210,15 @@ export class InspectorRepository {
   }
 
   async findInspectorByUserInfo(
-    email: string,
     name: string,
     studentNumber: string,
   ): Promise<Inspector> {
-    const emailHash = this.encryptionService.hash(email);
-    const nameHash = this.encryptionService.hash(name);
-    const studentNumberHash = this.encryptionService.hash(studentNumber);
+    const studentHash = this.encryptionService.hash(name, studentNumber);
 
     return await this.databaseService.inspector
       .findFirstOrThrow({
         where: {
-          emailHash,
-          nameHash,
-          studentNumberHash,
+          studentHash,
         },
       })
       .then((inspector) => this.encryptionService.decryptInspector(inspector))
@@ -237,21 +239,16 @@ export class InspectorRepository {
   }
 
   async existsInspectorInScheduleByUserInfo(
-    email: string,
     name: string,
     studentNumber: string,
     scheduleUuid: string,
   ): Promise<boolean> {
-    const emailHash = this.encryptionService.hash(email);
-    const nameHash = this.encryptionService.hash(name);
-    const studentNumberHash = this.encryptionService.hash(studentNumber);
+    const studentHash = this.encryptionService.hash(name, studentNumber);
 
     return await this.databaseService.inspector
       .findFirst({
         where: {
-          emailHash,
-          nameHash,
-          studentNumberHash,
+          studentHash,
           availableSlots: {
             some: {
               inspectionSlot: { scheduleUuid },
@@ -275,19 +272,24 @@ export class InspectorRepository {
   }
 
   async findAvailableInspectorBySlotUuidInTx(
+    studentNamesToExclude: string[],
     studentNumbersToExclude: string[],
     inspectionSlotUuid: string,
     scheduleUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
   ): Promise<Inspector> {
-    const studentNumberHashesToExclude = studentNumbersToExclude.map(
-      (studentNumber) => this.encryptionService.hash(studentNumber),
+    const studentHashesToExclude = studentNumbersToExclude.map(
+      (studentNumber, index) =>
+        this.encryptionService.hash(
+          studentNamesToExclude[index],
+          studentNumber,
+        ),
     );
 
     const inspectorExclusionCondition =
-      studentNumberHashesToExclude.length > 0
-        ? Prisma.sql`AND i.student_number_hash NOT IN (${Prisma.join(studentNumberHashesToExclude)})`
+      studentHashesToExclude.length > 0
+        ? Prisma.sql`AND i.student_hash NOT IN (${Prisma.join(studentHashesToExclude)})`
         : Prisma.empty;
 
     const inspectors = await tx.$queryRaw<Inspector[]>`

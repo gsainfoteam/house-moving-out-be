@@ -124,6 +124,8 @@ export class ApplicationService {
             inspectionTargetInfo.uuid,
           );
 
+        const residentStudentNames =
+          this.getResidentsStudentNames(inspectionTargetInfo);
         const residentStudentNumbers =
           this.getResidentStudentNumbers(inspectionTargetInfo);
 
@@ -156,6 +158,7 @@ export class ApplicationService {
         if (!assignedInspector) {
           assignedInspector =
             await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
+              residentStudentNames,
               residentStudentNumbers,
               inspectionSlotUuid,
               schedule.uuid,
@@ -262,12 +265,17 @@ export class ApplicationService {
       if (updatedSlot.reservedCount > updatedSlot.capacity) {
         throw new ConflictException('Slot capacity is already full.');
       }
+
+      const residentStudentNames = this.getResidentsStudentNames(
+        application.inspectionTargetInfo,
+      );
       const residentStudentNumbers = this.getResidentStudentNumbers(
         application.inspectionTargetInfo,
       );
 
       const inspector =
         await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
+          residentStudentNames,
           residentStudentNumbers,
           inspectionSlotUuid,
           updatedSlot.scheduleUuid,
@@ -482,12 +490,11 @@ export class ApplicationService {
   }
 
   async recordTargetNoShow(
-    { email, name, studentNumber }: User,
+    { name, studentNumber }: User,
     applicationUuid: string,
     status: ApplicationStatus,
   ): Promise<TargetPhoneNumberResDto> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      email,
       name,
       studentNumber,
     );
@@ -541,7 +548,7 @@ export class ApplicationService {
   }
 
   async submitInspectionResult(
-    { email, name, studentNumber }: User,
+    { name, studentNumber }: User,
     applicationUuid: string,
     {
       passed,
@@ -571,7 +578,6 @@ export class ApplicationService {
     );
 
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      email,
       name,
       studentNumber,
     );
@@ -616,12 +622,11 @@ export class ApplicationService {
   }
 
   async getDocumentUploadUrl(
-    { email, name, studentNumber }: User,
+    { name, studentNumber }: User,
     applicationUuid: string,
     { contentLength }: GetDocumentUploadUrlReqDto,
   ): Promise<RegisterResultResDto> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      email,
       name,
       studentNumber,
     );
@@ -675,7 +680,6 @@ export class ApplicationService {
         applicationUuid,
       );
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      user.email,
       user.name,
       user.studentNumber,
     );
@@ -698,6 +702,14 @@ export class ApplicationService {
       applicationUuid,
       true,
     );
+  }
+
+  private getResidentsStudentNames(targetInfo: InspectionTargetInfo): string[] {
+    return [
+      targetInfo.student1Name,
+      targetInfo.student2Name,
+      targetInfo.student3Name,
+    ].filter((studentName): studentName is string => !!studentName);
   }
 
   private getResidentStudentNumbers(
