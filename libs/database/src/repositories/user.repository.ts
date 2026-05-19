@@ -53,16 +53,24 @@ export class UserRepository {
     }: Pick<User, 'uuid' | 'name' | 'email' | 'phoneNumber' | 'studentNumber'>,
     tx: PrismaTransaction,
   ): Promise<User> {
-    const encryptedName = this.encryptionService.encrypt(name, 'user', uuid)!;
-    const encryptedEmail = this.encryptionService.encrypt(email, 'user', uuid)!;
+    const encryptedName = this.encryptionService.encrypt(
+      name,
+      'user:name',
+      uuid,
+    )!;
+    const encryptedEmail = this.encryptionService.encrypt(
+      email,
+      'user:email',
+      uuid,
+    )!;
     const encryptedPhoneNumber = this.encryptionService.encrypt(
       phoneNumber,
-      'user',
+      'user:phoneNumber',
       uuid,
     )!;
     const encryptedStudentNumber = this.encryptionService.encrypt(
       studentNumber,
-      'user',
+      'user:studentNumber',
       uuid,
     )!;
     const studentHash = this.encryptionService.hash(name, studentNumber);

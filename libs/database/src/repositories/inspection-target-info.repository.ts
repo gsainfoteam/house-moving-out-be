@@ -110,6 +110,7 @@ export class InspectionTargetInfoRepository {
           );
 
           return {
+            uuid,
             scheduleUuid,
             houseName: target.houseName,
             gender: target.gender,
@@ -117,32 +118,32 @@ export class InspectionTargetInfoRepository {
             roomCapacity: target.roomCapacity,
             student1Name: this.encryptionService.encrypt(
               target.students[0]?.studentName,
-              'target',
+              'target:name',
               uuid,
             ),
             student1StudentNumber: this.encryptionService.encrypt(
               target.students[0]?.studentNumber,
-              'target',
+              'target:studentNumber',
               uuid,
             ),
             student2Name: this.encryptionService.encrypt(
               target.students[1]?.studentName,
-              'target',
+              'target:name',
               uuid,
             ),
             student2StudentNumber: this.encryptionService.encrypt(
               target.students[1]?.studentNumber,
-              'target',
+              'target:studentNumber',
               uuid,
             ),
             student3Name: this.encryptionService.encrypt(
               target.students[2]?.studentName,
-              'target',
+              'target:name',
               uuid,
             ),
             student3StudentNumber: this.encryptionService.encrypt(
               target.students[2]?.studentNumber,
-              'target',
+              'target:studentNumber',
               uuid,
             ),
             studentHashes,

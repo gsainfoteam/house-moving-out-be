@@ -71,58 +71,63 @@ export class InspectorRepository {
     inspector: InspectorDto | TemporaryInspectorDto,
     tx: PrismaTransaction,
   ) {
-    const uuid = crypto.randomUUID();
-    const encryptedName = this.encryptionService.encrypt(
-      inspector.name,
-      'inspector',
-      uuid,
-    )!;
-    const encryptedEmail = this.encryptionService.encrypt(
-      inspector.email,
-      'inspector',
-      uuid,
-    )!;
-    const encryptedStudentNumber = this.encryptionService.encrypt(
-      inspector.studentNumber,
-      'inspector',
-      uuid,
-    )!;
     const studentHash = this.encryptionService.hash(
       inspector.name,
       inspector.studentNumber,
     );
+    const existingInspector = await tx.inspector.findUnique({
+      where: { studentHash },
+    });
+    const uuid = existingInspector?.uuid ?? crypto.randomUUID();
+    const encryptedName = this.encryptionService.encrypt(
+      inspector.name,
+      'inspector:name',
+      uuid,
+    )!;
+    const encryptedEmail = this.encryptionService.encrypt(
+      inspector.email,
+      'inspector:email',
+      uuid,
+    )!;
+    const encryptedStudentNumber = this.encryptionService.encrypt(
+      inspector.studentNumber,
+      'inspector:studentNumber',
+      uuid,
+    )!;
 
-    return await tx.inspector
-      .upsert({
-        where: { studentHash },
-        create: {
-          uuid,
-          ...inspector,
-          name: encryptedName,
-          email: encryptedEmail,
-          studentNumber: encryptedStudentNumber,
-          studentHash,
-        },
-        update: {
-          uuid,
-          ...inspector,
-          name: encryptedName,
-          email: encryptedEmail,
-          studentNumber: encryptedStudentNumber,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          if (error.code === 'P2002') {
-            this.logger.debug(`Conflict email: ${error.message}`);
-            throw new ConflictException('Conflict Error');
-          }
-          this.logger.error(`createInspectors prisma error: ${error.message}`);
-          throw new InternalServerErrorException('Database Error');
+    return await (
+      existingInspector
+        ? tx.inspector.update({
+            where: { studentHash },
+            data: {
+              ...inspector,
+              name: encryptedName,
+              email: encryptedEmail,
+              studentNumber: encryptedStudentNumber,
+            },
+          })
+        : tx.inspector.create({
+            data: {
+              uuid,
+              ...inspector,
+              name: encryptedName,
+              email: encryptedEmail,
+              studentNumber: encryptedStudentNumber,
+              studentHash,
+            },
+          })
+    ).catch((error) => {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          this.logger.debug(`Conflict email: ${error.message}`);
+          throw new ConflictException('Conflict Error');
         }
-        this.logger.error(`createInspectors error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
+        this.logger.error(`createInspectors prisma error: ${error.message}`);
+        throw new InternalServerErrorException('Database Error');
+      }
+      this.logger.error(`createInspectors error: ${error}`);
+      throw new InternalServerErrorException('Unknown Error');
+    });
   }
 
   async findInspector(
@@ -268,19 +273,14 @@ export class InspectorRepository {
   }
 
   async findAvailableInspectorBySlotUuidInTx(
-    studentNamesToExclude: string[],
-    studentNumbersToExclude: string[],
+    residentStudents: { name: string; studentNumber: string }[],
     inspectionSlotUuid: string,
     scheduleUuid: string,
     gender: Gender,
     tx: PrismaTransaction,
   ): Promise<Inspector> {
-    const studentHashesToExclude = studentNumbersToExclude.map(
-      (studentNumber, index) =>
-        this.encryptionService.hash(
-          studentNamesToExclude[index],
-          studentNumber,
-        ),
+    const studentHashesToExclude = residentStudents.map((resident) =>
+      this.encryptionService.hash(resident.name, resident.studentNumber),
     );
 
     const inspectorExclusionCondition =

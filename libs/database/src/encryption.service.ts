@@ -42,17 +42,17 @@ export class EncryptionService implements OnModuleInit {
         new GetSecretValueCommand({ SecretId: this.secretName }),
       );
 
-      if (response.SecretString) {
-        const secrets = JSON.parse(response.SecretString) as EncryptionSecrets;
-        if (!secrets.ENCRYPTION_KEY || !secrets.ENCRYPTION_PEPPER) {
-          throw new Error(
-            'Secret must contain ENCRYPTION_KEY and ENCRYPTION_PEPPER',
-          );
-        }
-        this.key = Buffer.from(secrets.ENCRYPTION_KEY, 'hex');
-        this.pepper = secrets.ENCRYPTION_PEPPER;
-        this.isInitialized = true;
+      if (!response.SecretString) throw new Error('SecretString is empty');
+
+      const secrets = JSON.parse(response.SecretString) as EncryptionSecrets;
+      if (!secrets.ENCRYPTION_KEY || !secrets.ENCRYPTION_PEPPER) {
+        throw new Error(
+          'Secret must contain ENCRYPTION_KEY and ENCRYPTION_PEPPER',
+        );
       }
+      this.key = Buffer.from(secrets.ENCRYPTION_KEY, 'hex');
+      this.pepper = secrets.ENCRYPTION_PEPPER;
+      this.isInitialized = true;
     } catch (error) {
       this.logger.error('Failed to load encryption secrets from AWS:', error);
       throw new InternalServerErrorException(
@@ -143,10 +143,18 @@ export class EncryptionService implements OnModuleInit {
     if (!user) return user;
     return {
       ...user,
-      name: this.decrypt(user.name, 'user', user.uuid)!,
-      email: this.decrypt(user.email, 'user', user.uuid)!,
-      phoneNumber: this.decrypt(user.phoneNumber, 'user', user.uuid)!,
-      studentNumber: this.decrypt(user.studentNumber, 'user', user.uuid)!,
+      name: this.decrypt(user.name, 'user:name', user.uuid)!,
+      email: this.decrypt(user.email, 'user:email', user.uuid)!,
+      phoneNumber: this.decrypt(
+        user.phoneNumber,
+        'user:phoneNumber',
+        user.uuid,
+      )!,
+      studentNumber: this.decrypt(
+        user.studentNumber,
+        'user:studentNumber',
+        user.uuid,
+      )!,
     };
   }
 
@@ -154,11 +162,11 @@ export class EncryptionService implements OnModuleInit {
     if (!inspector) return inspector;
     return {
       ...inspector,
-      name: this.decrypt(inspector.name, 'inspector', inspector.uuid)!,
-      email: this.decrypt(inspector.email, 'inspector', inspector.uuid)!,
+      name: this.decrypt(inspector.name, 'inspector:name', inspector.uuid)!,
+      email: this.decrypt(inspector.email, 'inspector:email', inspector.uuid)!,
       studentNumber: this.decrypt(
         inspector.studentNumber,
-        'inspector',
+        'inspector:studentNumber',
         inspector.uuid,
       )!,
     };
@@ -168,22 +176,34 @@ export class EncryptionService implements OnModuleInit {
     if (!target) return target;
     return {
       ...target,
-      student1Name: this.decrypt(target.student1Name, 'target', target.uuid)!,
+      student1Name: this.decrypt(
+        target.student1Name,
+        'target:name',
+        target.uuid,
+      )!,
       student1StudentNumber: this.decrypt(
         target.student1StudentNumber,
-        'target',
+        'target:studentNumber',
         target.uuid,
       )!,
-      student2Name: this.decrypt(target.student2Name, 'target', target.uuid)!,
+      student2Name: this.decrypt(
+        target.student2Name,
+        'target:name',
+        target.uuid,
+      )!,
       student2StudentNumber: this.decrypt(
         target.student2StudentNumber,
-        'target',
+        'target:studentNumber',
         target.uuid,
       )!,
-      student3Name: this.decrypt(target.student3Name, 'target', target.uuid)!,
+      student3Name: this.decrypt(
+        target.student3Name,
+        'target:name',
+        target.uuid,
+      )!,
       student3StudentNumber: this.decrypt(
         target.student3StudentNumber,
-        'target',
+        'target:studentNumber',
         target.uuid,
       )!,
     };

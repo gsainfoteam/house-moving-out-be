@@ -135,10 +135,7 @@ export class ApplicationService {
           throw new ConflictException('Slot capacity is already full.');
         }
 
-        const residentStudentNames =
-          this.getResidentsStudentNames(inspectionTargetInfo);
-        const residentStudentNumbers =
-          this.getResidentStudentNumbers(inspectionTargetInfo);
+        const residents = this.getResidents(inspectionTargetInfo);
 
         let assignedInspector: Inspector | undefined;
 
@@ -156,7 +153,7 @@ export class ApplicationService {
           if (
             !this.isInspectorInTargetResidents(
               inspector.studentNumber,
-              residentStudentNumbers,
+              residents.map((resident) => resident.studentNumber),
             ) &&
             inspector.gender === inspectionTargetInfo.gender &&
             isSlotAvailable
@@ -169,8 +166,7 @@ export class ApplicationService {
         if (!assignedInspector) {
           assignedInspector =
             await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
-              residentStudentNames,
-              residentStudentNumbers,
+              residents,
               inspectionSlotUuid,
               schedule.uuid,
               inspectionTargetInfo.gender,
@@ -277,17 +273,13 @@ export class ApplicationService {
         throw new ConflictException('Slot capacity is already full.');
       }
 
-      const residentStudentNames = this.getResidentsStudentNames(
-        application.inspectionTargetInfo,
-      );
-      const residentStudentNumbers = this.getResidentStudentNumbers(
+      const residentStudents = this.getResidents(
         application.inspectionTargetInfo,
       );
 
       const inspector =
         await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
-          residentStudentNames,
-          residentStudentNumbers,
+          residentStudents,
           inspectionSlotUuid,
           updatedSlot.scheduleUuid,
           application.inspectionTargetInfo.gender,
@@ -400,7 +392,9 @@ export class ApplicationService {
         if (
           this.isInspectorInTargetResidents(
             inspector.studentNumber,
-            this.getResidentStudentNumbers(application.inspectionTargetInfo),
+            this.getResidents(application.inspectionTargetInfo).map(
+              (resident) => resident.studentNumber,
+            ),
           )
         ) {
           throw new ForbiddenException(
@@ -715,22 +709,26 @@ export class ApplicationService {
     );
   }
 
-  private getResidentsStudentNames(targetInfo: InspectionTargetInfo): string[] {
-    return [
-      targetInfo.student1Name,
-      targetInfo.student2Name,
-      targetInfo.student3Name,
-    ].filter((studentName): studentName is string => !!studentName);
-  }
-
-  private getResidentStudentNumbers(
+  private getResidents(
     targetInfo: InspectionTargetInfo,
-  ): string[] {
+  ): { name: string; studentNumber: string }[] {
     return [
-      targetInfo.student1StudentNumber,
-      targetInfo.student2StudentNumber,
-      targetInfo.student3StudentNumber,
-    ].filter((studentNumber): studentNumber is string => !!studentNumber);
+      {
+        name: targetInfo.student1Name,
+        studentNumber: targetInfo.student1StudentNumber,
+      },
+      {
+        name: targetInfo.student2Name,
+        studentNumber: targetInfo.student2StudentNumber,
+      },
+      {
+        name: targetInfo.student3Name,
+        studentNumber: targetInfo.student3StudentNumber,
+      },
+    ].filter(
+      (student): student is { name: string; studentNumber: string } =>
+        !!student.name && !!student.studentNumber,
+    );
   }
 
   private isInspectorInTargetResidents(
