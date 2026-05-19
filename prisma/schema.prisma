@@ -81,7 +81,7 @@ enum ApplicationStatus {
 
 model User {
   uuid          String @id @db.Uuid
-  studentHash   String @unique @map("hash")
+  studentHash   String @unique @map("student_hash")
   name          String
   email         String
   phoneNumber   String @map("phone_number")
@@ -273,7 +273,7 @@ model InspectorAvailableSlot {
 
 model Inspector {
   uuid          String @id @default(uuid()) @db.Uuid
-  studentHash   String @unique @map("hash")
+  studentHash   String @unique @map("student_hash")
   name          String
   email         String
   studentNumber String @map("student_number")

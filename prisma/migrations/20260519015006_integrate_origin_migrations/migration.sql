@@ -24,8 +24,8 @@ CREATE TYPE "application_status" AS ENUM ('PASSED', 'FAILED', 'PENDING_NO_SHOW',
 
 -- CreateTable
 CREATE TABLE "user" (
-    "uuid" TEXT NOT NULL,
-    "hash" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
+    "student_hash" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone_number" TEXT NOT NULL,
@@ -40,8 +40,8 @@ CREATE TABLE "user" (
 
 -- CreateTable
 CREATE TABLE "user_refresh_token" (
-    "uuid" TEXT NOT NULL,
-    "user_uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
+    "user_uuid" UUID NOT NULL,
     "refresh_token" TEXT NOT NULL,
     "session_id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -52,8 +52,8 @@ CREATE TABLE "user_refresh_token" (
 
 -- CreateTable
 CREATE TABLE "user_consent" (
-    "uuid" TEXT NOT NULL,
-    "user_uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
+    "user_uuid" UUID NOT NULL,
     "consent_type" "consent_type" NOT NULL,
     "version" TEXT NOT NULL,
     "agreed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -63,10 +63,10 @@ CREATE TABLE "user_consent" (
 
 -- CreateTable
 CREATE TABLE "audit_log" (
-    "uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
     "action" TEXT NOT NULL,
     "data" TEXT NOT NULL,
-    "user_uuid" TEXT NOT NULL,
+    "user_uuid" UUID NOT NULL,
     "performed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "audit_log_pkey" PRIMARY KEY ("uuid")
@@ -74,12 +74,12 @@ CREATE TABLE "audit_log" (
 
 -- CreateTable
 CREATE TABLE "move_out_schedule" (
-    "uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
     "title" TEXT NOT NULL,
     "application_start_time" TIMESTAMP(3) NOT NULL,
     "application_end_time" TIMESTAMP(3) NOT NULL,
-    "current_semester_uuid" TEXT NOT NULL,
-    "next_semester_uuid" TEXT NOT NULL,
+    "current_semester_uuid" UUID NOT NULL,
+    "next_semester_uuid" UUID NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" "schedule_status" NOT NULL DEFAULT 'DRAFT',
@@ -89,8 +89,8 @@ CREATE TABLE "move_out_schedule" (
 
 -- CreateTable
 CREATE TABLE "move_out_schedule_on_inspector" (
-    "schedule_uuid" TEXT NOT NULL,
-    "inspector_uuid" TEXT NOT NULL,
+    "schedule_uuid" UUID NOT NULL,
+    "inspector_uuid" UUID NOT NULL,
     "is_temporary" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "move_out_schedule_on_inspector_pkey" PRIMARY KEY ("schedule_uuid","inspector_uuid")
@@ -98,7 +98,7 @@ CREATE TABLE "move_out_schedule_on_inspector" (
 
 -- CreateTable
 CREATE TABLE "semester" (
-    "uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
     "year" INTEGER NOT NULL,
     "season" "season" NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -108,8 +108,8 @@ CREATE TABLE "semester" (
 
 -- CreateTable
 CREATE TABLE "inspection_target" (
-    "uuid" TEXT NOT NULL,
-    "schedule_uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
+    "schedule_uuid" UUID NOT NULL,
     "house_name" TEXT NOT NULL,
     "gender" "gender" NOT NULL,
     "room_number" TEXT NOT NULL,
@@ -133,8 +133,8 @@ CREATE TABLE "inspection_target" (
 
 -- CreateTable
 CREATE TABLE "inspection_slot" (
-    "uuid" TEXT NOT NULL,
-    "schedule_uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
+    "schedule_uuid" UUID NOT NULL,
     "start_time" TIMESTAMP(3) NOT NULL,
     "end_time" TIMESTAMP(3) NOT NULL,
     "gender" "gender" NOT NULL,
@@ -146,10 +146,10 @@ CREATE TABLE "inspection_slot" (
 
 -- CreateTable
 CREATE TABLE "inspection_application" (
-    "uuid" TEXT NOT NULL,
-    "user_uuid" TEXT NOT NULL,
-    "inspection_target_info_uuid" TEXT NOT NULL,
-    "inspection_slot_uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
+    "user_uuid" UUID NOT NULL,
+    "inspection_target_info_uuid" UUID NOT NULL,
+    "inspection_slot_uuid" UUID NOT NULL,
     "status" "application_status",
     "item_results" JSONB,
     "additional_comment" TEXT,
@@ -158,7 +158,7 @@ CREATE TABLE "inspection_application" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" TIMESTAMP(3),
-    "inspector_uuid" TEXT NOT NULL,
+    "inspector_uuid" UUID NOT NULL,
     "inspection_count" INTEGER NOT NULL,
 
     CONSTRAINT "inspection_application_pkey" PRIMARY KEY ("uuid")
@@ -166,16 +166,16 @@ CREATE TABLE "inspection_application" (
 
 -- CreateTable
 CREATE TABLE "inspector_available_slot" (
-    "inspector_uuid" TEXT NOT NULL,
-    "inspection_slot_uuid" TEXT NOT NULL,
+    "inspector_uuid" UUID NOT NULL,
+    "inspection_slot_uuid" UUID NOT NULL,
 
     CONSTRAINT "inspector_available_slot_pkey" PRIMARY KEY ("inspector_uuid","inspection_slot_uuid")
 );
 
 -- CreateTable
 CREATE TABLE "inspector" (
-    "uuid" TEXT NOT NULL,
-    "hash" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
+    "student_hash" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "student_number" TEXT NOT NULL,
@@ -186,7 +186,7 @@ CREATE TABLE "inspector" (
 
 -- CreateTable
 CREATE TABLE "article" (
-    "uuid" TEXT NOT NULL,
+    "uuid" UUID NOT NULL,
     "type" "article_type" NOT NULL,
     "title_ko" TEXT NOT NULL,
     "title_en" TEXT NOT NULL,
@@ -201,7 +201,7 @@ CREATE TABLE "article" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_hash_key" ON "user"("hash");
+CREATE UNIQUE INDEX "user_student_hash_key" ON "user"("student_hash");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_refresh_token_refresh_token_key" ON "user_refresh_token"("refresh_token");
@@ -231,10 +231,10 @@ CREATE UNIQUE INDEX "inspection_slot_schedule_uuid_start_time_end_time_gender_ke
 CREATE INDEX "inspection_application_inspection_slot_uuid_idx" ON "inspection_application"("inspection_slot_uuid");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "inspector_hash_key" ON "inspector"("hash");
+CREATE UNIQUE INDEX "inspector_student_hash_key" ON "inspector"("student_hash");
 
 -- 활성화된 Application에 대한 Unique 제약 (수동 추가)
-CREATE UNIQUE INDEX "unique_active_application" ON "inspection_application"("inspection_target_info_uuid") WHERE "status" IS NULL AND "deleted_at" IS NULL;
+CREATE UNIQUE INDEX "unique_active_application" ON "inspection_application"("inspection_target_info_uuid") WHERE "deleted_at" IS NULL AND ("status" IS NULL OR "status" = 'PENDING_NO_SHOW');
 
 -- 수동 추가된 Check 제약 조건
 ALTER TABLE "inspection_slot" ADD CONSTRAINT "InspectionSlot_reservedCount_check" CHECK ("reserved_count" >= 0);
