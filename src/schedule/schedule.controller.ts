@@ -15,6 +15,8 @@ import {
   Query,
   StreamableFile,
   Res,
+  Delete,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -35,7 +37,6 @@ import {
 import { AdminGuard } from 'src/auth/guard/admin.guard';
 import { UserGuard } from 'src/auth/guard/user.guard';
 import { ErrorDto } from 'src/common/dto/error.dto';
-import { InspectorResDto } from 'src/inspector/dto/res/inspector-res.dto';
 import { MoveOutScheduleWithSlotsResDto } from './dto/res/move-out-schedule-with-slots-res.dto';
 import { MoveOutScheduleResDto } from './dto/res/move-out-schedule-res.dto';
 import { ScheduleService } from './schedule.service';
@@ -193,26 +194,6 @@ export class ScheduleController {
   }
 
   @ApiOperation({
-    summary: 'Get Inspectors using schedule uuid',
-    description:
-      'Get available inspectors for a move out schedule using schedule UUID.',
-  })
-  @ApiOkResponse({
-    description: 'The available inspectors has been successfully retrieved.',
-    type: [InspectorResDto],
-  })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-  @ApiBearerAuth('admin')
-  @UseGuards(AdminGuard)
-  @Get(':uuid/inspector')
-  async findInspectorsByScheduleUuid(
-    @Param('uuid', ParseUUIDPipe) uuid: string,
-  ): Promise<InspectorResDto[]> {
-    return await this.scheduleService.findInspectorsByScheduleUuid(uuid);
-  }
-
-  @ApiOperation({
     summary: 'Get All Inspection Applications by Schedule Uuid',
     description:
       'Retrieve all inspection applications by Inspection Schedule Uuid',
@@ -236,6 +217,33 @@ export class ScheduleController {
       query,
       scheduleUuid,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Download Inspection Applications by Schedule Uuid',
+    description: 'Download inspection applications by Inspection Schedule Uuid',
+  })
+  @ApiOkResponse({
+    description: 'Inspection applications successfully downloaded',
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  // @UseGuards(AdminGuard)
+  @Get(':uuid/applications/download')
+  async downloadInspectionApplications(
+    @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const buffer =
+      await this.scheduleService.downloadInspectionApplications(scheduleUuid);
+    res.setHeader('Content-Length', buffer.length.toString());
+    return new StreamableFile(buffer, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      disposition: 'attachment',
+    });
   }
 
   @ApiOperation({
@@ -398,5 +406,30 @@ export class ScheduleController {
       type: 'application/pdf',
       disposition: 'attachment',
     });
+  }
+
+  @ApiOperation({
+    summary: 'Remove Move Out Schedule',
+    description: 'Remove a specific move out schedule by UUID.',
+  })
+  @ApiNoContentResponse({
+    description: 'The move out schedule has been successfully removed.',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiBadRequestResponse({ description: 'Invalid UUID format' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description:
+      'Move out schedule can be removed only when the status is CANCELED or COMPLETED.',
+  })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Delete(':uuid')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeMoveOutSchedule(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+  ): Promise<void> {
+    return await this.scheduleService.removeMoveOutSchedule(uuid);
   }
 }

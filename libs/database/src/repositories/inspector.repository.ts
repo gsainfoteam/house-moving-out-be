@@ -249,11 +249,7 @@ export class InspectorRepository {
       .findFirst({
         where: {
           studentHash,
-          availableSlots: {
-            some: {
-              inspectionSlot: { scheduleUuid },
-            },
-          },
+          schedules: { some: { scheduleUuid } },
         },
       })
       .then((inspector) => !!inspector)
@@ -334,48 +330,5 @@ export class InspectorRepository {
     }
 
     return this.encryptionService.decryptInspector(inspectors[0]);
-  }
-
-  async findInspectorByScheduleUuid(
-    uuid: string,
-  ): Promise<InspectorWithSlots[]> {
-    return await this.databaseService.inspector
-      .findMany({
-        where: {
-          availableSlots: {
-            some: {
-              inspectionSlot: { scheduleUuid: uuid },
-            },
-          },
-        },
-        include: {
-          availableSlots: {
-            where: {
-              inspectionSlot: { scheduleUuid: uuid },
-            },
-            include: {
-              inspectionSlot: true,
-            },
-          },
-          schedules: { where: { scheduleUuid: uuid } },
-        },
-      })
-      .then((inspectors) =>
-        inspectors.map((i) => ({
-          ...this.encryptionService.decryptInspector(i),
-          availableSlots: i.availableSlots,
-          schedules: i.schedules,
-        })),
-      )
-      .catch((error) => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          this.logger.error(
-            `findInspectorByScheduleUuid prisma error: ${error.message}`,
-          );
-          throw new InternalServerErrorException('Database Error');
-        }
-        this.logger.error(`findInspectorByScheduleUuid error: ${error}`);
-        throw new InternalServerErrorException('Unknown Error');
-      });
   }
 }

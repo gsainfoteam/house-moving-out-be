@@ -87,6 +87,22 @@ export class ApplicationService {
             tx,
           );
 
+        const applications =
+          await this.inspectionApplicationRepository.findApplicationsByTargetInTx(
+            inspectionTargetInfo.uuid,
+            tx,
+          );
+
+        const hasActiveApplication = applications.some(
+          (application) =>
+            application.status === null ||
+            application.status === ApplicationStatus.PENDING_NO_SHOW,
+        );
+
+        if (hasActiveApplication) {
+          throw new ConflictException('Inspection application already exists.');
+        }
+
         if (inspectionTargetInfo.applyCleaningService) {
           throw new ForbiddenException(
             'Cannot apply for inspection while applying for cleaning service.',
@@ -118,11 +134,6 @@ export class ApplicationService {
         if (updatedSlot.reservedCount > updatedSlot.capacity) {
           throw new ConflictException('Slot capacity is already full.');
         }
-
-        const applications =
-          await this.inspectionApplicationRepository.findApplicationsByTarget(
-            inspectionTargetInfo.uuid,
-          );
 
         const residentStudentNames =
           this.getResidentsStudentNames(inspectionTargetInfo);

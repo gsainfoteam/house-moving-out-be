@@ -80,7 +80,7 @@ enum ApplicationStatus {
 }
 
 model User {
-  uuid          String @id
+  uuid          String @id @db.Uuid
   studentHash   String @unique @map("hash")
   name          String
   email         String
@@ -101,8 +101,8 @@ model User {
 }
 
 model UserRefreshToken {
-  uuid         String   @id @default(uuid())
-  userUuid     String   @map("user_uuid")
+  uuid         String   @id @default(uuid()) @db.Uuid
+  userUuid     String   @map("user_uuid") @db.Uuid
   refreshToken String   @unique @map("refresh_token")
   sessionId    String   @map("session_id")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -115,8 +115,8 @@ model UserRefreshToken {
 }
 
 model UserConsent {
-  uuid        String      @id @default(uuid())
-  userUuid    String      @map("user_uuid")
+  uuid        String      @id @default(uuid()) @db.Uuid
+  userUuid    String      @map("user_uuid") @db.Uuid
   consentType ConsentType @map("consent_type")
   version     String
   agreedAt    DateTime    @default(now()) @map("agreed_at")
@@ -128,10 +128,10 @@ model UserConsent {
 }
 
 model AuditLog {
-  uuid        String   @id @default(uuid())
+  uuid        String   @id @default(uuid()) @db.Uuid
   action      String
   data        String
-  userUuid    String   @map("user_uuid")
+  userUuid    String   @map("user_uuid") @db.Uuid
   performedAt DateTime @default(now()) @map("performed_at")
 
   user User @relation(fields: [userUuid], references: [uuid])
@@ -141,12 +141,12 @@ model AuditLog {
 }
 
 model MoveOutSchedule {
-  uuid                 String         @id @default(uuid())
+  uuid                 String         @id @default(uuid()) @db.Uuid
   title                String
   applicationStartTime DateTime       @map("application_start_time")
   applicationEndTime   DateTime       @map("application_end_time")
-  currentSemesterUuid  String         @map("current_semester_uuid")
-  nextSemesterUuid     String         @map("next_semester_uuid")
+  currentSemesterUuid  String         @map("current_semester_uuid") @db.Uuid
+  nextSemesterUuid     String         @map("next_semester_uuid") @db.Uuid
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @default(now()) @updatedAt @map("updated_at")
   status               ScheduleStatus @default(DRAFT)
@@ -162,8 +162,8 @@ model MoveOutSchedule {
 }
 
 model MoveOutScheduleOnInspector {
-  scheduleUuid  String  @map("schedule_uuid")
-  inspectorUuid String  @map("inspector_uuid")
+  scheduleUuid  String  @map("schedule_uuid") @db.Uuid
+  inspectorUuid String  @map("inspector_uuid") @db.Uuid
   isTemporary   Boolean @default(false) @map("is_temporary")
 
   schedule  MoveOutSchedule @relation(fields: [scheduleUuid], references: [uuid], onDelete: Cascade)
@@ -174,7 +174,7 @@ model MoveOutScheduleOnInspector {
 }
 
 model Semester {
-  uuid      String   @id @default(uuid())
+  uuid      String   @id @default(uuid()) @db.Uuid
   year      Int
   season    Season
   createdAt DateTime @default(now()) @map("created_at")
@@ -187,8 +187,8 @@ model Semester {
 }
 
 model InspectionTargetInfo {
-  uuid                  String             @id @default(uuid())
-  scheduleUuid          String             @map("schedule_uuid")
+  uuid                  String             @id @default(uuid()) @db.Uuid
+  scheduleUuid          String             @map("schedule_uuid") @db.Uuid
   houseName             String             @map("house_name")
   gender                Gender             @map("gender")
   roomNumber            String             @map("room_number")
@@ -216,8 +216,8 @@ model InspectionTargetInfo {
 }
 
 model InspectionSlot {
-  uuid          String   @id @default(uuid())
-  scheduleUuid  String   @map("schedule_uuid")
+  uuid          String   @id @default(uuid()) @db.Uuid
+  scheduleUuid  String   @map("schedule_uuid") @db.Uuid
   startTime     DateTime @map("start_time")
   endTime       DateTime @map("end_time")
   gender        Gender   @map("gender")
@@ -233,10 +233,10 @@ model InspectionSlot {
 }
 
 model InspectionApplication {
-  uuid                     String             @id @default(uuid())
-  userUuid                 String             @map("user_uuid")
-  inspectionTargetInfoUuid String             @map("inspection_target_info_uuid")
-  inspectionSlotUuid       String             @map("inspection_slot_uuid")
+  uuid                     String             @id @default(uuid()) @db.Uuid
+  userUuid                 String             @map("user_uuid") @db.Uuid
+  inspectionTargetInfoUuid String             @map("inspection_target_info_uuid") @db.Uuid
+  inspectionSlotUuid       String             @map("inspection_slot_uuid") @db.Uuid
   status                   ApplicationStatus?
   itemResults              Json?              @map("item_results")
   additionalComment        String?            @map("additional_comment")
@@ -245,7 +245,7 @@ model InspectionApplication {
   createdAt                DateTime           @default(now()) @map("created_at")
   updatedAt                DateTime           @default(now()) @updatedAt @map("updated_at")
   deletedAt                DateTime?          @map("deleted_at")
-  inspectorUuid            String             @map("inspector_uuid")
+  inspectorUuid            String             @map("inspector_uuid") @db.Uuid
   inspectionCount          Int                @map("inspection_count")
 
   user                 User                 @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
@@ -253,14 +253,16 @@ model InspectionApplication {
   inspectionSlot       InspectionSlot       @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
   inspector            Inspector            @relation(fields: [inspectorUuid], references: [uuid])
 
-  // isPass === null, deleteAt === null인 row에 대해 InspectionTargetInfoUuid에 Unique 조건을 걸어두어, 한 target에 대해 활성화된 Application이 하나가 되도록 함
+  // status가 null 또는 PENDING_NO_SHOW이고 deletedAt이 null인 row에 대해
+  // inspectionTargetInfoUuid 유니크 인덱스를 두어 한 target당 활성 Application 1개만 허용
+  // add_unique_active_application_status 데이터베이스 마이그레이션 파일 참고
   @@index([inspectionSlotUuid])
   @@map("inspection_application")
 }
 
 model InspectorAvailableSlot {
-  inspectorUuid      String @map("inspector_uuid")
-  inspectionSlotUuid String @map("inspection_slot_uuid")
+  inspectorUuid      String @map("inspector_uuid") @db.Uuid
+  inspectionSlotUuid String @map("inspection_slot_uuid") @db.Uuid
 
   inspector      Inspector      @relation(fields: [inspectorUuid], references: [uuid], onDelete: Cascade)
   inspectionSlot InspectionSlot @relation(fields: [inspectionSlotUuid], references: [uuid], onDelete: Cascade)
@@ -270,7 +272,7 @@ model InspectorAvailableSlot {
 }
 
 model Inspector {
-  uuid          String @id @default(uuid())
+  uuid          String @id @default(uuid()) @db.Uuid
   studentHash   String @unique @map("hash")
   name          String
   email         String
@@ -285,7 +287,7 @@ model Inspector {
 }
 
 model Article {
-  uuid      String      @id @default(uuid())
+  uuid      String      @id @default(uuid()) @db.Uuid
   type      ArticleType
   titleKo   String      @map("title_ko")
   titleEn   String      @map("title_en")

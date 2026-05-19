@@ -489,10 +489,11 @@ export class InspectionApplicationRepository {
       });
   }
 
-  async findApplicationsByTarget(
+  async findApplicationsByTargetInTx(
     targetUuid: string,
+    tx: PrismaTransaction,
   ): Promise<InspectionApplication[]> {
-    return await this.databaseService.inspectionApplication
+    return await tx.inspectionApplication
       .findMany({
         where: {
           inspectionTargetInfoUuid: targetUuid,
@@ -508,11 +509,11 @@ export class InspectionApplicationRepository {
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
-            `findApplicationsByUser prisma error: ${error.message}`,
+            `findApplicationByTargetInTx prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
-        this.logger.error(`findApplicationsByUser error: ${error}`);
+        this.logger.error(`findApplicationsByTargetInTx error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
       });
   }

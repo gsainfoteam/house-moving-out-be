@@ -286,4 +286,20 @@ export class MoveOutScheduleRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
   }
+
+  async deleteMoveOutScheduleByUuid(uuid: string): Promise<MoveOutSchedule> {
+    return await this.databaseService.moveOutSchedule
+      .delete({
+        where: { uuid },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            throw new NotFoundException(`Move out schedule not found`);
+          }
+        }
+        this.logger.error(`deleteMoveOutScheduleByUuid error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
 }
