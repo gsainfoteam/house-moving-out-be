@@ -119,7 +119,7 @@ export class InspectorRepository {
     ).catch((error) => {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          this.logger.debug(`Conflict email: ${error.message}`);
+          this.logger.debug(`Conflict studentHash: ${error.message}`);
           throw new ConflictException('Conflict Error');
         }
         this.logger.error(`createInspectors prisma error: ${error.message}`);
