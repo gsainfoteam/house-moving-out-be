@@ -111,7 +111,10 @@ export class InspectionTargetInfoRepository {
 
           return {
             scheduleUuid,
-            ...target,
+            houseName: target.houseName,
+            gender: target.gender,
+            roomNumber: target.roomNumber,
+            roomCapacity: target.roomCapacity,
             student1Name: this.encryptionService.encrypt(
               target.students[0]?.studentName,
               'target',
@@ -145,6 +148,7 @@ export class InspectionTargetInfoRepository {
             studentHashes,
             applyCleaningService: target.applyCleaningService ?? false,
             applyRepairCheck: target.applyRepairCheck ?? false,
+            inspectionType: target.inspectionType,
           };
         }),
       })
