@@ -103,55 +103,73 @@ export class InspectionTargetInfoRepository {
   ): Promise<{ count: number }> {
     return await tx.inspectionTargetInfo
       .createMany({
-        data: inspectionTargetInfos.map((target) => {
-          const uuid = crypto.randomUUID();
-          const studentHashes = target.students.map((s) =>
-            this.encryptionService.hash(s.studentName, s.studentNumber),
-          );
+        data: await Promise.all(
+          inspectionTargetInfos.map(async (target) => {
+            const uuid = crypto.randomUUID();
+            const studentHashes = target.students.map((s) =>
+              this.encryptionService.hash(s.studentName, s.studentNumber),
+            );
 
-          return {
-            uuid,
-            scheduleUuid,
-            houseName: target.houseName,
-            gender: target.gender,
-            roomNumber: target.roomNumber,
-            roomCapacity: target.roomCapacity,
-            student1Name: this.encryptionService.encrypt(
-              target.students[0]?.studentName,
-              'target:name',
+            const [
+              student1Name,
+              student1StudentNumber,
+              student2Name,
+              student2StudentNumber,
+              student3Name,
+              student3StudentNumber,
+            ] = await Promise.all([
+              this.encryptionService.encrypt(
+                target.students[0]?.studentName,
+                'target:name',
+                uuid,
+              ),
+              this.encryptionService.encrypt(
+                target.students[0]?.studentNumber,
+                'target:studentNumber',
+                uuid,
+              ),
+              this.encryptionService.encrypt(
+                target.students[1]?.studentName,
+                'target:name',
+                uuid,
+              ),
+              this.encryptionService.encrypt(
+                target.students[1]?.studentNumber,
+                'target:studentNumber',
+                uuid,
+              ),
+              this.encryptionService.encrypt(
+                target.students[2]?.studentName,
+                'target:name',
+                uuid,
+              ),
+              this.encryptionService.encrypt(
+                target.students[2]?.studentNumber,
+                'target:studentNumber',
+                uuid,
+              ),
+            ]);
+
+            return {
               uuid,
-            ),
-            student1StudentNumber: this.encryptionService.encrypt(
-              target.students[0]?.studentNumber,
-              'target:studentNumber',
-              uuid,
-            ),
-            student2Name: this.encryptionService.encrypt(
-              target.students[1]?.studentName,
-              'target:name',
-              uuid,
-            ),
-            student2StudentNumber: this.encryptionService.encrypt(
-              target.students[1]?.studentNumber,
-              'target:studentNumber',
-              uuid,
-            ),
-            student3Name: this.encryptionService.encrypt(
-              target.students[2]?.studentName,
-              'target:name',
-              uuid,
-            ),
-            student3StudentNumber: this.encryptionService.encrypt(
-              target.students[2]?.studentNumber,
-              'target:studentNumber',
-              uuid,
-            ),
-            studentHashes,
-            applyCleaningService: target.applyCleaningService ?? false,
-            applyRepairCheck: target.applyRepairCheck ?? false,
-            inspectionType: target.inspectionType,
-          };
-        }),
+              scheduleUuid,
+              houseName: target.houseName,
+              gender: target.gender,
+              roomNumber: target.roomNumber,
+              roomCapacity: target.roomCapacity,
+              student1Name,
+              student1StudentNumber,
+              student2Name,
+              student2StudentNumber,
+              student3Name,
+              student3StudentNumber,
+              studentHashes,
+              applyCleaningService: target.applyCleaningService ?? false,
+              applyRepairCheck: target.applyRepairCheck ?? false,
+              inspectionType: target.inspectionType,
+            };
+          }),
+        ),
       })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -281,7 +299,7 @@ export class InspectionTargetInfoRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
 
-    return this.encryptionService.decryptTarget(target);
+    return await this.encryptionService.decryptTarget(target);
   }
 
   async findInspectionTargetInfoByUserInfoInTx(
@@ -315,7 +333,7 @@ export class InspectionTargetInfoRepository {
         throw new InternalServerErrorException('Unknown Error');
       });
 
-    return this.encryptionService.decryptTarget(target);
+    return await this.encryptionService.decryptTarget(target);
   }
 
   async incrementInspectionCountInTx(
@@ -329,7 +347,10 @@ export class InspectionTargetInfoRepository {
           inspectionCount: { increment: 1 },
         },
       })
-      .then((target) => this.encryptionService.decryptTarget(target))
+      .then(
+        async (target) => await this.encryptionService.decryptTarget(target),
+      )
+
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -393,12 +414,14 @@ export class InspectionTargetInfoRepository {
         },
         orderBy: [{ houseName: 'asc' }, { roomNumber: 'asc' }],
       })
-      .then((targets) =>
-        targets.map((target) => ({
-          ...this.encryptionService.decryptTarget(target),
-          inspectionApplication: target.inspectionApplication,
-        })),
-      )
+      .then(async (targets) => {
+        return await Promise.all(
+          targets.map(async (target) => ({
+            ...(await this.encryptionService.decryptTarget(target)),
+            inspectionApplication: target.inspectionApplication,
+          })),
+        );
+      })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(

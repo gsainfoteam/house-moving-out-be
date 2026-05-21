@@ -10,30 +10,34 @@ import {
   GetSecretValueCommand,
   SecretsManagerClient,
 } from '@aws-sdk/client-secrets-manager';
+import { KMSClient, EncryptCommand, DecryptCommand } from '@aws-sdk/client-kms';
 import { User, Inspector, InspectionTargetInfo } from 'generated/prisma/client';
 
 interface EncryptionSecrets {
-  ENCRYPTION_KEY: string;
   ENCRYPTION_PEPPER: string;
 }
 
 @Injectable()
 export class EncryptionService implements OnModuleInit {
   private readonly logger = new Logger(EncryptionService.name);
-  private readonly algorithm = 'aes-256-gcm';
-  private key!: Buffer;
   private pepper!: string;
   private isInitialized = false;
   private readonly secretName: string;
+  private readonly awsRegion: string;
+  private readonly kmsKeyId: string;
   private readonly secretsManager: SecretsManagerClient;
+  private readonly kmsClient: KMSClient;
 
   constructor(private readonly configService: ConfigService) {
     this.secretName = this.configService.getOrThrow<string>(
       'AWS_SECRET_MANAGER_NAME',
     );
+    this.awsRegion = this.configService.getOrThrow<string>('AWS_REGION');
+    this.kmsKeyId = this.configService.getOrThrow<string>('AWS_KMS_KEY_ID');
     this.secretsManager = new SecretsManagerClient({
-      region: this.configService.getOrThrow<string>('AWS_S3_REGION'),
+      region: this.awsRegion,
     });
+    this.kmsClient = new KMSClient({ region: this.awsRegion });
   }
 
   async onModuleInit() {
@@ -45,12 +49,9 @@ export class EncryptionService implements OnModuleInit {
       if (!response.SecretString) throw new Error('SecretString is empty');
 
       const secrets = JSON.parse(response.SecretString) as EncryptionSecrets;
-      if (!secrets.ENCRYPTION_KEY || !secrets.ENCRYPTION_PEPPER) {
-        throw new Error(
-          'Secret must contain ENCRYPTION_KEY and ENCRYPTION_PEPPER',
-        );
+      if (!secrets.ENCRYPTION_PEPPER) {
+        throw new Error('Secret must contain ENCRYPTION_PEPPER');
       }
-      this.key = Buffer.from(secrets.ENCRYPTION_KEY, 'hex');
       this.pepper = secrets.ENCRYPTION_PEPPER;
       this.isInitialized = true;
     } catch (error) {
@@ -69,61 +70,62 @@ export class EncryptionService implements OnModuleInit {
     }
   }
 
-  encrypt(
+  async encrypt(
     text: string | null | undefined,
     purpose: string,
     uuid: string,
-  ): string | null {
+  ): Promise<string | null> {
     if (!text) return text as null;
     this.ensureInitialized();
 
-    const iv = crypto.randomBytes(12);
-    const derivedKey = Buffer.from(
-      crypto.hkdfSync('sha256', this.key, purpose, uuid, 32),
-    );
-    const cipher = crypto.createCipheriv(this.algorithm, derivedKey, iv);
+    try {
+      const command = new EncryptCommand({
+        KeyId: this.kmsKeyId,
+        Plaintext: Buffer.from(text, 'utf8'),
+        EncryptionContext: {
+          purpose,
+          uuid,
+        },
+      });
 
-    let encrypted = cipher.update(text, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
+      const response = await this.kmsClient.send(command);
+      if (!response.CiphertextBlob) {
+        throw new Error('KMS encryption failed: No CiphertextBlob returned');
+      }
 
-    const tag = cipher.getAuthTag();
-    const result = Buffer.concat([iv, Buffer.from(encrypted, 'base64'), tag]);
-
-    return result.toString('base64');
+      return Buffer.from(response.CiphertextBlob).toString('base64');
+    } catch (error) {
+      this.logger.error('KMS encryption failed:', error);
+      throw new InternalServerErrorException('Encryption failed');
+    }
   }
 
-  decrypt(
+  async decrypt(
     encryptedData: string | null | undefined,
     purpose: string,
     uuid: string,
-  ): string | null {
+  ): Promise<string | null> {
     if (!encryptedData) return encryptedData as null;
     this.ensureInitialized();
 
     try {
-      const buffer = Buffer.from(encryptedData, 'base64');
-      if (buffer.length < 28) {
-        throw new Error('Invalid encrypted data format');
+      const command = new DecryptCommand({
+        KeyId: this.kmsKeyId,
+        CiphertextBlob: Buffer.from(encryptedData, 'base64'),
+        EncryptionContext: {
+          purpose,
+          uuid,
+        },
+      });
+
+      const response = await this.kmsClient.send(command);
+      if (!response.Plaintext) {
+        throw new Error('KMS decryption failed: No Plaintext returned');
       }
 
-      const iv = buffer.subarray(0, 12);
-      const tag = buffer.subarray(buffer.length - 16);
-      const ciphertext = buffer.subarray(12, buffer.length - 16);
-      const derivedKey = Buffer.from(
-        crypto.hkdfSync('sha256', this.key, purpose, uuid, 32),
-      );
-      const decipher = crypto.createDecipheriv(this.algorithm, derivedKey, iv);
-      decipher.setAuthTag(tag);
-
-      let decrypted = decipher.update(
-        ciphertext.toString('base64'),
-        'base64',
-        'utf8',
-      );
-      decrypted += decipher.final('utf8');
-
-      return decrypted;
+      return Buffer.from(response.Plaintext).toString('utf8');
     } catch (error) {
+      this.logger.error('KMS decryption failed:', error);
       throw new InternalServerErrorException(
         `Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -139,73 +141,81 @@ export class EncryptionService implements OnModuleInit {
       .digest('hex');
   }
 
-  decryptUser(user: User): User {
+  async decryptUser(user: User): Promise<User> {
     if (!user) return user;
+    const [name, email, phoneNumber, studentNumber] = await Promise.all([
+      this.decrypt(user.name, 'user:name', user.uuid),
+      this.decrypt(user.email, 'user:email', user.uuid),
+      this.decrypt(user.phoneNumber, 'user:phoneNumber', user.uuid),
+      this.decrypt(user.studentNumber, 'user:studentNumber', user.uuid),
+    ]);
     return {
       ...user,
-      name: this.decrypt(user.name, 'user:name', user.uuid)!,
-      email: this.decrypt(user.email, 'user:email', user.uuid)!,
-      phoneNumber: this.decrypt(
-        user.phoneNumber,
-        'user:phoneNumber',
-        user.uuid,
-      )!,
-      studentNumber: this.decrypt(
-        user.studentNumber,
-        'user:studentNumber',
-        user.uuid,
-      )!,
+      name: name!,
+      email: email!,
+      phoneNumber: phoneNumber!,
+      studentNumber: studentNumber!,
     };
   }
 
-  decryptInspector(inspector: Inspector): Inspector {
+  async decryptInspector(inspector: Inspector): Promise<Inspector> {
     if (!inspector) return inspector;
-    return {
-      ...inspector,
-      name: this.decrypt(inspector.name, 'inspector:name', inspector.uuid)!,
-      email: this.decrypt(inspector.email, 'inspector:email', inspector.uuid)!,
-      studentNumber: this.decrypt(
+    const [name, email, studentNumber] = await Promise.all([
+      this.decrypt(inspector.name, 'inspector:name', inspector.uuid),
+      this.decrypt(inspector.email, 'inspector:email', inspector.uuid),
+      this.decrypt(
         inspector.studentNumber,
         'inspector:studentNumber',
         inspector.uuid,
-      )!,
+      ),
+    ]);
+    return {
+      ...inspector,
+      name: name!,
+      email: email!,
+      studentNumber: studentNumber!,
     };
   }
 
-  decryptTarget(target: InspectionTargetInfo): InspectionTargetInfo {
+  async decryptTarget(
+    target: InspectionTargetInfo,
+  ): Promise<InspectionTargetInfo> {
     if (!target) return target;
-    return {
-      ...target,
-      student1Name: this.decrypt(
-        target.student1Name,
-        'target:name',
-        target.uuid,
-      )!,
-      student1StudentNumber: this.decrypt(
+    const [
+      student1Name,
+      student1StudentNumber,
+      student2Name,
+      student2StudentNumber,
+      student3Name,
+      student3StudentNumber,
+    ] = await Promise.all([
+      this.decrypt(target.student1Name, 'target:name', target.uuid),
+      this.decrypt(
         target.student1StudentNumber,
         'target:studentNumber',
         target.uuid,
-      )!,
-      student2Name: this.decrypt(
-        target.student2Name,
-        'target:name',
-        target.uuid,
-      )!,
-      student2StudentNumber: this.decrypt(
+      ),
+      this.decrypt(target.student2Name, 'target:name', target.uuid),
+      this.decrypt(
         target.student2StudentNumber,
         'target:studentNumber',
         target.uuid,
-      )!,
-      student3Name: this.decrypt(
-        target.student3Name,
-        'target:name',
-        target.uuid,
-      )!,
-      student3StudentNumber: this.decrypt(
+      ),
+      this.decrypt(target.student3Name, 'target:name', target.uuid),
+      this.decrypt(
         target.student3StudentNumber,
         'target:studentNumber',
         target.uuid,
-      )!,
+      ),
+    ]);
+    return {
+      ...target,
+      student1Name,
+      student1StudentNumber,
+      student2Name,
+      student2StudentNumber,
+      student3Name,
+      student3StudentNumber,
     };
   }
 }

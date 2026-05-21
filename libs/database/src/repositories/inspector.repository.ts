@@ -50,13 +50,15 @@ export class InspectorRepository {
           schedules: { where: { scheduleUuid } },
         },
       })
-      .then((inspectors) =>
-        inspectors.map((inspector) => ({
-          ...this.encryptionService.decryptInspector(inspector),
-          availableSlots: inspector.availableSlots,
-          schedules: inspector.schedules,
-        })),
-      )
+      .then(async (inspectors) => {
+        return await Promise.all(
+          inspectors.map(async (inspector) => ({
+            ...(await this.encryptionService.decryptInspector(inspector)),
+            availableSlots: inspector.availableSlots,
+            schedules: inspector.schedules,
+          })),
+        );
+      })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`findAllInspectors prisma error: ${error.message}`);
@@ -79,21 +81,20 @@ export class InspectorRepository {
       where: { studentHash },
     });
     const uuid = existingInspector?.uuid ?? crypto.randomUUID();
-    const encryptedName = this.encryptionService.encrypt(
-      inspector.name,
-      'inspector:name',
-      uuid,
-    )!;
-    const encryptedEmail = this.encryptionService.encrypt(
-      inspector.email,
-      'inspector:email',
-      uuid,
-    )!;
-    const encryptedStudentNumber = this.encryptionService.encrypt(
-      inspector.studentNumber,
-      'inspector:studentNumber',
-      uuid,
-    )!;
+    const [encryptedName, encryptedEmail, encryptedStudentNumber] =
+      await Promise.all([
+        this.encryptionService.encrypt(inspector.name, 'inspector:name', uuid),
+        this.encryptionService.encrypt(
+          inspector.email,
+          'inspector:email',
+          uuid,
+        ),
+        this.encryptionService.encrypt(
+          inspector.studentNumber,
+          'inspector:studentNumber',
+          uuid,
+        ),
+      ]);
 
     return await (
       existingInspector
@@ -101,18 +102,18 @@ export class InspectorRepository {
             where: { studentHash },
             data: {
               ...inspector,
-              name: encryptedName,
-              email: encryptedEmail,
-              studentNumber: encryptedStudentNumber,
+              name: encryptedName!,
+              email: encryptedEmail!,
+              studentNumber: encryptedStudentNumber!,
             },
           })
         : tx.inspector.create({
             data: {
               uuid,
               ...inspector,
-              name: encryptedName,
-              email: encryptedEmail,
-              studentNumber: encryptedStudentNumber,
+              name: encryptedName!,
+              email: encryptedEmail!,
+              studentNumber: encryptedStudentNumber!,
               studentHash,
             },
           })
@@ -149,8 +150,8 @@ export class InspectorRepository {
           schedules: { where: { scheduleUuid } },
         },
       })
-      .then((inspector) => ({
-        ...this.encryptionService.decryptInspector(inspector),
+      .then(async (inspector) => ({
+        ...(await this.encryptionService.decryptInspector(inspector)),
         availableSlots: inspector.availableSlots,
         schedules: inspector.schedules,
       }))
@@ -194,8 +195,8 @@ export class InspectorRepository {
           },
         },
       })
-      .then((inspector) => ({
-        ...this.encryptionService.decryptInspector(inspector),
+      .then(async (inspector) => ({
+        ...(await this.encryptionService.decryptInspector(inspector)),
         applications: inspector.applications,
         availableSlots: inspector.availableSlots,
         schedules: inspector.schedules,
@@ -226,7 +227,10 @@ export class InspectorRepository {
           studentHash,
         },
       })
-      .then((inspector) => this.encryptionService.decryptInspector(inspector))
+      .then(
+        async (inspector) =>
+          await this.encryptionService.decryptInspector(inspector),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -329,6 +333,6 @@ export class InspectorRepository {
       throw new NotFoundException('No available inspector found.');
     }
 
-    return this.encryptionService.decryptInspector(inspectors[0]);
+    return await this.encryptionService.decryptInspector(inspectors[0]);
   }
 }

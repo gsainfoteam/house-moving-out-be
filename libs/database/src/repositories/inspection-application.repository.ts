@@ -115,9 +115,9 @@ export class InspectionApplicationRepository {
           createdAt: 'desc',
         },
       })
-      .then((app) => ({
+      .then(async (app) => ({
         ...app,
-        inspectionTargetInfo: this.encryptionService.decryptTarget(
+        inspectionTargetInfo: await this.encryptionService.decryptTarget(
           app.inspectionTargetInfo,
         ),
       }))
@@ -152,9 +152,9 @@ export class InspectionApplicationRepository {
           inspectionTargetInfo: true,
         },
       })
-      .then((app) => ({
+      .then(async (app) => ({
         ...app,
-        inspectionTargetInfo: this.encryptionService.decryptTarget(
+        inspectionTargetInfo: await this.encryptionService.decryptTarget(
           app.inspectionTargetInfo,
         ),
       }))
@@ -196,9 +196,9 @@ export class InspectionApplicationRepository {
           user: true,
         },
       })
-      .then((app) => ({
+      .then(async (app) => ({
         ...app,
-        user: this.encryptionService.decryptUser(app.user),
+        user: await this.encryptionService.decryptUser(app.user),
       }))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -297,14 +297,19 @@ export class InspectionApplicationRepository {
           inspectionTargetInfo: true,
         },
       })
-      .then((app) => ({
-        ...app,
-        user: this.encryptionService.decryptUser(app.user),
-        inspector: this.encryptionService.decryptInspector(app.inspector),
-        inspectionTargetInfo: this.encryptionService.decryptTarget(
-          app.inspectionTargetInfo,
-        ),
-      }))
+      .then(async (app) => {
+        const [user, inspector, inspectionTargetInfo] = await Promise.all([
+          this.encryptionService.decryptUser(app.user),
+          this.encryptionService.decryptInspector(app.inspector),
+          this.encryptionService.decryptTarget(app.inspectionTargetInfo),
+        ]);
+        return {
+          ...app,
+          user,
+          inspector,
+          inspectionTargetInfo,
+        };
+      })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -350,15 +355,27 @@ export class InspectionApplicationRepository {
           createdAt: 'desc',
         },
       })
-      .then((apps) =>
-        apps.map((app) => ({
-          ...app,
-          user: this.encryptionService.decryptUser(app.user),
-          inspector: this.encryptionService.decryptInspector(app.inspector),
-          inspectionTargetInfo: this.encryptionService.decryptTarget(
-            app.inspectionTargetInfo,
+      .then(
+        async (apps) =>
+          await Promise.all(
+            apps.map(async (app) => {
+              const [user, inspector, inspectionTargetInfo] = await Promise.all(
+                [
+                  this.encryptionService.decryptUser(app.user),
+                  this.encryptionService.decryptInspector(app.inspector),
+                  this.encryptionService.decryptTarget(
+                    app.inspectionTargetInfo,
+                  ),
+                ],
+              );
+              return {
+                ...app,
+                user,
+                inspector,
+                inspectionTargetInfo,
+              };
+            }),
           ),
-        })),
       )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -440,13 +457,16 @@ export class InspectionApplicationRepository {
           inspectionTargetInfo: true,
         },
       })
-      .then((apps) =>
-        apps.map((app) => ({
-          ...app,
-          inspectionTargetInfo: this.encryptionService.decryptTarget(
-            app.inspectionTargetInfo,
+      .then(
+        async (apps) =>
+          await Promise.all(
+            apps.map(async (app) => ({
+              ...app,
+              inspectionTargetInfo: await this.encryptionService.decryptTarget(
+                app.inspectionTargetInfo,
+              ),
+            })),
           ),
-        })),
       )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {

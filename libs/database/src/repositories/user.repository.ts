@@ -28,7 +28,7 @@ export class UserRepository {
           deletedAt: null,
         },
       })
-      .then((user) => this.encryptionService.decryptUser(user))
+      .then(async (user) => await this.encryptionService.decryptUser(user))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -53,26 +53,18 @@ export class UserRepository {
     }: Pick<User, 'uuid' | 'name' | 'email' | 'phoneNumber' | 'studentNumber'>,
     tx: PrismaTransaction,
   ): Promise<User> {
-    const encryptedName = this.encryptionService.encrypt(
-      name,
-      'user:name',
-      uuid,
-    )!;
-    const encryptedEmail = this.encryptionService.encrypt(
-      email,
-      'user:email',
-      uuid,
-    )!;
-    const encryptedPhoneNumber = this.encryptionService.encrypt(
-      phoneNumber,
-      'user:phoneNumber',
-      uuid,
-    )!;
-    const encryptedStudentNumber = this.encryptionService.encrypt(
-      studentNumber,
-      'user:studentNumber',
-      uuid,
-    )!;
+    const [
+      encryptedName,
+      encryptedEmail,
+      encryptedPhoneNumber,
+      encryptedStudentNumber,
+    ] = await Promise.all([
+      this.encryptionService.encrypt(name, 'user:name', uuid),
+      this.encryptionService.encrypt(email, 'user:email', uuid),
+      this.encryptionService.encrypt(phoneNumber, 'user:phoneNumber', uuid),
+      this.encryptionService.encrypt(studentNumber, 'user:studentNumber', uuid),
+    ]);
+
     const studentHash = this.encryptionService.hash(name, studentNumber);
 
     return await tx.user
@@ -81,20 +73,21 @@ export class UserRepository {
         create: {
           uuid,
           studentHash,
-          name: encryptedName,
-          email: encryptedEmail,
-          phoneNumber: encryptedPhoneNumber,
-          studentNumber: encryptedStudentNumber,
+          name: encryptedName!,
+          email: encryptedEmail!,
+          phoneNumber: encryptedPhoneNumber!,
+          studentNumber: encryptedStudentNumber!,
         },
         update: {
-          name: encryptedName,
+          name: encryptedName!,
           studentHash,
-          email: encryptedEmail,
-          phoneNumber: encryptedPhoneNumber,
-          studentNumber: encryptedStudentNumber,
+          email: encryptedEmail!,
+          phoneNumber: encryptedPhoneNumber!,
+          studentNumber: encryptedStudentNumber!,
         },
       })
-      .then((user) => this.encryptionService.decryptUser(user))
+      .then(async (user) => await this.encryptionService.decryptUser(user))
+
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(`upsertUserInTx prisma error: ${error.message}`);
