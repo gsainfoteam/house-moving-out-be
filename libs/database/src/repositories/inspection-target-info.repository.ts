@@ -121,32 +121,32 @@ export class InspectionTargetInfoRepository {
             ] = await Promise.all([
               this.encryptionService.encrypt(
                 target.students[0]?.studentName,
-                ENCRYPTION_PURPOSE.TARGET.NAME,
+                ENCRYPTION_PURPOSE.TARGET.STUDENT1_NAME,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[0]?.studentNumber,
-                ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
+                ENCRYPTION_PURPOSE.TARGET.STUDENT1_STUDENT_NUMBER,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[1]?.studentName,
-                ENCRYPTION_PURPOSE.TARGET.NAME,
+                ENCRYPTION_PURPOSE.TARGET.STUDENT2_NAME,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[1]?.studentNumber,
-                ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
+                ENCRYPTION_PURPOSE.TARGET.STUDENT2_STUDENT_NUMBER,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[2]?.studentName,
-                ENCRYPTION_PURPOSE.TARGET.NAME,
+                ENCRYPTION_PURPOSE.TARGET.STUDENT3_NAME,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[2]?.studentNumber,
-                ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
+                ENCRYPTION_PURPOSE.TARGET.STUDENT3_STUDENT_NUMBER,
                 uuid,
               ),
             ]);

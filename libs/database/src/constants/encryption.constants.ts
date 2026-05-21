@@ -11,8 +11,12 @@ export const ENCRYPTION_PURPOSE = {
     STUDENT_NUMBER: 'inspector:studentNumber',
   },
   TARGET: {
-    NAME: 'target:name',
-    STUDENT_NUMBER: 'target:studentNumber',
+    STUDENT1_NAME: 'target:student1:name',
+    STUDENT1_STUDENT_NUMBER: 'target:student1:studentNumber',
+    STUDENT2_NAME: 'target:student2:name',
+    STUDENT2_STUDENT_NUMBER: 'target:student2:studentNumber',
+    STUDENT3_NAME: 'target:student3:name',
+    STUDENT3_STUDENT_NUMBER: 'target:student3:studentNumber',
   },
 } as const;
 

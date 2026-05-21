@@ -211,32 +211,32 @@ export class EncryptionService implements OnModuleInit {
     ] = await Promise.all([
       this.decrypt(
         target.student1Name,
-        ENCRYPTION_PURPOSE.TARGET.NAME,
+        ENCRYPTION_PURPOSE.TARGET.STUDENT1_NAME,
         target.uuid,
       ),
       this.decrypt(
         target.student1StudentNumber,
-        ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
+        ENCRYPTION_PURPOSE.TARGET.STUDENT1_STUDENT_NUMBER,
         target.uuid,
       ),
       this.decrypt(
         target.student2Name,
-        ENCRYPTION_PURPOSE.TARGET.NAME,
+        ENCRYPTION_PURPOSE.TARGET.STUDENT2_NAME,
         target.uuid,
       ),
       this.decrypt(
         target.student2StudentNumber,
-        ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
+        ENCRYPTION_PURPOSE.TARGET.STUDENT2_STUDENT_NUMBER,
         target.uuid,
       ),
       this.decrypt(
         target.student3Name,
-        ENCRYPTION_PURPOSE.TARGET.NAME,
+        ENCRYPTION_PURPOSE.TARGET.STUDENT3_NAME,
         target.uuid,
       ),
       this.decrypt(
         target.student3StudentNumber,
-        ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
+        ENCRYPTION_PURPOSE.TARGET.STUDENT3_STUDENT_NUMBER,
         target.uuid,
       ),
     ]);
