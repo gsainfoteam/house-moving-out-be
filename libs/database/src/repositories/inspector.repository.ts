@@ -21,6 +21,7 @@ import { PrismaTransaction } from '../types';
 import { InspectorWithSlots } from '../types/inspector.type';
 import { InspectorDto } from 'src/inspector/dto/req/create-inspectors.dto';
 import { TemporaryInspectorDto } from 'src/inspector/dto/req/create-temporary-inspectors.dto';
+import { ENCRYPTION_PURPOSE } from '../constants/encryption.constants';
 
 @Loggable()
 @Injectable()
@@ -83,15 +84,19 @@ export class InspectorRepository {
     const uuid = existingInspector?.uuid ?? crypto.randomUUID();
     const [encryptedName, encryptedEmail, encryptedStudentNumber] =
       await Promise.all([
-        this.encryptionService.encrypt(inspector.name, 'inspector:name', uuid),
+        this.encryptionService.encrypt(
+          inspector.name,
+          ENCRYPTION_PURPOSE.INSPECTOR.NAME,
+          uuid,
+        ),
         this.encryptionService.encrypt(
           inspector.email,
-          'inspector:email',
+          ENCRYPTION_PURPOSE.INSPECTOR.EMAIL,
           uuid,
         ),
         this.encryptionService.encrypt(
           inspector.studentNumber,
-          'inspector:studentNumber',
+          ENCRYPTION_PURPOSE.INSPECTOR.STUDENT_NUMBER,
           uuid,
         ),
       ]);

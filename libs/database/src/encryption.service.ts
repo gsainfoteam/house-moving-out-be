@@ -12,6 +12,10 @@ import {
 } from '@aws-sdk/client-secrets-manager';
 import { KMSClient, EncryptCommand, DecryptCommand } from '@aws-sdk/client-kms';
 import { User, Inspector, InspectionTargetInfo } from 'generated/prisma/client';
+import {
+  ENCRYPTION_PURPOSE,
+  EncryptionPurpose,
+} from './constants/encryption.constants';
 
 interface EncryptionSecrets {
   ENCRYPTION_PEPPER: string;
@@ -72,7 +76,7 @@ export class EncryptionService implements OnModuleInit {
 
   async encrypt(
     text: string | null | undefined,
-    purpose: string,
+    purpose: EncryptionPurpose,
     uuid: string,
   ): Promise<string | null> {
     if (!text) return text as null;
@@ -102,7 +106,7 @@ export class EncryptionService implements OnModuleInit {
 
   async decrypt(
     encryptedData: string | null | undefined,
-    purpose: string,
+    purpose: EncryptionPurpose,
     uuid: string,
   ): Promise<string | null> {
     if (!encryptedData) return encryptedData as null;
@@ -144,10 +148,18 @@ export class EncryptionService implements OnModuleInit {
   async decryptUser(user: User): Promise<User> {
     if (!user) return user;
     const [name, email, phoneNumber, studentNumber] = await Promise.all([
-      this.decrypt(user.name, 'user:name', user.uuid),
-      this.decrypt(user.email, 'user:email', user.uuid),
-      this.decrypt(user.phoneNumber, 'user:phoneNumber', user.uuid),
-      this.decrypt(user.studentNumber, 'user:studentNumber', user.uuid),
+      this.decrypt(user.name, ENCRYPTION_PURPOSE.USER.NAME, user.uuid),
+      this.decrypt(user.email, ENCRYPTION_PURPOSE.USER.EMAIL, user.uuid),
+      this.decrypt(
+        user.phoneNumber,
+        ENCRYPTION_PURPOSE.USER.PHONE_NUMBER,
+        user.uuid,
+      ),
+      this.decrypt(
+        user.studentNumber,
+        ENCRYPTION_PURPOSE.USER.STUDENT_NUMBER,
+        user.uuid,
+      ),
     ]);
     return {
       ...user,
@@ -161,11 +173,19 @@ export class EncryptionService implements OnModuleInit {
   async decryptInspector(inspector: Inspector): Promise<Inspector> {
     if (!inspector) return inspector;
     const [name, email, studentNumber] = await Promise.all([
-      this.decrypt(inspector.name, 'inspector:name', inspector.uuid),
-      this.decrypt(inspector.email, 'inspector:email', inspector.uuid),
+      this.decrypt(
+        inspector.name,
+        ENCRYPTION_PURPOSE.INSPECTOR.NAME,
+        inspector.uuid,
+      ),
+      this.decrypt(
+        inspector.email,
+        ENCRYPTION_PURPOSE.INSPECTOR.EMAIL,
+        inspector.uuid,
+      ),
       this.decrypt(
         inspector.studentNumber,
-        'inspector:studentNumber',
+        ENCRYPTION_PURPOSE.INSPECTOR.STUDENT_NUMBER,
         inspector.uuid,
       ),
     ]);
@@ -189,22 +209,34 @@ export class EncryptionService implements OnModuleInit {
       student3Name,
       student3StudentNumber,
     ] = await Promise.all([
-      this.decrypt(target.student1Name, 'target:name', target.uuid),
+      this.decrypt(
+        target.student1Name,
+        ENCRYPTION_PURPOSE.TARGET.NAME,
+        target.uuid,
+      ),
       this.decrypt(
         target.student1StudentNumber,
-        'target:studentNumber',
+        ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
         target.uuid,
       ),
-      this.decrypt(target.student2Name, 'target:name', target.uuid),
+      this.decrypt(
+        target.student2Name,
+        ENCRYPTION_PURPOSE.TARGET.NAME,
+        target.uuid,
+      ),
       this.decrypt(
         target.student2StudentNumber,
-        'target:studentNumber',
+        ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
         target.uuid,
       ),
-      this.decrypt(target.student3Name, 'target:name', target.uuid),
+      this.decrypt(
+        target.student3Name,
+        ENCRYPTION_PURPOSE.TARGET.NAME,
+        target.uuid,
+      ),
       this.decrypt(
         target.student3StudentNumber,
-        'target:studentNumber',
+        ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
         target.uuid,
       ),
     ]);

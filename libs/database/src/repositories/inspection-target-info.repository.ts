@@ -13,6 +13,7 @@ import { InspectionTargetInfo, Prisma } from 'generated/prisma/client';
 import { PrismaTransaction } from '../types';
 import { InspectionTargetStudent } from 'src/schedule/types/inspection-target.type';
 import { InspectionTargetInfoWithApplication } from '../types/inspection-target-info.type';
+import { ENCRYPTION_PURPOSE } from '../constants/encryption.constants';
 
 @Loggable()
 @Injectable()
@@ -120,32 +121,32 @@ export class InspectionTargetInfoRepository {
             ] = await Promise.all([
               this.encryptionService.encrypt(
                 target.students[0]?.studentName,
-                'target:name',
+                ENCRYPTION_PURPOSE.TARGET.NAME,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[0]?.studentNumber,
-                'target:studentNumber',
+                ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[1]?.studentName,
-                'target:name',
+                ENCRYPTION_PURPOSE.TARGET.NAME,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[1]?.studentNumber,
-                'target:studentNumber',
+                ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[2]?.studentName,
-                'target:name',
+                ENCRYPTION_PURPOSE.TARGET.NAME,
                 uuid,
               ),
               this.encryptionService.encrypt(
                 target.students[2]?.studentNumber,
-                'target:studentNumber',
+                ENCRYPTION_PURPOSE.TARGET.STUDENT_NUMBER,
                 uuid,
               ),
             ]);
