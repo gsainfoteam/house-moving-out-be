@@ -16,7 +16,7 @@ export class FileService {
   private readonly s3Client: S3Client;
   constructor(private readonly configService: ConfigService) {
     this.s3Client = new S3Client({
-      region: configService.getOrThrow('AWS_S3_REGION'),
+      region: configService.getOrThrow('AWS_REGION'),
       credentials: {
         accessKeyId: configService.getOrThrow('AWS_ACCESS_KEY_ID'),
         secretAccessKey: configService.getOrThrow('AWS_SECRET_ACCESS_KEY'),

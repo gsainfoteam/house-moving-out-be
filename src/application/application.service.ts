@@ -135,8 +135,7 @@ export class ApplicationService {
           throw new ConflictException('Slot capacity is already full.');
         }
 
-        const residentStudentNumbers =
-          this.getResidentStudentNumbers(inspectionTargetInfo);
+        const residents = this.getResidents(inspectionTargetInfo);
 
         let assignedInspector: Inspector | undefined;
 
@@ -154,7 +153,7 @@ export class ApplicationService {
           if (
             !this.isInspectorInTargetResidents(
               inspector.studentNumber,
-              residentStudentNumbers,
+              residents.map((resident) => resident.studentNumber),
             ) &&
             inspector.gender === inspectionTargetInfo.gender &&
             isSlotAvailable
@@ -167,7 +166,7 @@ export class ApplicationService {
         if (!assignedInspector) {
           assignedInspector =
             await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
-              residentStudentNumbers,
+              residents,
               inspectionSlotUuid,
               schedule.uuid,
               inspectionTargetInfo.gender,
@@ -273,13 +272,14 @@ export class ApplicationService {
       if (updatedSlot.reservedCount > updatedSlot.capacity) {
         throw new ConflictException('Slot capacity is already full.');
       }
-      const residentStudentNumbers = this.getResidentStudentNumbers(
+
+      const residentStudents = this.getResidents(
         application.inspectionTargetInfo,
       );
 
       const inspector =
         await this.inspectorRepository.findAvailableInspectorBySlotUuidInTx(
-          residentStudentNumbers,
+          residentStudents,
           inspectionSlotUuid,
           updatedSlot.scheduleUuid,
           application.inspectionTargetInfo.gender,
@@ -392,7 +392,9 @@ export class ApplicationService {
         if (
           this.isInspectorInTargetResidents(
             inspector.studentNumber,
-            this.getResidentStudentNumbers(application.inspectionTargetInfo),
+            this.getResidents(application.inspectionTargetInfo).map(
+              (resident) => resident.studentNumber,
+            ),
           )
         ) {
           throw new ForbiddenException(
@@ -493,12 +495,11 @@ export class ApplicationService {
   }
 
   async recordTargetNoShow(
-    { email, name, studentNumber }: User,
+    { name, studentNumber }: User,
     applicationUuid: string,
     status: ApplicationStatus,
   ): Promise<TargetPhoneNumberResDto> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      email,
       name,
       studentNumber,
     );
@@ -552,7 +553,7 @@ export class ApplicationService {
   }
 
   async submitInspectionResult(
-    { email, name, studentNumber }: User,
+    { name, studentNumber }: User,
     applicationUuid: string,
     {
       passed,
@@ -582,7 +583,6 @@ export class ApplicationService {
     );
 
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      email,
       name,
       studentNumber,
     );
@@ -627,12 +627,11 @@ export class ApplicationService {
   }
 
   async getDocumentUploadUrl(
-    { email, name, studentNumber }: User,
+    { name, studentNumber }: User,
     applicationUuid: string,
     { contentLength }: GetDocumentUploadUrlReqDto,
   ): Promise<RegisterResultResDto> {
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      email,
       name,
       studentNumber,
     );
@@ -686,7 +685,6 @@ export class ApplicationService {
         applicationUuid,
       );
     const inspector = await this.inspectorRepository.findInspectorByUserInfo(
-      user.email,
       user.name,
       user.studentNumber,
     );
@@ -711,14 +709,26 @@ export class ApplicationService {
     );
   }
 
-  private getResidentStudentNumbers(
+  private getResidents(
     targetInfo: InspectionTargetInfo,
-  ): string[] {
+  ): { name: string; studentNumber: string }[] {
     return [
-      targetInfo.student1StudentNumber,
-      targetInfo.student2StudentNumber,
-      targetInfo.student3StudentNumber,
-    ].filter((studentNumber): studentNumber is string => !!studentNumber);
+      {
+        name: targetInfo.student1Name,
+        studentNumber: targetInfo.student1StudentNumber,
+      },
+      {
+        name: targetInfo.student2Name,
+        studentNumber: targetInfo.student2StudentNumber,
+      },
+      {
+        name: targetInfo.student3Name,
+        studentNumber: targetInfo.student3StudentNumber,
+      },
+    ].filter(
+      (student): student is { name: string; studentNumber: string } =>
+        !!student.name && !!student.studentNumber,
+    );
   }
 
   private isInspectorInTargetResidents(

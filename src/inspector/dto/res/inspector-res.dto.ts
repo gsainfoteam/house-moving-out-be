@@ -1,45 +1,52 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Exclude, Expose, Transform } from 'class-transformer';
 import { Gender, InspectionSlot } from 'generated/prisma/client';
 import { InspectorWithSlots } from '@lib/database';
 import { InspectionSlotResDto } from 'src/schedule/dto/res/move-out-schedule-with-slots-res.dto';
 
+@Exclude()
 export class InspectorResDto {
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
     description: 'Inspector UUID',
   })
-  uuid: string;
+  @Expose()
+  uuid!: string;
 
   @ApiProperty({
     example: 'John Doe',
     description: 'Inspector name',
   })
-  name: string;
+  @Expose()
+  name!: string;
 
   @ApiProperty({
     example: 'email@gm.gist.ac.kr',
     description: 'Inspector email',
   })
-  email: string;
+  @Expose()
+  email!: string;
 
   @ApiProperty({
     example: '20250000',
     description: 'Inspector student number',
   })
-  studentNumber: string;
+  @Expose()
+  studentNumber!: string;
 
   @ApiProperty({
     example: Gender.MALE,
     description: 'Inspector gender',
     enum: Gender,
   })
-  gender: Gender;
+  @Expose()
+  gender!: Gender;
 
   @ApiPropertyOptional({
     example: false,
     description: 'Is temporary inspector',
   })
+  @Expose()
   isTemporary?: boolean;
 
   @ApiProperty({
@@ -49,7 +56,8 @@ export class InspectorResDto {
   @Transform(({ value }: { value: { inspectionSlot: InspectionSlot }[] }) =>
     value.map((slot) => slot.inspectionSlot),
   )
-  availableSlots: InspectionSlotResDto[];
+  @Expose()
+  availableSlots!: InspectionSlotResDto[];
 
   constructor(partial: InspectorWithSlots) {
     Object.assign(this, partial);

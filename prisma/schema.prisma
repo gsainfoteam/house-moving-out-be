@@ -81,8 +81,9 @@ enum ApplicationStatus {
 
 model User {
   uuid          String @id @db.Uuid
+  studentHash   String @unique @map("student_hash")
   name          String
-  email         String @unique
+  email         String
   phoneNumber   String @map("phone_number")
   studentNumber String @map("student_number")
   role          Role   @default(USER)
@@ -198,6 +199,7 @@ model InspectionTargetInfo {
   student2StudentNumber String?            @map("student2_student_number")
   student3Name          String?            @map("student3_name")
   student3StudentNumber String?            @map("student3_student_number")
+  studentHashes         String[]           @map("student_hashes")
   applyCleaningService  Boolean            @default(false) @map("apply_cleaning_service")
   applyRepairCheck      Boolean            @default(false) @map("apply_repair_check")
   inspectionType        RoomInspectionType @map("inspection_type")
@@ -271,8 +273,9 @@ model InspectorAvailableSlot {
 
 model Inspector {
   uuid          String @id @default(uuid()) @db.Uuid
+  studentHash   String @unique @map("student_hash")
   name          String
-  email         String @unique
+  email         String
   studentNumber String @map("student_number")
   gender        Gender
 
