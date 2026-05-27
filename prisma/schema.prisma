@@ -55,6 +55,7 @@ enum RoomInspectionType {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
   USER
 
