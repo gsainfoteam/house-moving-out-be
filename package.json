@@ -96,6 +96,9 @@
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
+    "moduleNameMapper": {
+      "^generated/(.*)$": "<rootDir>/../generated/$1"
+    },
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
