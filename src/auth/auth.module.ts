@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { InfoteamAccountModule } from '@lib/infoteam-account';
 import { JwtModule } from '@nestjs/jwt';
 import { AdminGuard } from './guard/admin.guard';
+import { SuperAdminGuard } from './guard/superadmin.guard';
 import { UserGuard } from './guard/user.guard';
 import { UserStrategy } from './guard/user.strategy';
 import { HttpModule } from '@nestjs/axios';
@@ -19,6 +20,12 @@ import { DatabaseModule } from '@lib/database';
     DatabaseModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AdminGuard, UserGuard, UserStrategy],
+  providers: [
+    AuthService,
+    AdminGuard,
+    SuperAdminGuard,
+    UserGuard,
+    UserStrategy,
+  ],
 })
 export class AuthModule {}
