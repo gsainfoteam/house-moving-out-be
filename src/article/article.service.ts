@@ -1,16 +1,17 @@
+import { ArticleRepository } from '@lib/database';
 import { Loggable } from '@lib/logger';
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
+import { Article, User } from 'generated/prisma/client';
+import { isAdminRole } from 'src/auth/utils/role.util';
 import { Language } from './dto/article.dto';
-import { Article, Role, User } from 'generated/prisma/client';
+import { CreateArticleReqDto } from './dto/req/create-article-req.dto';
 import { FindArticlesQueryDto } from './dto/req/find-articles-query.dto';
-import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { ArticleDetailResDto } from './dto/res/article-detail-res.dto';
-import { ArticleRepository } from '@lib/database';
+import { FindArticlesResDto } from './dto/res/find-articles-res.dto';
 import { CreateArticleType } from './types/create-article.type';
 
 @Loggable()
@@ -30,7 +31,7 @@ export class ArticleService {
   async findArticleByUuid(user: User, uuid: string) {
     const article = await this.articleRepository.findArticleByUuid(uuid);
 
-    if (user.role !== Role.ADMIN && !article.isVisible) {
+    if (!isAdminRole(user.role) && !article.isVisible) {
       throw new ForbiddenException(
         'You do not have permission to view this article.',
       );
@@ -43,7 +44,7 @@ export class ArticleService {
     user: User,
     { type, offset, limit }: FindArticlesQueryDto,
   ): Promise<FindArticlesResDto> {
-    const isVisible = user.role === Role.ADMIN ? undefined : true;
+    const isVisible = isAdminRole(user.role) ? undefined : true;
 
     const [articles, totalCount] =
       await this.articleRepository.findArticlesByType(
