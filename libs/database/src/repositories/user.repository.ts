@@ -162,7 +162,9 @@ export class UserRepository {
             throw new NotFoundException('User not found');
           }
           if (error.code === 'P2002') {
-            this.logger.debug(`Unique constraint on role update: ${error.message}`);
+            this.logger.debug(
+              `Unique constraint on role update: ${error.message}`,
+            );
             throw new ConflictException(
               'Another SUPERADMIN transfer is in progress or a SUPERADMIN already exists',
             );
@@ -192,7 +194,9 @@ export class UserRepository {
             throw new NotFoundException('User not found');
           }
           if (error.code === 'P2002') {
-            this.logger.debug(`Unique constraint on role update: ${error.message}`);
+            this.logger.debug(
+              `Unique constraint on role update: ${error.message}`,
+            );
             throw new ConflictException(
               'Another SUPERADMIN transfer is in progress or a SUPERADMIN already exists',
             );
