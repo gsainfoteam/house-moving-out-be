@@ -61,7 +61,7 @@ export class UserRepository {
       .then(async (user) => {
         if (!user) {
           this.logger.debug(
-            `user not found by student hash: name=${name}, studentNumber=${studentNumber}`,
+            `user not found by student hash lookup (studentHash=${studentHash.slice(0, 10)}...)`,
           );
           throw new NotFoundException('User not found');
         }
