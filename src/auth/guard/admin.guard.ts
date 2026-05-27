@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { Role } from 'generated/prisma/client';
 import { isAdminRole } from '../utils/role.util';
 import { UserGuard } from './user.guard';
@@ -10,7 +10,7 @@ export class AdminGuard extends UserGuard {
     user: TUser,
   ): TUser {
     if (!isAdminRole(user.role)) {
-      throw new UnauthorizedException('user is not admin');
+      throw new ForbiddenException('user is not admin');
     }
 
     return user;
