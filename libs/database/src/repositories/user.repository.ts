@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import { EncryptionService } from '../encryption.service';
@@ -160,6 +161,12 @@ export class UserRepository {
             this.logger.debug(`user not found: ${userUuid}`);
             throw new NotFoundException('User not found');
           }
+          if (error.code === 'P2002') {
+            this.logger.debug(`Unique constraint on role update: ${error.message}`);
+            throw new ConflictException(
+              'Another SUPERADMIN transfer is in progress or a SUPERADMIN already exists',
+            );
+          }
           this.logger.error(`updateUserRole prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }
@@ -183,6 +190,12 @@ export class UserRepository {
           if (error.code === 'P2025') {
             this.logger.debug(`user not found: ${userUuid}`);
             throw new NotFoundException('User not found');
+          }
+          if (error.code === 'P2002') {
+            this.logger.debug(`Unique constraint on role update: ${error.message}`);
+            throw new ConflictException(
+              'Another SUPERADMIN transfer is in progress or a SUPERADMIN already exists',
+            );
           }
           this.logger.error(
             `updateUserRoleInTx prisma error: ${error.message}`,
