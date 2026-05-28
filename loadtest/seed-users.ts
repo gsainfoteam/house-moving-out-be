@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { randomUUID, randomBytes, createHmac } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -15,6 +15,14 @@ type SeedUsersOptions = {
   role: Role;
   tokensPath: string;
   outputPath?: string;
+  inputPath?: string;
+};
+
+type InputUser = {
+  name: string;
+  studentNumber: string;
+  email?: string;
+  phoneNumber?: string;
 };
 
 function parseArgs(argv: string[]): SeedUsersOptions {
@@ -45,6 +53,8 @@ function parseArgs(argv: string[]): SeedUsersOptions {
   const role = String(args.get('role') ?? defaultRole) as Role;
   const tokensPath = String(args.get('tokensPath') ?? defaultTokensPath);
   const outputPath = String(args.get('outputPath') ?? defaultOutputPath);
+  const inputPath =
+    args.get('inputPath') ?? process.env['SEED_USERS_INPUT_PATH'];
 
   if (!Number.isFinite(count) || count <= 0) {
     throw new Error(
@@ -59,7 +69,7 @@ function parseArgs(argv: string[]): SeedUsersOptions {
   }
   if (!tokensPath.trim()) throw new Error('Invalid --tokensPath (empty)');
 
-  return { count, prefix, role, tokensPath, outputPath };
+  return { count, prefix, role, tokensPath, outputPath, inputPath };
 }
 
 function pad4(n: number) {
@@ -93,6 +103,67 @@ function makeStudentNumber(n: number) {
   const year = 20 + (n % 6); // 20~25
   const serial = String((n % 9999) + 1).padStart(4, '0');
   return `20${year}${serial}`;
+}
+
+async function readInputUsers(inputPath: string): Promise<InputUser[]> {
+  const raw = await readFile(inputPath, 'utf8');
+  const parsed: unknown = JSON.parse(raw);
+
+  if (!Array.isArray(parsed)) {
+    throw new Error(`Invalid input JSON: expected an array at ${inputPath}`);
+  }
+
+  const users: InputUser[] = parsed.map((u, idx) => {
+    if (!u || typeof u !== 'object') {
+      throw new Error(`Invalid user at index=${idx}: expected object`);
+    }
+    const obj = u as Record<string, unknown>;
+    const name = obj['name'];
+    const studentNumber = obj['studentNumber'];
+    const email = obj['email'];
+    const phoneNumber = obj['phoneNumber'];
+
+    if (typeof name !== 'string' || !name.trim()) {
+      throw new Error(`Invalid name at index=${idx}`);
+    }
+    if (typeof studentNumber !== 'string' || !studentNumber.trim()) {
+      throw new Error(`Invalid studentNumber at index=${idx}`);
+    }
+    if (email != null && typeof email !== 'string') {
+      throw new Error(`Invalid email at index=${idx}`);
+    }
+    if (phoneNumber != null && typeof phoneNumber !== 'string') {
+      throw new Error(`Invalid phoneNumber at index=${idx}`);
+    }
+
+    return {
+      name: name.trim(),
+      studentNumber: studentNumber.trim(),
+      email:
+        typeof email === 'string' && email.trim() ? email.trim() : undefined,
+      phoneNumber:
+        typeof phoneNumber === 'string' && phoneNumber.trim()
+          ? phoneNumber.trim()
+          : undefined,
+    };
+  });
+
+  const duplicates = new Set<string>();
+  const seen = new Set<string>();
+  for (const u of users) {
+    const key = `${u.name.toLowerCase().trim()}:${u.studentNumber}`;
+    if (seen.has(key)) duplicates.add(key);
+    seen.add(key);
+  }
+  if (duplicates.size > 0) {
+    throw new Error(
+      `Duplicate (name, studentNumber) pairs in input: ${Array.from(duplicates)
+        .slice(0, 5)
+        .join(', ')}${duplicates.size > 5 ? ' ...' : ''}`,
+    );
+  }
+
+  return users;
 }
 
 function generateOpaqueToken(): string {
@@ -138,14 +209,38 @@ async function main() {
     await encryptionService.onModuleInit();
     await prisma.$connect();
 
-    const results = await Promise.all(
-      Array.from({ length: options.count }).map(async (_, idx) => {
-        const n = idx + 1;
-        const name = `${makeName(n)}${n}`;
-        const studentNumber = makeStudentNumber(n);
-        const email = `${options.prefix}.${runId}.${pad4(n)}@example.com`;
-        const phoneNumber = makePhoneNumber(n);
+    const inputUsers = options.inputPath
+      ? await readInputUsers(options.inputPath)
+      : null;
 
+    const seedList: Array<{
+      name: string;
+      studentNumber: string;
+      email: string;
+      phoneNumber: string;
+    }> = inputUsers
+      ? inputUsers.map((u, idx) => {
+          const n = idx + 1;
+          return {
+            name: u.name,
+            studentNumber: u.studentNumber,
+            email:
+              u.email ?? `${options.prefix}.${runId}.${pad4(n)}@example.com`,
+            phoneNumber: u.phoneNumber ?? makePhoneNumber(n),
+          };
+        })
+      : Array.from({ length: options.count }).map((_, idx) => {
+          const n = idx + 1;
+          return {
+            name: `${makeName(n)}${n}`,
+            studentNumber: makeStudentNumber(n),
+            email: `${options.prefix}.${runId}.${pad4(n)}@example.com`,
+            phoneNumber: makePhoneNumber(n),
+          };
+        });
+
+    const results = await Promise.all(
+      seedList.map(async ({ name, studentNumber, email, phoneNumber }) => {
         const studentHash = encryptionService.hash(name, studentNumber);
 
         const existing = await prisma.user.findUnique({
@@ -276,11 +371,12 @@ async function main() {
       JSON.stringify(
         {
           ok: true,
-          requested: options.count,
+          requested: seedList.length,
           createdCount: created.length,
           updatedCount: updated.length,
           tokensPath: options.tokensPath,
           outputPath: options.outputPath,
+          inputPath: options.inputPath,
           created,
         },
         null,
