@@ -4,10 +4,6 @@
     "skipLibCheck": false,
     "noEmit": true
   },
-  "include": [
-    "src/**/*",
-    "libs/**/*",
-    "generated/**/*"
-  ],
+  "include": ["src/**/*", "loadtest/**/*", "libs/**/*", "generated/**/*"],
   "exclude": []
 }
