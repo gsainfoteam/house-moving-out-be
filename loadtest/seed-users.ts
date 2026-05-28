@@ -366,7 +366,6 @@ async function main() {
       );
     }
 
-    // eslint-disable-next-line no-console
     console.log(
       JSON.stringify(
         {
@@ -389,7 +388,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(err);
   process.exitCode = 1;
 });
