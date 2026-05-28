@@ -8,6 +8,7 @@ import { InspectorModule } from './inspector/inspector.module';
 import { UserModule } from './user/user.module';
 import { HealthModule } from './health/health.module';
 import { ArticleModule } from './article/article.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ArticleModule } from './article/article.module';
     HealthModule,
     UserModule,
     ArticleModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [],

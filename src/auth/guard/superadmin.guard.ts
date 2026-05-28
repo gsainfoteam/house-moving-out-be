@@ -4,11 +4,10 @@ import {
   ExecutionContext,
 } from '@nestjs/common';
 import { Role } from 'generated/prisma/client';
-import { isAdminRole } from '../utils/role.util';
 import { UserGuard } from './user.guard';
 
 @Injectable()
-export class AdminGuard extends UserGuard {
+export class SuperAdminGuard extends UserGuard {
   handleRequest<TUser extends { role: Role }>(
     err: unknown,
     user: TUser,
@@ -17,8 +16,8 @@ export class AdminGuard extends UserGuard {
     status: unknown,
   ): TUser {
     super.handleRequest(err, user, info, context, status);
-    if (!isAdminRole(user.role)) {
-      throw new ForbiddenException('user is not admin');
+    if (user.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException('user is not superadmin');
     }
 
     return user;
