@@ -16,23 +16,25 @@ const THINK_TIME_MS = Number(__ENV.THINK_TIME_MS || '100');
 const ALLOW_CONFLICT =
   (__ENV.ALLOW_CONFLICT || 'true').toLowerCase() === 'true';
 const ALLOW_FORBIDDEN =
-  (__ENV.ALLOW_FORBIDDEN || 'true').toLowerCase() === 'true';
+  (__ENV.ALLOW_FORBIDDEN || 'false').toLowerCase() === 'true';
+const ALLOW_NON_TARGET =
+  (__ENV.ALLOW_NON_TARGET || 'true').toLowerCase() === 'true';
 
 export const options = {
   scenarios: {
     apply_inspection: {
       executor: 'ramping-vus',
-      startVUs: Number(__ENV.START_VUS || '0'),
+      startVUs: Number(__ENV.START_VUS || '100'),
       stages: [
         {
-          duration: __ENV.RAMP_UP || '30s',
-          target: Number(__ENV.TARGET_VUS || '50'),
+          duration: __ENV.RAMP_UP || '10s',
+          target: Number(__ENV.TARGET_VUS || '300'),
         },
         {
           duration: __ENV.HOLD || '1m',
-          target: Number(__ENV.TARGET_VUS || '50'),
+          target: Number(__ENV.TARGET_VUS || '300'),
         },
-        { duration: __ENV.RAMP_DOWN || '30s', target: 0 },
+        { duration: __ENV.RAMP_DOWN || '10s', target: 0 },
       ],
       gracefulRampDown: '10s',
     },
@@ -68,10 +70,23 @@ function pickToken(tokens: string[]) {
   return tokens[idx];
 }
 
+function checkUser(token: string) {
+  const res = http.get(`${BASE_URL}/user/me`, authHeaders(token));
+  const ok = check(res, {
+    'GET /user/me status 200': (r) => r.status === 200,
+  });
+  if (!ok) {
+    fail(
+      `GET /user/me failed: status=${res.status} body=${JSON.stringify(res.body)}`,
+    );
+  }
+}
+
 function fetchActiveSlots(token: string) {
   const res = http.get(`${BASE_URL}/schedule/active`, authHeaders(token));
   const ok = check(res, {
-    'GET /schedule/active status 200': (r) => r.status === 200,
+    'GET /schedule/active status 200': (r) =>
+      r.status === 200 || (ALLOW_NON_TARGET && r.status === 404),
   });
   if (!ok) {
     fail(
@@ -110,6 +125,7 @@ export function setup() {
   }
 
   const bootstrapToken = tokens[0];
+  checkUser(bootstrapToken);
   const slots = fetchActiveSlots(bootstrapToken);
 
   // Choose a single slot for contention mode (prefer the least remaining capacity to force race)
