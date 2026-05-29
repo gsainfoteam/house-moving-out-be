@@ -2,20 +2,6 @@ import http from 'k6/http';
 import { check, sleep, fail } from 'k6';
 import { InspectionSlot } from 'generated/prisma/client';
 
-declare const __ENV: {
-  BASE_URL: string;
-  TOKENS_PATH: string;
-  CONTEND_SLOT: string;
-  THINK_TIME_MS: string;
-  ALLOW_CONFLICT: string;
-  ALLOW_FORBIDDEN: string;
-  START_VUS: string;
-  RAMP_UP: string;
-  TARGET_VUS: string;
-  HOLD: string;
-  RAMP_DOWN: string;
-};
-
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const TOKENS_PATH = __ENV.TOKENS_PATH || 'tokens.json';
 
