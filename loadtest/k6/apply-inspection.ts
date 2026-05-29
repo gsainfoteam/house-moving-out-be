@@ -1,6 +1,7 @@
 import http from 'k6/http';
-import { check, sleep, fail } from 'k6';
-import { InspectionSlot } from 'generated/prisma/client';
+import { check, fail } from 'k6';
+import { Gender, InspectionSlot } from 'generated/prisma/client';
+import { UserDto } from 'src/user/dto/res/user.dto';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const TOKENS_PATH = __ENV.TOKENS_PATH || 'tokens.json';
@@ -8,9 +9,6 @@ const TOKENS_PATH = __ENV.TOKENS_PATH || 'tokens.json';
 // If CONTEND_SLOT=true, all users will try to apply to the same slot (max contention).
 // Otherwise, k6 spreads requests across slots to measure throughput under load.
 const CONTEND_SLOT = (__ENV.CONTEND_SLOT || 'false').toLowerCase() === 'true';
-
-// How long to wait between operations inside one iteration.
-const THINK_TIME_MS = Number(__ENV.THINK_TIME_MS || '100');
 
 // Expected "business" errors under contention / duplicates.
 const ALLOW_CONFLICT =
@@ -24,17 +22,17 @@ export const options = {
   scenarios: {
     apply_inspection: {
       executor: 'ramping-vus',
-      startVUs: Number(__ENV.START_VUS || '100'),
+      startVUs: Number(__ENV.START_VUS || '0'),
       stages: [
         {
-          duration: __ENV.RAMP_UP || '10s',
-          target: Number(__ENV.TARGET_VUS || '300'),
+          duration: __ENV.RAMP_UP || '5s',
+          target: Number(__ENV.TARGET_VUS || '100'),
         },
         {
           duration: __ENV.HOLD || '1m',
-          target: Number(__ENV.TARGET_VUS || '300'),
+          target: Number(__ENV.TARGET_VUS || '100'),
         },
-        { duration: __ENV.RAMP_DOWN || '10s', target: 0 },
+        { duration: __ENV.RAMP_DOWN || '5s', target: 0 },
       ],
       gracefulRampDown: '10s',
     },
@@ -141,31 +139,42 @@ export default function (data: {
   const { tokens, slots, contendSlotUuid } = data;
   const token = pickToken(tokens);
 
-  // Optional: verify token is valid (cheap sanity check).
-  // Comment out if you want max throughput.
-  if (__ITER % 20 === 0) {
-    const me = http.get(`${BASE_URL}/user/me`, authHeaders(token));
-    check(me, { 'GET /user/me status 200': (r) => r.status === 200 });
+  const me = http.get(`${BASE_URL}/user/me`, authHeaders(token));
+  if (!check(me, { 'GET /user/me status 200': (r) => r.status === 200 })) {
+    fail(
+      `GET /user/me failed: status=${me.status} body=${JSON.stringify(me.body)}`,
+    );
   }
+  const meData = me.json() as unknown as UserDto;
+  const gender = meData.gender as Gender;
+  if (!gender) fail('gender missing');
+
+  const filteredSlots = slots.filter((s) => s.gender === gender);
 
   const slotUuid = CONTEND_SLOT
     ? contendSlotUuid
-    : slots[(__VU + __ITER) % slots.length]?.uuid;
+    : filteredSlots[(__VU + __ITER) % filteredSlots.length]?.uuid;
 
   if (!slotUuid) fail('slotUuid missing');
 
   const payload = JSON.stringify({ inspectionSlotUuid: slotUuid });
-  const res = http.post(`${BASE_URL}/application`, payload, authHeaders(token));
+  const res = http.post(`${BASE_URL}/application`, payload, {
+    ...authHeaders(token),
+    responseCallback: http.expectedStatuses({ min: 200, max: 299 }, 409),
+  });
 
   const isExpectedBusinessError =
     (ALLOW_CONFLICT && res.status === 409) ||
     (ALLOW_FORBIDDEN && (res.status === 403 || res.status === 401));
 
-  check(res, {
-    'POST /application success or expected error': (r) =>
-      r.status === 201 || r.status === 200 || isExpectedBusinessError,
-  });
-
-  // Small think time to avoid totally unrealistic tight loops
-  if (THINK_TIME_MS > 0) sleep(THINK_TIME_MS / 1000);
+  if (
+    !check(res, {
+      'POST /application success or expected error': (r) =>
+        r.status === 201 || r.status === 200 || isExpectedBusinessError,
+    })
+  ) {
+    fail(
+      `POST /application failed: status=${res.status} body=${JSON.stringify(res.body)}`,
+    );
+  }
 }
