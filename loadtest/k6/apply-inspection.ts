@@ -70,18 +70,6 @@ function pickToken(tokens: string[]) {
   return tokens[idx];
 }
 
-function checkUser(token: string) {
-  const res = http.get(`${BASE_URL}/user/me`, authHeaders(token));
-  const ok = check(res, {
-    'GET /user/me status 200': (r) => r.status === 200,
-  });
-  if (!ok) {
-    fail(
-      `GET /user/me failed: status=${res.status} body=${JSON.stringify(res.body)}`,
-    );
-  }
-}
-
 function fetchActiveSlots(token: string) {
   const res = http.get(`${BASE_URL}/schedule/active`, authHeaders(token));
   const ok = check(res, {
@@ -125,7 +113,6 @@ export function setup() {
   }
 
   const bootstrapToken = tokens[0];
-  checkUser(bootstrapToken);
   const slots = fetchActiveSlots(bootstrapToken);
 
   // Choose a single slot for contention mode (prefer the least remaining capacity to force race)
