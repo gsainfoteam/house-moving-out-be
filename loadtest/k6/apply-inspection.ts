@@ -156,19 +156,24 @@ export default function (data: {
   if (!slotUuid) fail('slotUuid missing');
 
   const payload = JSON.stringify({ inspectionSlotUuid: slotUuid });
+  const moreAllowedStatus = [
+    ...(ALLOW_CONFLICT ? [409] : []),
+    ...(ALLOW_FORBIDDEN ? [403, 401] : []),
+  ];
   const res = http.post(`${BASE_URL}/application`, payload, {
     ...authHeaders(token),
-    responseCallback: http.expectedStatuses({ min: 200, max: 299 }, 409),
+    responseCallback: http.expectedStatuses(
+      { min: 200, max: 299 },
+      ...moreAllowedStatus,
+    ),
   });
-
-  const isExpectedBusinessError =
-    (ALLOW_CONFLICT && res.status === 409) ||
-    (ALLOW_FORBIDDEN && (res.status === 403 || res.status === 401));
 
   if (
     !check(res, {
       'POST /application success or expected error': (r) =>
-        r.status === 201 || r.status === 200 || isExpectedBusinessError,
+        r.status === 201 ||
+        r.status === 200 ||
+        moreAllowedStatus.includes(r.status),
     })
   ) {
     fail(
