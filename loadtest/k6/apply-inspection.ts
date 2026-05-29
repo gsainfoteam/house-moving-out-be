@@ -15,8 +15,6 @@ const ALLOW_CONFLICT =
   (__ENV.ALLOW_CONFLICT || 'true').toLowerCase() === 'true';
 const ALLOW_FORBIDDEN =
   (__ENV.ALLOW_FORBIDDEN || 'false').toLowerCase() === 'true';
-const ALLOW_NON_TARGET =
-  (__ENV.ALLOW_NON_TARGET || 'true').toLowerCase() === 'true';
 
 export const options = {
   scenarios: {
@@ -71,8 +69,7 @@ function pickToken(tokens: string[]) {
 function fetchActiveSlots(token: string) {
   const res = http.get(`${BASE_URL}/schedule/active`, authHeaders(token));
   const ok = check(res, {
-    'GET /schedule/active status 200': (r) =>
-      r.status === 200 || (ALLOW_NON_TARGET && r.status === 404),
+    'GET /schedule/active status 200': (r) => r.status === 200,
   });
   if (!ok) {
     fail(
