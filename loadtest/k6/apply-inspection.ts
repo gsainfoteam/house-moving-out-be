@@ -147,6 +147,7 @@ export default function (data: {
   if (!gender) fail('gender missing');
 
   const filteredSlots = slots.filter((s) => s.gender === gender);
+  if (filteredSlots.length === 0) fail('No slots found for gender');
 
   const slotUuid = CONTEND_SLOT
     ? contendSlotUuid
