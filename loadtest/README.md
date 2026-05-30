@@ -103,7 +103,7 @@ Built-in thresholds (both scripts):
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `CONTEND_SLOT` | `false` | If `true`, all VUs apply to the **same slot** (picks the slot with the least remaining capacity) |
+| `CONTEND_SLOT` | `false` | If `true`, VUs apply to **one slot per gender** (each gender uses the slot with the least remaining capacity among its gender-matched slots) |
 | `ALLOW_CONFLICT` | `true` | Treat `409` as an expected response (duplicate apply, slot full, etc.) |
 | `ALLOW_FORBIDDEN` | `false` | If `true`, treat `401` / `403` as expected responses |
 
@@ -111,7 +111,7 @@ Flow summary:
 
 1. **setup**: First token calls `GET /schedule/active` → load `inspectionSlots`. Prefer slots where `reservedCount < capacity`.
 2. **VU loop**: `GET /user/me` for `gender` → only slots matching that gender.
-3. **Slot pick**: `CONTEND_SLOT=true` uses the single slot from setup; otherwise round-robin over gender-filtered slots by VU/iteration.
+3. **Slot pick**: `CONTEND_SLOT=true` uses the gender-specific contend slot from setup (one per `MALE` / `FEMALE`); otherwise round-robin over gender-filtered slots by VU/iteration.
 4. **POST /application**: Success is `200` / `201`. With `ALLOW_*`, `409`, `401`, and `403` are not counted as k6 request failures.
 
 ## 4) Example runs
@@ -129,7 +129,7 @@ docker run --rm -i \
   grafana/k6 run loadtest/k6/apply-inspection.ts
 ```
 
-### (B) Contention / locking-focused — single slot
+### (B) Contention / locking-focused — one slot per gender
 
 ```bash
 docker run --rm -i \

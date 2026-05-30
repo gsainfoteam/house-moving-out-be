@@ -6,7 +6,8 @@ import { UserDto } from 'src/user/dto/res/user.dto';
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const TOKENS_PATH = __ENV.TOKENS_PATH || 'tokens.json';
 
-// If CONTEND_SLOT=true, all users will try to apply to the same slot (max contention).
+// If CONTEND_SLOT=true, all users of the same gender compete for one slot per gender
+// (max contention while respecting gender-matched slots).
 // Otherwise, k6 spreads requests across slots to measure throughput under load.
 const CONTEND_SLOT = (__ENV.CONTEND_SLOT || 'false').toLowerCase() === 'true';
 
@@ -99,6 +100,18 @@ function fetchActiveSlots(token: string) {
   return candidateSlots.length > 0 ? candidateSlots : slots;
 }
 
+function pickContendSlotUuid(slots: InspectionSlot[]): string | null {
+  const sorted = slots
+    .map((s) => ({
+      uuid: s.uuid,
+      remaining: Number(s.capacity) - Number(s.reservedCount),
+    }))
+    .filter((s) => !!s.uuid && Number.isFinite(s.remaining))
+    .sort((a, b) => a.remaining - b.remaining);
+
+  return (sorted[0] || slots[0])?.uuid ?? null;
+}
+
 const tokens = readJson<string[]>(TOKENS_PATH);
 export function setup() {
   if (!Array.isArray(tokens) || tokens.length === 0) {
@@ -110,30 +123,33 @@ export function setup() {
   const bootstrapToken = tokens[0];
   const slots = fetchActiveSlots(bootstrapToken);
 
-  // Choose a single slot for contention mode (prefer the least remaining capacity to force race)
-  let contendSlotUuid: string | null = null;
+  // Choose one slot per gender for contention mode (least remaining capacity forces race).
+  const contendSlotByGender: Partial<Record<Gender, string>> = {};
   if (CONTEND_SLOT) {
-    const sorted = slots
-      .map((s) => ({
-        uuid: s.uuid,
-        remaining: Number(s.capacity) - Number(s.reservedCount),
-      }))
-      .filter((s) => !!s.uuid && Number.isFinite(s.remaining))
-      .sort((a, b) => a.remaining - b.remaining);
+    for (const gender of [Gender.MALE, Gender.FEMALE] as const) {
+      const genderSlots = slots.filter((s) => s.gender === gender);
+      if (genderSlots.length === 0) {
+        fail(`No slots found for gender ${gender} in CONTEND_SLOT mode`);
+      }
 
-    contendSlotUuid = (sorted[0] || slots[0])?.uuid;
-    if (!contendSlotUuid) fail('Failed to select contendSlotUuid');
+      const slotUuid = pickContendSlotUuid(genderSlots);
+      if (!slotUuid) {
+        fail(`Failed to select contend slot for gender ${gender}`);
+      }
+
+      contendSlotByGender[gender] = slotUuid;
+    }
   }
 
-  return { tokens, slots, contendSlotUuid };
+  return { tokens, slots, contendSlotByGender };
 }
 
 export default function (data: {
   tokens: string[];
   slots: InspectionSlot[];
-  contendSlotUuid: string | null;
+  contendSlotByGender: Partial<Record<Gender, string>>;
 }) {
-  const { tokens, slots, contendSlotUuid } = data;
+  const { tokens, slots, contendSlotByGender } = data;
   const token = pickToken(tokens);
 
   const me = http.get(`${BASE_URL}/user/me`, authHeaders(token));
@@ -150,7 +166,7 @@ export default function (data: {
   if (filteredSlots.length === 0) fail('No slots found for gender');
 
   const slotUuid = CONTEND_SLOT
-    ? contendSlotUuid
+    ? contendSlotByGender[gender]
     : filteredSlots[(__VU + __ITER) % filteredSlots.length]?.uuid;
 
   if (!slotUuid) fail('slotUuid missing');
