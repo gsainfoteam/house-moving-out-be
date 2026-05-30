@@ -1,92 +1,155 @@
 # Load & Stress Testing (k6 + TypeScript)
 
-This project’s `POST /application` endpoint enforces **per-user constraints** (e.g., “an application already exists”),
-so a realistic “many users applying at the same time” scenario requires a **pool of JWTs for distinct users**.
+`POST /application` enforces **per-user constraints** (e.g. one application per user), so a realistic “many users applying at once” scenario needs a **pool of JWTs for distinct users**.
+
+## Directory layout
+
+| Path | Description |
+| --- | --- |
+| `loadtest/seed-users.ts` | Upsert test users in the DB and write JWTs to `tokens.json` |
+| `loadtest/k6/apply-inspection.ts` | Load test: `GET /schedule/active` → `GET /user/me` → `POST /application` |
+| `loadtest/k6/get-user.ts` | Read load test: `GET /user/me` |
+| `loadtest/k6/tokens.example.json` | Example token file format |
+| `loadtest/k6/tokens.json` | Actual JWT array (gitignored; created manually or via seed) |
+| `loadtest/k6/users.json` | Seed metadata output (gitignored, optional) |
 
 ## 1) Prepare tokens
 
-- Copy `loadtest/k6/tokens.example.json` to `loadtest/k6/tokens.json`
-- The file must be a **JSON array of JWT strings**
+### Recommended: generate users and JWTs with the seed script
+
+Run from the project root with `.env` loaded (especially `DATABASE_URL` and JWT/encryption variables).
+
+```bash
+# Default: 50 users, tokens → loadtest/k6/tokens.json
+bun run loadtest:seed-users
+
+# Examples with options
+bun run loadtest/seed-users.ts --count 200 --prefix loadtest --role USER
+bun run loadtest/seed-users.ts --inputPath loadtest/users-input.json
+```
+
+| CLI / env var | Default | Description |
+| --- | --- | --- |
+| `--count` / `SEED_USERS_COUNT` | `50` | Number of users to auto-generate (when `--inputPath` is omitted) |
+| `--prefix` / `SEED_USERS_PREFIX` | `loadtest` | Prefix for email and similar identifiers |
+| `--role` / `SEED_USERS_ROLE` | `USER` | `Role` enum value |
+| `--tokensPath` / `SEED_USERS_TOKENS_PATH` | `loadtest/k6/tokens.json` | Output path for JWT array |
+| `--outputPath` / `SEED_USERS_OUTPUT_PATH` | `loadtest/k6/users.json` | User metadata output |
+| `--inputPath` / `SEED_USERS_INPUT_PATH` | (none) | JSON array of `{ name, studentNumber, email?, phoneNumber? }` |
+
+### Manual: copy the example file
+
+```bash
+cp loadtest/k6/tokens.example.json loadtest/k6/tokens.json
+# Fill the array with valid JWT strings
+```
 
 ```json
 ["user1_jwt", "user2_jwt"]
 ```
 
-## 2) Run (build TS → run k6 in Docker)
+## 2) Run (Docker + k6)
 
-Default `BASE_URL` is `http://localhost:3000`.
+Default `BASE_URL` is `http://localhost:3000`. k6 v1+ and the `grafana/k6` image run **TypeScript without a separate build** (`loadtest/k6/*.ts`).
 
-### Recommended: build TypeScript first
-
-`k6` executes JavaScript, so we bundle `loadtest/k6/apply-inspection.ts` into
-`loadtest/k6/dist/apply-inspection.js` via `esbuild`.
+When the API runs on the host, set `BASE_URL` for Docker networking (e.g. `host.docker.internal` on macOS/Windows).
 
 ```bash
-cd loadtest/k6
-bun install
-bun run build
-cd ../..
-
+# From project root (TOKENS_PATH defaults to tokens.json beside the script)
 docker run --rm -i \
-  -e BASE_URL="https://staging.example.com" \
-  -e TOKENS_PATH="loadtest/k6/tokens.json" \
+  -e BASE_URL="http://host.docker.internal:3000" \
   -v "$PWD:/work" -w /work \
-  grafana/k6 run loadtest/k6/dist/apply-inspection.js
+  grafana/k6 run loadtest/k6/apply-inspection.ts
 ```
 
-### Optional: run the legacy JS script directly
+### Scripts by scenario
+
+| Script | Scenario name | Default `TARGET_VUS` | APIs exercised |
+| --- | --- | --- | --- |
+| `apply-inspection.ts` | `apply_inspection` | `100` | `GET /schedule/active` (setup), `GET /user/me`, `POST /application` |
+| `get-user.ts` | `get_user` | `150` | `GET /user/me` |
+
+`get-user` example:
 
 ```bash
 docker run --rm -i \
-  -e BASE_URL="https://staging.example.com" \
-  -e TOKENS_PATH="loadtest/k6/tokens.json" \
+  -e BASE_URL="http://host.docker.internal:3000" \
   -v "$PWD:/work" -w /work \
-  grafana/k6 run loadtest/k6/apply-inspection.js
+  grafana/k6 run loadtest/k6/get-user.ts
 ```
 
-## 3) Key options
+Each VU maps to a token via `tokens[(__VU - 1) % tokens.length]`. If VUs exceed the token count, tokens are reused.
 
-- **Concurrency / ramping**
-  - `START_VUS` (default `0`)
-  - `TARGET_VUS` (default `50`)
-  - `RAMP_UP` (default `30s`)
-  - `HOLD` (default `1m`)
-  - `RAMP_DOWN` (default `30s`)
-- **Contention mode**
-  - `CONTEND_SLOT=true`: all users apply to the **same slot** (good for contention/locking/409 behavior)
-  - `CONTEND_SLOT=false`: spread traffic across slots (default; good for throughput)
-- **Think time**
-  - `THINK_TIME_MS` (default `100`)
-- **Treat expected business errors as non-failures**
-  - `ALLOW_CONFLICT=true` (default `true`): allow 409 (duplicate / slot full)
-  - `ALLOW_FORBIDDEN=true` (default `true`): allow 401/403 (auth / period restrictions)
+## 3) Environment variables
+
+### Common (ramping / thresholds)
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `BASE_URL` | `http://localhost:3000` | API base URL |
+| `TOKENS_PATH` | `tokens.json` | Path to JWT JSON array, **relative to the running script** (e.g. `loadtest/k6/tokens.json` on disk → set `tokens.json`, not `loadtest/k6/tokens.json`) |
+| `START_VUS` | `0` | Starting VUs for ramping |
+| `TARGET_VUS` | `100` (`apply-inspection`) / `150` (`get-user`) | Target VUs during ramp-up and hold |
+| `RAMP_UP` | `5s` | Ramp-up duration |
+| `HOLD` | `1m` | Hold at target VUs |
+| `RAMP_DOWN` | `5s` | Ramp-down duration |
+
+Built-in thresholds (both scripts):
+
+- `http_req_failed`: `rate < 0.02`
+- `http_req_duration`: `p(95) < 800`, `p(99) < 1500`
+
+### `apply-inspection.ts` only
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `CONTEND_SLOT` | `false` | If `true`, all VUs apply to the **same slot** (picks the slot with the least remaining capacity) |
+| `ALLOW_CONFLICT` | `true` | Treat `409` as an expected response (duplicate apply, slot full, etc.) |
+| `ALLOW_FORBIDDEN` | `false` | If `true`, treat `401` / `403` as expected responses |
+
+Flow summary:
+
+1. **setup**: First token calls `GET /schedule/active` → load `inspectionSlots`. Prefer slots where `reservedCount < capacity`.
+2. **VU loop**: `GET /user/me` for `gender` → only slots matching that gender.
+3. **Slot pick**: `CONTEND_SLOT=true` uses the single slot from setup; otherwise round-robin over gender-filtered slots by VU/iteration.
+4. **POST /application**: Success is `200` / `201`. With `ALLOW_*`, `409`, `401`, and `403` are not counted as k6 request failures.
 
 ## 4) Example runs
 
-### (A) Throughput-focused (spread across slots)
+### (A) Throughput-focused — spread across slots
 
 ```bash
 docker run --rm -i \
   -e BASE_URL="https://staging.example.com" \
-  -e TOKENS_PATH="loadtest/k6/tokens.json" \
   -e TARGET_VUS="200" \
   -e RAMP_UP="2m" \
   -e HOLD="5m" \
   -e CONTEND_SLOT="false" \
   -v "$PWD:/work" -w /work \
-  grafana/k6 run loadtest/k6/dist/apply-inspection.js
+  grafana/k6 run loadtest/k6/apply-inspection.ts
 ```
 
-### (B) Contention / locking-focused (all into one slot)
+### (B) Contention / locking-focused — single slot
 
 ```bash
 docker run --rm -i \
   -e BASE_URL="https://staging.example.com" \
-  -e TOKENS_PATH="loadtest/k6/tokens.json" \
   -e TARGET_VUS="300" \
   -e RAMP_UP="30s" \
   -e HOLD="2m" \
   -e CONTEND_SLOT="true" \
   -v "$PWD:/work" -w /work \
-  grafana/k6 run loadtest/k6/dist/apply-inspection.js
+  grafana/k6 run loadtest/k6/apply-inspection.ts
+```
+
+### (C) `GET /user/me` read load
+
+```bash
+docker run --rm -i \
+  -e BASE_URL="https://staging.example.com" \
+  -e TARGET_VUS="200" \
+  -e RAMP_UP="1m" \
+  -e HOLD="3m" \
+  -v "$PWD:/work" -w /work \
+  grafana/k6 run loadtest/k6/get-user.ts
 ```
