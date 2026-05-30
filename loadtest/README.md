@@ -2,6 +2,25 @@
 
 `POST /application` enforces **per-user constraints** (e.g. one application per user), so a realistic “many users applying at once” scenario needs a **pool of JWTs for distinct users**.
 
+## Recommended test workflow
+
+When running load or stress tests repeatedly, follow this order to set up the environment and reset state between runs.
+
+1. **Create a schedule in the admin dashboard** — Ensure inspection dates and slots are configured so they appear via `GET /schedule/active`.
+2. **Register inspectors** — Add inspectors and link them to the schedule.
+3. **Activate the schedule** — Inactive schedules may cause apply/read scenarios to behave unexpectedly.
+4. **Run the stress test** — [Prepare tokens](#1-prepare-tokens), then [run k6](#2-run-docker--k6) (e.g. `apply-inspection.ts`).
+5. **Reset the database** — Connect to the DB and run the SQL below to clear applications and counters.
+6. **Repeat steps 4–5** — After each run, execute step 5 before running step 4 again on the same schedule and slots.
+
+```sql
+DELETE FROM inspection_application;
+UPDATE inspection_slot SET reserved_count = 0;
+UPDATE inspection_target SET inspection_count = 0;
+```
+
+> **Warning:** Use this SQL only on **test or staging** databases. Running it in production permanently deletes application data.
+
 ## Directory layout
 
 | Path | Description |
