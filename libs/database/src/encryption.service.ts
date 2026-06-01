@@ -11,7 +11,12 @@ import {
   SecretsManagerClient,
 } from '@aws-sdk/client-secrets-manager';
 import { KMSClient, EncryptCommand, DecryptCommand } from '@aws-sdk/client-kms';
-import { User, Inspector, InspectionTargetInfo } from 'generated/prisma/client';
+import {
+  User,
+  Inspector,
+  InspectionTargetInfo,
+  InspectionApplication,
+} from 'generated/prisma/client';
 import {
   ENCRYPTION_PURPOSE,
   EncryptionPurpose,
@@ -248,6 +253,21 @@ export class EncryptionService implements OnModuleInit {
       student2StudentNumber,
       student3Name,
       student3StudentNumber,
+    };
+  }
+
+  async decryptApplication<T extends InspectionApplication>(
+    application: T,
+  ): Promise<T> {
+    if (!application) return application;
+    const document = await this.decrypt(
+      application.document,
+      ENCRYPTION_PURPOSE.APPLICATION.DOCUMENT,
+      application.uuid,
+    );
+    return {
+      ...application,
+      document,
     };
   }
 }

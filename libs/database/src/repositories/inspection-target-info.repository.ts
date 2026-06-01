@@ -419,7 +419,11 @@ export class InspectionTargetInfoRepository {
         return await Promise.all(
           targets.map(async (target) => ({
             ...(await this.encryptionService.decryptTarget(target)),
-            inspectionApplication: target.inspectionApplication,
+            inspectionApplication: await Promise.all(
+              target.inspectionApplication.map((app) =>
+                this.encryptionService.decryptApplication(app),
+              ),
+            ),
           })),
         );
       })

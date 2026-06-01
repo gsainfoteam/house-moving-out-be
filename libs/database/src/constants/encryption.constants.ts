@@ -20,9 +20,19 @@ const TARGET = {
   STUDENT3_STUDENT_NUMBER: 'target:student3:studentNumber',
 } as const;
 
-export const ENCRYPTION_PURPOSE = { USER, INSPECTOR, TARGET } as const;
+const APPLICATION = {
+  DOCUMENT: 'application:document',
+} as const;
+
+export const ENCRYPTION_PURPOSE = {
+  USER,
+  INSPECTOR,
+  TARGET,
+  APPLICATION,
+} as const;
 
 export type EncryptionPurpose =
   | (typeof USER)[keyof typeof USER]
   | (typeof INSPECTOR)[keyof typeof INSPECTOR]
-  | (typeof TARGET)[keyof typeof TARGET];
+  | (typeof TARGET)[keyof typeof TARGET]
+  | (typeof APPLICATION)[keyof typeof APPLICATION];
