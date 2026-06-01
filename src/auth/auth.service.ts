@@ -136,7 +136,7 @@ export class AuthService {
 
     const latestPolicyVersions = await this.getLatestPolicyVersions();
 
-    const { refreshToken, sessionId, expiredAt } =
+    const { user, refreshToken, sessionId, expiredAt } =
       await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
         const user = await this.userRepository.upsertUserInTx(userinfo, tx);
 
@@ -167,6 +167,7 @@ export class AuthService {
         );
 
         return {
+          user,
           refreshToken: token,
           sessionId,
           expiredAt,
@@ -176,7 +177,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(
       { sessionId },
       {
-        subject: userinfo.uuid,
+        subject: user.uuid,
         secret: this.userJwtSecret,
         expiresIn: this.userJwtExpire,
         algorithm: 'HS256',
