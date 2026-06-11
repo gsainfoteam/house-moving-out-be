@@ -50,7 +50,6 @@ export class InfoteamAccountService {
     );
 
     const {
-      sub: uuid,
       name,
       email,
       student_id: studentNumber,
@@ -67,6 +66,6 @@ export class InfoteamAccountService {
       throw new UnauthorizedException('Student ID not verified');
     }
 
-    return { uuid, name, email, studentNumber, phoneNumber };
+    return { name, email, studentNumber, phoneNumber };
   }
 }

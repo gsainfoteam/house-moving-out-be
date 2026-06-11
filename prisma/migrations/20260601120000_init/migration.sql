@@ -14,7 +14,7 @@ CREATE TYPE "gender" AS ENUM ('MALE', 'FEMALE');
 CREATE TYPE "room_inspection_type" AS ENUM ('FULL', 'SOLO', 'EMPTY');
 
 -- CreateEnum
-CREATE TYPE "role" AS ENUM ('ADMIN', 'USER');
+CREATE TYPE "role" AS ENUM ('SUPERADMIN', 'ADMIN', 'USER');
 
 -- CreateEnum
 CREATE TYPE "article_type" AS ENUM ('NOTICE', 'FAQ');
@@ -235,6 +235,9 @@ CREATE UNIQUE INDEX "inspector_student_hash_key" ON "inspector"("student_hash");
 
 -- 활성화된 Application에 대한 Unique 제약 (수동 추가)
 CREATE UNIQUE INDEX "unique_active_application" ON "inspection_application"("inspection_target_info_uuid") WHERE "deleted_at" IS NULL AND ("status" IS NULL OR "status" = 'PENDING_NO_SHOW');
+
+-- Enforce that only one active SUPERADMIN exists.
+CREATE UNIQUE INDEX "unique_active_superadmin" ON "user"("role") WHERE "deleted_at" IS NULL AND "role" = 'SUPERADMIN';
 
 -- 수동 추가된 Check 제약 조건
 ALTER TABLE "inspection_slot" ADD CONSTRAINT "InspectionSlot_reservedCount_check" CHECK ("reserved_count" >= 0);

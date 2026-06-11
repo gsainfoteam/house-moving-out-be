@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database.service';
 import { EncryptionService } from '../encryption.service';
+import { ENCRYPTION_PURPOSE } from '../constants/encryption.constants';
 import {
   ApplicationStatus,
   InspectionApplication,
@@ -115,12 +116,16 @@ export class InspectionApplicationRepository {
           createdAt: 'desc',
         },
       })
-      .then(async (app) => ({
-        ...app,
-        inspectionTargetInfo: await this.encryptionService.decryptTarget(
-          app.inspectionTargetInfo,
-        ),
-      }))
+      .then(async (app) => {
+        const [decryptedApp, inspectionTargetInfo] = await Promise.all([
+          this.encryptionService.decryptApplication(app),
+          this.encryptionService.decryptTarget(app.inspectionTargetInfo),
+        ]);
+        return {
+          ...decryptedApp,
+          inspectionTargetInfo,
+        };
+      })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -152,12 +157,16 @@ export class InspectionApplicationRepository {
           inspectionTargetInfo: true,
         },
       })
-      .then(async (app) => ({
-        ...app,
-        inspectionTargetInfo: await this.encryptionService.decryptTarget(
-          app.inspectionTargetInfo,
-        ),
-      }))
+      .then(async (app) => {
+        const [decryptedApp, inspectionTargetInfo] = await Promise.all([
+          this.encryptionService.decryptApplication(app),
+          this.encryptionService.decryptTarget(app.inspectionTargetInfo),
+        ]);
+        return {
+          ...decryptedApp,
+          inspectionTargetInfo,
+        };
+      })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -196,10 +205,16 @@ export class InspectionApplicationRepository {
           user: true,
         },
       })
-      .then(async (app) => ({
-        ...app,
-        user: await this.encryptionService.decryptUser(app.user),
-      }))
+      .then(async (app) => {
+        const [decryptedApp, user] = await Promise.all([
+          this.encryptionService.decryptApplication(app),
+          this.encryptionService.decryptUser(app.user),
+        ]);
+        return {
+          ...decryptedApp,
+          user,
+        };
+      })
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -227,6 +242,12 @@ export class InspectionApplicationRepository {
     isDocumentActive: boolean,
     tx: PrismaTransaction,
   ): Promise<void> {
+    const encryptedDocument = await this.encryptionService.encrypt(
+      document,
+      ENCRYPTION_PURPOSE.APPLICATION.DOCUMENT,
+      applicationUuid,
+    );
+
     await tx.inspectionApplication
       .update({
         where: { uuid: applicationUuid, deletedAt: null },
@@ -234,7 +255,7 @@ export class InspectionApplicationRepository {
           itemResults,
           additionalComment,
           status,
-          document,
+          document: encryptedDocument,
           isDocumentActive,
         },
       })
@@ -265,6 +286,7 @@ export class InspectionApplicationRepository {
         where: { uuid: applicationUuid },
         data: { isDocumentActive },
       })
+      .then((app) => this.encryptionService.decryptApplication(app))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           if (error.code === 'P2025') {
@@ -298,13 +320,15 @@ export class InspectionApplicationRepository {
         },
       })
       .then(async (app) => {
-        const [user, inspector, inspectionTargetInfo] = await Promise.all([
-          this.encryptionService.decryptUser(app.user),
-          this.encryptionService.decryptInspector(app.inspector),
-          this.encryptionService.decryptTarget(app.inspectionTargetInfo),
-        ]);
+        const [decryptedApp, user, inspector, inspectionTargetInfo] =
+          await Promise.all([
+            this.encryptionService.decryptApplication(app),
+            this.encryptionService.decryptUser(app.user),
+            this.encryptionService.decryptInspector(app.inspector),
+            this.encryptionService.decryptTarget(app.inspectionTargetInfo),
+          ]);
         return {
-          ...app,
+          ...decryptedApp,
           user,
           inspector,
           inspectionTargetInfo,
@@ -359,17 +383,17 @@ export class InspectionApplicationRepository {
         async (apps) =>
           await Promise.all(
             apps.map(async (app) => {
-              const [user, inspector, inspectionTargetInfo] = await Promise.all(
-                [
+              const [decryptedApp, user, inspector, inspectionTargetInfo] =
+                await Promise.all([
+                  this.encryptionService.decryptApplication(app),
                   this.encryptionService.decryptUser(app.user),
                   this.encryptionService.decryptInspector(app.inspector),
                   this.encryptionService.decryptTarget(
                     app.inspectionTargetInfo,
                   ),
-                ],
-              );
+                ]);
               return {
-                ...app,
+                ...decryptedApp,
                 user,
                 inspector,
                 inspectionTargetInfo,
@@ -401,6 +425,11 @@ export class InspectionApplicationRepository {
         },
         orderBy: { createdAt: 'desc' },
       })
+      .then((apps) =>
+        Promise.all(
+          apps.map((app) => this.encryptionService.decryptApplication(app)),
+        ),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
@@ -460,12 +489,16 @@ export class InspectionApplicationRepository {
       .then(
         async (apps) =>
           await Promise.all(
-            apps.map(async (app) => ({
-              ...app,
-              inspectionTargetInfo: await this.encryptionService.decryptTarget(
-                app.inspectionTargetInfo,
-              ),
-            })),
+            apps.map(async (app) => {
+              const [decryptedApp, inspectionTargetInfo] = await Promise.all([
+                this.encryptionService.decryptApplication(app),
+                this.encryptionService.decryptTarget(app.inspectionTargetInfo),
+              ]);
+              return {
+                ...decryptedApp,
+                inspectionTargetInfo,
+              };
+            }),
           ),
       )
       .catch((error) => {
@@ -526,6 +559,11 @@ export class InspectionApplicationRepository {
           createdAt: 'desc',
         },
       })
+      .then((apps) =>
+        Promise.all(
+          apps.map((app) => this.encryptionService.decryptApplication(app)),
+        ),
+      )
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(

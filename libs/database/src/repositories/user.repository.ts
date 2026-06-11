@@ -1,4 +1,5 @@
 import { Loggable } from '@lib/logger';
+import * as crypto from 'crypto';
 import {
   Injectable,
   InternalServerErrorException,
@@ -81,14 +82,19 @@ export class UserRepository {
 
   async upsertUserInTx(
     {
-      uuid,
       name,
       email,
       phoneNumber,
       studentNumber,
-    }: Pick<User, 'uuid' | 'name' | 'email' | 'phoneNumber' | 'studentNumber'>,
+    }: Pick<User, 'name' | 'email' | 'phoneNumber' | 'studentNumber'>,
     tx: PrismaTransaction,
   ): Promise<User> {
+    const studentHash = this.encryptionService.hash(name, studentNumber);
+    const existingUser = await tx.user.findUnique({
+      where: { studentHash },
+    });
+    const uuid = existingUser?.uuid ?? crypto.randomUUID();
+
     const [
       encryptedName,
       encryptedEmail,
@@ -113,11 +119,9 @@ export class UserRepository {
       ),
     ]);
 
-    const studentHash = this.encryptionService.hash(name, studentNumber);
-
     return await tx.user
       .upsert({
-        where: { uuid },
+        where: { uuid, studentHash },
         create: {
           uuid,
           studentHash,
@@ -128,16 +132,18 @@ export class UserRepository {
         },
         update: {
           name: encryptedName!,
-          studentHash,
           email: encryptedEmail!,
           phoneNumber: encryptedPhoneNumber!,
           studentNumber: encryptedStudentNumber!,
         },
       })
       .then(async (user) => await this.encryptionService.decryptUser(user))
-
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            this.logger.debug(`Conflict studentHash: ${error.message}`);
+            throw new ConflictException('Conflict Error');
+          }
           this.logger.error(`upsertUserInTx prisma error: ${error.message}`);
           throw new InternalServerErrorException('Database Error');
         }

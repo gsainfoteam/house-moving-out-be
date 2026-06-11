@@ -202,7 +202,11 @@ export class InspectorRepository {
       })
       .then(async (inspector) => ({
         ...(await this.encryptionService.decryptInspector(inspector)),
-        applications: inspector.applications,
+        applications: await Promise.all(
+          inspector.applications.map((app) =>
+            this.encryptionService.decryptApplication(app),
+          ),
+        ),
         availableSlots: inspector.availableSlots,
         schedules: inspector.schedules,
       }))
