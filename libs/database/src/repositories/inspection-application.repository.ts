@@ -376,7 +376,9 @@ export class InspectionApplicationRepository {
         skip: offset,
         take: limit,
         orderBy: {
-          createdAt: 'desc',
+          inspectorSlot:{
+            startTime:'asc'
+          }
         },
       })
       .then(
