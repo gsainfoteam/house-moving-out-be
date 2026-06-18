@@ -186,7 +186,13 @@ export class ScheduleService {
   }
 
   async findApplicationsByScheduleUuid(
-    { offset, limit, inspectorUuid, slotUuid,includePast }: ApplicationListQueryDto,
+    {
+      offset,
+      limit,
+      inspectorUuid,
+      slotUuid,
+      includePast,
+    }: ApplicationListQueryDto,
     scheduleUuid: string,
   ): Promise<ApplicationListResDto> {
     const [applications, totalCount] = await Promise.all([
@@ -202,6 +208,7 @@ export class ScheduleService {
         scheduleUuid,
         inspectorUuid,
         slotUuid,
+        includePast ?? false,
       ),
     ]);
     return new ApplicationListResDto(
@@ -226,6 +233,9 @@ export class ScheduleService {
     const LIMIT = 100;
     const count = await this.inspectionApplicationRepository.countApplications(
       schedule.uuid,
+      undefined,
+      undefined,
+      true,
     );
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('applications');
@@ -256,6 +266,9 @@ export class ScheduleService {
           offset,
           LIMIT,
           schedule.uuid,
+          undefined,
+          undefined,
+          true,
         );
       ws.addRows(
         applications.map((app) => ({

@@ -41,10 +41,10 @@ export class ApplicationListQueryDto {
 
   @ApiPropertyOptional({
     description: 'Whether to include past inspection applications.',
-   example: true,
+    example: true,
   })
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includePast?: boolean;
 }

@@ -358,23 +358,12 @@ export class InspectionApplicationRepository {
     slotUuid?: string,
     includePast = false,
   ): Promise<ApplicationInfo[]> {
-    const now = new Date();
-
     return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           inspectionSlot: {
             scheduleUuid,
-            inspectionSlot: {
-              scheduleUuid,
-              ...(includePast
-            ? {}
-            : {
-              startTime: {
-                  gte: now,
-                },
-              }),
-            },
+            startTime: includePast ? undefined : { gte: new Date() },
           },
           inspectorUuid,
           inspectionSlotUuid: slotUuid,
@@ -389,9 +378,9 @@ export class InspectionApplicationRepository {
         skip: offset,
         take: limit,
         orderBy: {
-          inspectionSlot:{
-            startTime:'asc'
-          }
+          inspectionSlot: {
+            startTime: 'asc',
+          },
         },
       })
       .then(
@@ -463,12 +452,14 @@ export class InspectionApplicationRepository {
     scheduleUuid: string,
     inspectorUuid?: string,
     slotUuid?: string,
+    includePast = false,
   ): Promise<number> {
     return await this.databaseService.inspectionApplication
       .count({
         where: {
           inspectionSlot: {
             scheduleUuid,
+            startTime: includePast ? undefined : { gte: new Date() },
           },
           inspectorUuid,
           inspectionSlotUuid: slotUuid,
