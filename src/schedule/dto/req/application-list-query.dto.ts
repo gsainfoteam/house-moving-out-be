@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsUUID, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, IsOptional, IsUUID, Min, IsBoolean } from 'class-validator';
 
 export class ApplicationListQueryDto {
   @ApiPropertyOptional({
@@ -38,4 +38,13 @@ export class ApplicationListQueryDto {
   @IsOptional()
   @IsUUID()
   slotUuid?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether to include past inspection applications.',
+   example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  includePast?: boolean;
 }

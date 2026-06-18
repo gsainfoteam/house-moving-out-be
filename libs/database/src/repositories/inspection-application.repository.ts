@@ -356,12 +356,25 @@ export class InspectionApplicationRepository {
     scheduleUuid: string,
     inspectorUuid?: string,
     slotUuid?: string,
+    includePast = false,
   ): Promise<ApplicationInfo[]> {
+    const now = new Date();
+
     return await this.databaseService.inspectionApplication
       .findMany({
         where: {
           inspectionSlot: {
             scheduleUuid,
+            inspectionSlot: {
+              scheduleUuid,
+              ...(includePast
+            ? {}
+            : {
+              startTime: {
+                  gte: now,
+                },
+              }),
+            },
           },
           inspectorUuid,
           inspectionSlotUuid: slotUuid,
