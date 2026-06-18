@@ -376,7 +376,7 @@ export class InspectionApplicationRepository {
         skip: offset,
         take: limit,
         orderBy: {
-          inspectorSlot:{
+          inspectionSlot:{
             startTime:'asc'
           }
         },
