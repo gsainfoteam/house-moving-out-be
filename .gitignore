@@ -57,3 +57,6 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+loadtest/k6/tokens.json
+loadtest/k6/users.json
+loadtest/users-input.json

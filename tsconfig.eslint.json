@@ -6,8 +6,10 @@
   },
   "include": [
     "src/**/*",
+    "loadtest/**/*",
     "libs/**/*",
-    "generated/**/*"
+    "generated/**/*",
+    "test/**/*"
   ],
   "exclude": []
 }
