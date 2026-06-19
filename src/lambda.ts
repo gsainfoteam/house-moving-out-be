@@ -14,7 +14,16 @@ async function bootstrapServer(): Promise<Handler> {
 
   const expressApp = app.getHttpAdapter().getInstance() as RequestListener;
   // NOTE: Handler dropped support for callback after Node24
-  return serverlessExpress({ app: expressApp }) as unknown as Handler;
+  return serverlessExpress({
+    app: expressApp,
+    binarySettings: {
+      contentTypes: [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/octet-stream',
+      ],
+    },
+  }) as unknown as Handler;
 }
 
 async function getParameter(name: string) {
