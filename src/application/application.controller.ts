@@ -43,6 +43,7 @@ import { GetDocumentUploadUrlReqDto } from './dto/req/get-document-upload-url.dt
 import { RecordTargetNoShowDto } from './dto/req/record-target-no-show.dto';
 import { TargetPhoneNumberResDto } from './dto/res/target-phone-number-res.dto';
 import { ChangeAssignedInspectorDto } from './dto/req/change-assigned-inspector.dto';
+import { UpdateInspectionStatusByAdminDto } from './dto/req/update-inspection-status-by-admin.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('application')
@@ -220,6 +221,33 @@ export class ApplicationController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
   ): Promise<void> {
     return this.applicationService.cancelInspection(user, uuid);
+  }
+
+  @ApiOperation({
+    summary: 'Update Inspection Pass/Fail Status (Admin)',
+    description:
+      'Admin manually sets pass/fail status with an additional comment only. Checklist items are not required.',
+  })
+  @ApiNoContentResponse({
+    description:
+      'The inspection pass/fail status has been successfully updated.',
+  })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Cannot update status for this application.',
+  })
+  @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+  @ApiBearerAuth('admin')
+  @UseGuards(AdminGuard)
+  @Patch(':uuid/status')
+  @HttpCode(204)
+  async updateInspectionStatusByAdmin(
+    @Param('uuid', ParseUUIDPipe) uuid: string,
+    @Body() dto: UpdateInspectionStatusByAdminDto,
+  ): Promise<void> {
+    return this.applicationService.updateInspectionStatusByAdmin(uuid, dto);
   }
 
   @ApiOperation({

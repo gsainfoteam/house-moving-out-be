@@ -233,6 +233,39 @@ export class InspectionApplicationRepository {
       });
   }
 
+  async updateInspectionStatusByAdminInTx(
+    applicationUuid: string,
+    status: ApplicationStatus,
+    additionalComment: string,
+    tx: PrismaTransaction,
+  ): Promise<void> {
+    await tx.inspectionApplication
+      .update({
+        where: { uuid: applicationUuid, deletedAt: null },
+        data: {
+          status,
+          additionalComment,
+          itemResults: { passed: [], failed: [] },
+        },
+      })
+      .catch((error) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            this.logger.debug(
+              `InspectionApplication not found for admin status update: ${applicationUuid}`,
+            );
+            throw new NotFoundException('Inspection application not found.');
+          }
+          this.logger.error(
+            `updateInspectionStatusByAdminInTx prisma error: ${error.message}`,
+          );
+          throw new InternalServerErrorException('Database Error');
+        }
+        this.logger.error(`updateInspectionStatusByAdminInTx error: ${error}`);
+        throw new InternalServerErrorException('Unknown Error');
+      });
+  }
+
   async updateInspectionResultInTx(
     applicationUuid: string,
     itemResults: Prisma.InputJsonValue,

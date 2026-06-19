@@ -34,6 +34,7 @@ import {
 } from '@lib/database';
 import { TargetPhoneNumberResDto } from './dto/res/target-phone-number-res.dto';
 import { ChangeAssignedInspectorDto } from './dto/req/change-assigned-inspector.dto';
+import { UpdateInspectionStatusByAdminDto } from './dto/req/update-inspection-status-by-admin.dto';
 
 @Loggable()
 @Injectable()
@@ -547,6 +548,39 @@ export class ApplicationService {
         };
       },
     );
+  }
+
+  async updateInspectionStatusByAdmin(
+    applicationUuid: string,
+    { status, additionalComment }: UpdateInspectionStatusByAdminDto,
+  ): Promise<void> {
+    await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
+      const application =
+        await this.inspectionApplicationRepository.findApplicationByUuidWithXLockInTx(
+          applicationUuid,
+          tx,
+        );
+
+      const allowedSourceStatuses: (ApplicationStatus | null)[] = [
+        null,
+        ApplicationStatus.PASSED,
+        ApplicationStatus.FAILED,
+        ApplicationStatus.PENDING_NO_SHOW,
+      ];
+
+      if (!allowedSourceStatuses.includes(application.status)) {
+        throw new ForbiddenException(
+          'Cannot manually update pass/fail status for this application.',
+        );
+      }
+
+      await this.inspectionApplicationRepository.updateInspectionStatusByAdminInTx(
+        applicationUuid,
+        status,
+        additionalComment,
+        tx,
+      );
+    });
   }
 
   async submitInspectionResult(
