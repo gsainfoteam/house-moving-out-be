@@ -513,7 +513,6 @@ export class ScheduleService {
       const targetInfo =
         await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
           user.studentNumber,
-          user.name,
           schedule.uuid,
         );
 

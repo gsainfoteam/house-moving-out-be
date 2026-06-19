@@ -151,13 +151,13 @@ async function readInputUsers(inputPath: string): Promise<InputUser[]> {
   const duplicates = new Set<string>();
   const seen = new Set<string>();
   for (const u of users) {
-    const key = `${u.name.toLowerCase().trim()}:${u.studentNumber}`;
+    const key = u.studentNumber.trim();
     if (seen.has(key)) duplicates.add(key);
     seen.add(key);
   }
   if (duplicates.size > 0) {
     throw new Error(
-      `Duplicate (name, studentNumber) pairs in input: ${Array.from(duplicates)
+      `Duplicate studentNumber values in input: ${Array.from(duplicates)
         .slice(0, 5)
         .join(', ')}${duplicates.size > 5 ? ' ...' : ''}`,
     );
@@ -241,7 +241,7 @@ async function main() {
 
     const results = await Promise.all(
       seedList.map(async ({ name, studentNumber, email, phoneNumber }) => {
-        const studentHash = encryptionService.hash(name, studentNumber);
+        const studentHash = encryptionService.hash(studentNumber);
 
         const existing = await prisma.user.findUnique({
           where: { studentHash },
@@ -270,33 +270,43 @@ async function main() {
           ),
         ]);
 
-        const user = await prisma.user.upsert({
-          where: { studentHash },
-          create: {
-            uuid,
-            studentHash,
-            name: encryptedName!,
-            email: encryptedEmail!,
-            phoneNumber: encryptedPhoneNumber!,
-            studentNumber: encryptedStudentNumber!,
-            role: options.role,
-          },
-          update: {
-            name: encryptedName!,
-            email: encryptedEmail!,
-            phoneNumber: encryptedPhoneNumber!,
-            studentNumber: encryptedStudentNumber!,
-            role: options.role,
-            deletedAt: null,
-          },
-          select: {
-            uuid: true,
-            studentHash: true,
-            role: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        });
+        const user = existing
+          ? await prisma.user.update({
+              where: { uuid: existing.uuid },
+              data: {
+                name: encryptedName!,
+                email: encryptedEmail!,
+                phoneNumber: encryptedPhoneNumber!,
+                studentNumber: encryptedStudentNumber!,
+                role: options.role,
+                deletedAt: null,
+              },
+              select: {
+                uuid: true,
+                studentHash: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            })
+          : await prisma.user.create({
+              data: {
+                uuid,
+                studentHash,
+                name: encryptedName!,
+                email: encryptedEmail!,
+                phoneNumber: encryptedPhoneNumber!,
+                studentNumber: encryptedStudentNumber!,
+                role: options.role,
+              },
+              select: {
+                uuid: true,
+                studentHash: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            });
 
         await prisma.userRefreshToken.deleteMany({
           where: { userUuid: user.uuid },

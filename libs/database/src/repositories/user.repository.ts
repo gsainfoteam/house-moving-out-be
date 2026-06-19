@@ -50,7 +50,7 @@ export class UserRepository {
     name: string,
     studentNumber: string,
   ): Promise<User> {
-    const studentHash = this.encryptionService.hash(name, studentNumber);
+    const studentHash = this.encryptionService.hash(studentNumber);
 
     return await this.databaseService.user
       .findFirst({
@@ -77,7 +77,22 @@ export class UserRepository {
         }
         this.logger.error(`findUserByNameAndStudentNumber error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
+      })
+      .then((user) => {
+        if (user.name !== name) {
+          throw new NotFoundException('User not found');
+        }
+        return user;
       });
+  }
+
+  private async findExistingUserByStudentHashInTx(
+    studentHash: string,
+    tx: PrismaTransaction,
+  ) {
+    return await tx.user.findUnique({
+      where: { studentHash },
+    });
   }
 
   async upsertUserInTx(
@@ -89,10 +104,11 @@ export class UserRepository {
     }: Pick<User, 'name' | 'email' | 'phoneNumber' | 'studentNumber'>,
     tx: PrismaTransaction,
   ): Promise<User> {
-    const studentHash = this.encryptionService.hash(name, studentNumber);
-    const existingUser = await tx.user.findUnique({
-      where: { studentHash },
-    });
+    const studentHash = this.encryptionService.hash(studentNumber);
+    const existingUser = await this.findExistingUserByStudentHashInTx(
+      studentHash,
+      tx,
+    );
     const uuid = existingUser?.uuid ?? crypto.randomUUID();
 
     const [
@@ -119,24 +135,29 @@ export class UserRepository {
       ),
     ]);
 
-    return await tx.user
-      .upsert({
-        where: { uuid, studentHash },
-        create: {
-          uuid,
-          studentHash,
-          name: encryptedName!,
-          email: encryptedEmail!,
-          phoneNumber: encryptedPhoneNumber!,
-          studentNumber: encryptedStudentNumber!,
-        },
-        update: {
-          name: encryptedName!,
-          email: encryptedEmail!,
-          phoneNumber: encryptedPhoneNumber!,
-          studentNumber: encryptedStudentNumber!,
-        },
-      })
+    return await (
+      existingUser
+        ? tx.user.update({
+            where: { uuid: existingUser.uuid },
+            data: {
+              studentHash,
+              name: encryptedName!,
+              email: encryptedEmail!,
+              phoneNumber: encryptedPhoneNumber!,
+              studentNumber: encryptedStudentNumber!,
+            },
+          })
+        : tx.user.create({
+            data: {
+              uuid,
+              studentHash,
+              name: encryptedName!,
+              email: encryptedEmail!,
+              phoneNumber: encryptedPhoneNumber!,
+              studentNumber: encryptedStudentNumber!,
+            },
+          })
+    )
       .then(async (user) => await this.encryptionService.decryptUser(user))
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {

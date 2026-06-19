@@ -1,4 +1,5 @@
 import { Loggable } from '@lib/logger';
+import * as crypto from 'crypto';
 import {
   ConflictException,
   ForbiddenException,
@@ -74,10 +75,7 @@ export class InspectorRepository {
     inspector: InspectorDto | TemporaryInspectorDto,
     tx: PrismaTransaction,
   ) {
-    const studentHash = this.encryptionService.hash(
-      inspector.name,
-      inspector.studentNumber,
-    );
+    const studentHash = this.encryptionService.hash(inspector.studentNumber);
     const existingInspector = await tx.inspector.findUnique({
       where: { studentHash },
     });
@@ -104,7 +102,7 @@ export class InspectorRepository {
     return await (
       existingInspector
         ? tx.inspector.update({
-            where: { studentHash },
+            where: { uuid: existingInspector.uuid },
             data: {
               ...inspector,
               name: encryptedName!,
@@ -228,7 +226,7 @@ export class InspectorRepository {
     name: string,
     studentNumber: string,
   ): Promise<Inspector> {
-    const studentHash = this.encryptionService.hash(name, studentNumber);
+    const studentHash = this.encryptionService.hash(studentNumber);
 
     return await this.databaseService.inspector
       .findFirstOrThrow({
@@ -253,6 +251,12 @@ export class InspectorRepository {
         }
         this.logger.error(`findInspectorByUserInfo error: ${error}`);
         throw new InternalServerErrorException('Unknown Error');
+      })
+      .then((inspector) => {
+        if (inspector.name !== name) {
+          throw new NotFoundException('Inspector not found');
+        }
+        return inspector;
       });
   }
 
@@ -261,7 +265,7 @@ export class InspectorRepository {
     studentNumber: string,
     scheduleUuid: string,
   ): Promise<boolean> {
-    const studentHash = this.encryptionService.hash(name, studentNumber);
+    const studentHash = this.encryptionService.hash(studentNumber);
 
     return await this.databaseService.inspector
       .findFirst({
@@ -270,19 +274,19 @@ export class InspectorRepository {
           schedules: { some: { scheduleUuid } },
         },
       })
-      .then((inspector) => !!inspector)
       .catch((error) => {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
           this.logger.error(
-            `existsInspectorInScheduleByUserInfo prisma error: ${error.message}`,
+            `existsInspectorInScheduleByStudentNumber prisma error: ${error.message}`,
           );
           throw new InternalServerErrorException('Database Error');
         }
         this.logger.error(
-          `existsInspectorInScheduleByUserInfo error: ${error}`,
+          `existsInspectorInScheduleByStudentNumber error: ${error}`,
         );
         throw new InternalServerErrorException('Unknown Error');
-      });
+      })
+      .then((inspector) => inspector?.name === name);
   }
 
   async findAvailableInspectorBySlotUuidInTx(
@@ -293,7 +297,7 @@ export class InspectorRepository {
     tx: PrismaTransaction,
   ): Promise<Inspector> {
     const studentHashesToExclude = residentStudents.map((resident) =>
-      this.encryptionService.hash(resident.name, resident.studentNumber),
+      this.encryptionService.hash(resident.studentNumber),
     );
 
     const inspectorExclusionCondition =

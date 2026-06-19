@@ -141,12 +141,12 @@ export class EncryptionService implements OnModuleInit {
     }
   }
 
-  hash(name: string, studentNumber: string): string {
+  hash(studentNumber: string): string {
     this.ensureInitialized();
 
     return crypto
       .createHmac('sha256', this.pepper)
-      .update(`${name.toLowerCase().trim()}:${studentNumber}`)
+      .update(studentNumber.trim())
       .digest('hex');
   }
 
