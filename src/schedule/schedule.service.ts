@@ -202,13 +202,13 @@ export class ScheduleService {
         scheduleUuid,
         inspectorUuid,
         slotUuid,
-        includePast ?? false,
+        includePast ?? true,
       ),
       this.inspectionApplicationRepository.countApplications(
         scheduleUuid,
         inspectorUuid,
         slotUuid,
-        includePast ?? false,
+        includePast ?? true,
       ),
     ]);
     return new ApplicationListResDto(
