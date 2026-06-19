@@ -225,7 +225,9 @@ export class ScheduleService {
     );
   }
 
-  async downloadInspectionApplications(scheduleUuid: string): Promise<Buffer> {
+  async downloadInspectionApplications(
+    scheduleUuid: string,
+  ): Promise<ArrayBuffer> {
     const schedule =
       await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(
         scheduleUuid,
@@ -285,7 +287,7 @@ export class ScheduleService {
       );
     }
     const buffer = await wb.xlsx.writeBuffer();
-    return Buffer.from(buffer);
+    return buffer;
   }
 
   async updateInspectionTargetsAndUpdateSlotCapacities(
