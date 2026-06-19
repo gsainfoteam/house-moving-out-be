@@ -82,7 +82,6 @@ export class ApplicationService {
         const inspectionTargetInfo =
           await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfoInTx(
             user.studentNumber,
-            user.name,
             schedule.uuid,
             tx,
           );
@@ -195,7 +194,6 @@ export class ApplicationService {
     const targetInfo =
       await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
         user.studentNumber,
-        user.name,
         schedule.uuid,
       );
 
@@ -463,7 +461,6 @@ export class ApplicationService {
     const inspectionTargetInfo =
       await this.inspectionTargetInfoRepository.findInspectionTargetInfoByUserInfo(
         user.studentNumber,
-        user.name,
         schedule.uuid,
       );
     const application =

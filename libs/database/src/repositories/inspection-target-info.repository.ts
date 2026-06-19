@@ -108,7 +108,7 @@ export class InspectionTargetInfoRepository {
           inspectionTargetInfos.map(async (target) => {
             const uuid = crypto.randomUUID();
             const studentHashes = target.students.map((s) =>
-              this.encryptionService.hash(s.studentName, s.studentNumber),
+              this.encryptionService.hash(s.studentNumber),
             );
 
             const [
@@ -274,10 +274,9 @@ export class InspectionTargetInfoRepository {
 
   async findInspectionTargetInfoByUserInfo(
     studentNumber: string,
-    studentName: string,
     scheduleUuid: string,
   ): Promise<InspectionTargetInfo> {
-    const studentHash = this.encryptionService.hash(studentName, studentNumber);
+    const studentHash = this.encryptionService.hash(studentNumber);
 
     const target = await this.databaseService.inspectionTargetInfo
       .findFirstOrThrow({
@@ -305,11 +304,10 @@ export class InspectionTargetInfoRepository {
 
   async findInspectionTargetInfoByUserInfoInTx(
     studentNumber: string,
-    studentName: string,
     scheduleUuid: string,
     tx: PrismaTransaction,
   ): Promise<InspectionTargetInfo> {
-    const studentHash = this.encryptionService.hash(studentName, studentNumber);
+    const studentHash = this.encryptionService.hash(studentNumber);
 
     const target = await tx.inspectionTargetInfo
       .findFirstOrThrow({
