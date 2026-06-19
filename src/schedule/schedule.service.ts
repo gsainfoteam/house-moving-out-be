@@ -202,13 +202,13 @@ export class ScheduleService {
         scheduleUuid,
         inspectorUuid,
         slotUuid,
-        includePast ?? false,
+        includePast ?? true, // hotfix: 프론트엔드에 체크박스 추가 후 false 로 변경
       ),
       this.inspectionApplicationRepository.countApplications(
         scheduleUuid,
         inspectorUuid,
         slotUuid,
-        includePast ?? false,
+        includePast ?? true, // hotfix: 프론트엔드에 체크박스 추가 후 false 로 변경
       ),
     ]);
     return new ApplicationListResDto(

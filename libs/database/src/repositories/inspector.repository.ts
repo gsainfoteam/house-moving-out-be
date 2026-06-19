@@ -27,7 +27,7 @@ import { ENCRYPTION_PURPOSE } from '../constants/encryption.constants';
 @Injectable()
 export class InspectorRepository {
   private readonly logger = new Logger(InspectorRepository.name);
-  public readonly MAX_APPLICATIONS_PER_INSPECTOR = 2;
+  public readonly MAX_APPLICATIONS_PER_INSPECTOR = 1;
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly encryptionService: EncryptionService,
