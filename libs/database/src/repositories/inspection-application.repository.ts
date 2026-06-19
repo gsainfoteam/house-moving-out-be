@@ -356,7 +356,7 @@ export class InspectionApplicationRepository {
     scheduleUuid: string,
     inspectorUuid?: string,
     slotUuid?: string,
-    includePast = false,
+    includePast?: boolean,
   ): Promise<ApplicationInfo[]> {
     return await this.databaseService.inspectionApplication
       .findMany({
@@ -452,7 +452,7 @@ export class InspectionApplicationRepository {
     scheduleUuid: string,
     inspectorUuid?: string,
     slotUuid?: string,
-    includePast = false,
+    includePast?: boolean,
   ): Promise<number> {
     return await this.databaseService.inspectionApplication
       .count({
