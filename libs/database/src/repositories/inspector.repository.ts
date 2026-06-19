@@ -286,7 +286,12 @@ export class InspectorRepository {
         );
         throw new InternalServerErrorException('Unknown Error');
       })
-      .then((inspector) => inspector?.name === name);
+      .then(async (inspector) => {
+        if (!inspector) return false;
+        const decrypted =
+          await this.encryptionService.decryptInspector(inspector);
+        return decrypted.name === name;
+      });
   }
 
   async findAvailableInspectorBySlotUuidInTx(
