@@ -192,6 +192,7 @@ export class ScheduleService {
       inspectorUuid,
       slotUuid,
       includePast,
+      includeCanceled,
     }: ApplicationListQueryDto,
     scheduleUuid: string,
   ): Promise<ApplicationListResDto> {
@@ -202,13 +203,15 @@ export class ScheduleService {
         scheduleUuid,
         inspectorUuid,
         slotUuid,
-        includePast ?? true, // hotfix: 프론트엔드에 체크박스 추가 후 false 로 변경
+        includePast ?? true,
+        includeCanceled ?? true,
       ),
       this.inspectionApplicationRepository.countApplications(
         scheduleUuid,
         inspectorUuid,
         slotUuid,
-        includePast ?? true, // hotfix: 프론트엔드에 체크박스 추가 후 false 로 변경
+        includePast ?? true,
+        includeCanceled ?? true,
       ),
     ]);
     return new ApplicationListResDto(

@@ -390,6 +390,7 @@ export class InspectionApplicationRepository {
     inspectorUuid?: string,
     slotUuid?: string,
     includePast?: boolean,
+    includeCanceled?: boolean,
   ): Promise<ApplicationInfo[]> {
     return await this.databaseService.inspectionApplication
       .findMany({
@@ -401,6 +402,21 @@ export class InspectionApplicationRepository {
           inspectorUuid,
           inspectionSlotUuid: slotUuid,
           deletedAt: null,
+          ...(includeCanceled
+            ? {}
+            : {
+                OR: [
+                  { status: null },
+                  {
+                    status: {
+                      notIn: [
+                        ApplicationStatus.CANCELED,
+                        ApplicationStatus.NO_SHOW_CANCELED,
+                      ],
+                    },
+                  },
+                ],
+              }),
         },
         include: {
           user: true,
@@ -486,6 +502,7 @@ export class InspectionApplicationRepository {
     inspectorUuid?: string,
     slotUuid?: string,
     includePast?: boolean,
+    includeCanceled?: boolean,
   ): Promise<number> {
     return await this.databaseService.inspectionApplication
       .count({
@@ -497,6 +514,21 @@ export class InspectionApplicationRepository {
           inspectorUuid,
           inspectionSlotUuid: slotUuid,
           deletedAt: null,
+          ...(includeCanceled
+            ? {}
+            : {
+                OR: [
+                  { status: null },
+                  {
+                    status: {
+                      notIn: [
+                        ApplicationStatus.CANCELED,
+                        ApplicationStatus.NO_SHOW_CANCELED,
+                      ],
+                    },
+                  },
+                ],
+              }),
         },
       })
       .catch((error) => {
