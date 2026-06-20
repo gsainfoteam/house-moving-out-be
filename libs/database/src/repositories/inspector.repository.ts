@@ -11,6 +11,7 @@ import {
 import { DatabaseService } from '../database.service';
 import { EncryptionService } from '../encryption.service';
 import {
+  ApplicationStatus,
   Gender,
   InspectionApplication,
   Inspector,
@@ -190,7 +191,20 @@ export class InspectorRepository {
         where: { uuid, schedules: { some: { scheduleUuid } } },
         include: {
           applications: {
-            where: { deletedAt: null },
+            where: {
+              deletedAt: null,
+              OR: [
+                { status: null },
+                {
+                  status: {
+                    notIn: [
+                      ApplicationStatus.CANCELED,
+                      ApplicationStatus.NO_SHOW_CANCELED,
+                    ],
+                  },
+                },
+              ],
+            },
           },
           availableSlots: true,
           schedules: {
@@ -325,6 +339,7 @@ export class InspectorRepository {
           WHERE ia.inspector_uuid = i.uuid 
             AND ia.inspection_slot_uuid = ${inspectionSlotUuid}
             AND ia.deleted_at IS NULL
+            AND (ia.status IS NULL OR ia.status NOT IN ('CANCELED', 'NO_SHOW_CANCELED'))
         ) < ${this.MAX_APPLICATIONS_PER_INSPECTOR}
       ORDER BY (
         SELECT COUNT(*) 
@@ -332,6 +347,7 @@ export class InspectorRepository {
         INNER JOIN inspection_slot AS slot ON slot.uuid = ia.inspection_slot_uuid
         WHERE ia.inspector_uuid = i.uuid
           AND ia.deleted_at IS NULL
+          AND (ia.status IS NULL OR ia.status NOT IN ('CANCELED', 'NO_SHOW_CANCELED'))
           AND slot.schedule_uuid = ${scheduleUuid}
       ) ASC, random()
       LIMIT 1
