@@ -566,6 +566,7 @@ export class ApplicationService {
         ApplicationStatus.PASSED,
         ApplicationStatus.FAILED,
         ApplicationStatus.PENDING_NO_SHOW,
+        ApplicationStatus.NO_SHOW,
       ];
 
       if (!allowedSourceStatuses.includes(application.status)) {

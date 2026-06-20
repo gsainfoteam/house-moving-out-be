@@ -6,9 +6,17 @@ export class UpdateInspectionStatusByAdminDto {
   @ApiProperty({
     description: 'Pass/fail status to set manually by admin.',
     example: ApplicationStatus.PASSED,
-    enum: [ApplicationStatus.PASSED, ApplicationStatus.FAILED],
+    enum: [
+      ApplicationStatus.PASSED,
+      ApplicationStatus.FAILED,
+      ApplicationStatus.NO_SHOW,
+    ],
   })
-  @IsIn([ApplicationStatus.PASSED, ApplicationStatus.FAILED])
+  @IsIn([
+    ApplicationStatus.PASSED,
+    ApplicationStatus.FAILED,
+    ApplicationStatus.NO_SHOW,
+  ])
   status: ApplicationStatus;
 
   @ApiProperty({
