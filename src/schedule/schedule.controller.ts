@@ -231,16 +231,14 @@ export class ScheduleController {
   @ApiNotFoundResponse({ description: 'Not Found', type: ErrorDto })
   @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
   @ApiBearerAuth('admin')
-  // @UseGuards(AdminGuard)
+  @UseGuards(AdminGuard)
   @Get(':uuid/applications/download')
   async downloadInspectionApplications(
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
-    @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
     const buffer =
       await this.scheduleService.downloadInspectionApplications(scheduleUuid);
-    res.setHeader('Content-Length', buffer.length.toString());
-    return new StreamableFile(buffer, {
+    return new StreamableFile(new Uint8Array(buffer), {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       disposition: 'attachment',
     });
