@@ -47,4 +47,13 @@ export class ApplicationListQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includePast?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether to include canceled inspection applications.',
+    example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  includeCanceled?: boolean;
 }
