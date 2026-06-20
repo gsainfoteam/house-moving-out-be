@@ -389,8 +389,8 @@ export class InspectionApplicationRepository {
     scheduleUuid: string,
     inspectorUuid?: string,
     slotUuid?: string,
-    includePast?: boolean,
-    includeCanceled?: boolean,
+    includePast: boolean = true,
+    includeCanceled: boolean = true,
   ): Promise<ApplicationInfo[]> {
     return await this.databaseService.inspectionApplication
       .findMany({
