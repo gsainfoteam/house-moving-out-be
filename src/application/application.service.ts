@@ -139,6 +139,8 @@ export class ApplicationService {
 
         let assignedInspector: Inspector | undefined;
 
+        // hotfix: 임시 수정, 나중에 하우스와 논의 후 로직 변경
+        /*
         for (const application of applications) {
           const inspector = await this.inspectorRepository.findInspectorInTx(
             application.inspectorUuid,
@@ -162,6 +164,7 @@ export class ApplicationService {
             break;
           }
         }
+        */
 
         if (!assignedInspector) {
           assignedInspector =
