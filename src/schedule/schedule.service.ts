@@ -47,6 +47,7 @@ import { FileService } from '@lib/file';
 import { PDFDocument } from 'pdf-lib';
 import pLimit from 'p-limit';
 import { BulkUpdateRepairCheckDto } from './dto/req/bulk-update-repair-check.dto';
+import { randomUUID } from 'crypto';
 
 @Loggable()
 @Injectable()
@@ -62,7 +63,6 @@ export class ScheduleService {
     private readonly inspectionTargetInfoRepository: InspectionTargetInfoRepository,
     private readonly semesterRepository: SemesterRepository,
     private readonly inspectionApplicationRepository: InspectionApplicationRepository,
-    private readonly inspectorRepository: InspectorRepository,
   ) {}
 
   async findAllMoveOutSchedules(): Promise<MoveOutSchedule[]> {
@@ -956,10 +956,10 @@ export class ScheduleService {
       }
     }
     const out = await merged.save();
-    const key = `merged_docs/${scheduleUuid}_${Date.now()}.pdf`;
+    const key = `merged_docs/${scheduleUuid}_${randomUUID()}.pdf`;
     await this.fileService.uploadFile(key, Buffer.from(out), 'application/pdf');
     const url = await this.fileService.getUrl(key);
-    return new DownloadInspectionDocumentsResDto(documents.length, url);
+    return new DownloadInspectionDocumentsResDto(merged.getPageCount(), url);
   }
 
   async removeMoveOutSchedule(uuid: string): Promise<void> {
