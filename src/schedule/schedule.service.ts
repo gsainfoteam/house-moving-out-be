@@ -40,6 +40,7 @@ import { InspectionTargetStudent } from './types/inspection-target.type';
 import { InspectionTargetCount } from './types/inspection-target-count.type';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
+import { DownloadInspectionDocumentsResDto } from './dto/res/download-inspection-documents-res.dto';
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { FileService } from '@lib/file';
@@ -927,7 +928,7 @@ export class ScheduleService {
 
   async downloadInspectionDocuments(
     scheduleUuid: string,
-  ): Promise<{ pages: number; buffer: Buffer }> {
+  ): Promise<DownloadInspectionDocumentsResDto> {
     const schedule =
       await this.moveOutScheduleRepository.findMoveOutScheduleWithUuid(
         scheduleUuid,
@@ -955,10 +956,10 @@ export class ScheduleService {
       }
     }
     const out = await merged.save();
-    return {
-      pages: documents.length,
-      buffer: Buffer.from(out),
-    };
+    const key = `merged_docs/${scheduleUuid}_${Date.now()}.pdf`;
+    await this.fileService.uploadFile(key, Buffer.from(out), 'application/pdf');
+    const url = await this.fileService.getUrl(key);
+    return new DownloadInspectionDocumentsResDto(documents.length, url);
   }
 
   async removeMoveOutSchedule(uuid: string): Promise<void> {

@@ -85,4 +85,18 @@ export class FileService {
         throw error;
       });
   }
+
+  async uploadFile(
+    key: string,
+    buffer: Buffer,
+    contentType: string,
+  ): Promise<void> {
+    const command = new PutObjectCommand({
+      Bucket: this.configService.getOrThrow<string>('AWS_S3_BUCKET'),
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    });
+    await this.s3Client.send(command);
+  }
 }
