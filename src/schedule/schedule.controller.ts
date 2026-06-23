@@ -14,7 +14,6 @@ import {
   UseInterceptors,
   Query,
   StreamableFile,
-  Res,
   Delete,
   HttpStatus,
 } from '@nestjs/common';
@@ -50,6 +49,7 @@ import {
 } from './dto/req/update-inspection-targets.dto';
 import { UpdateInspectionTargetsResDto } from './dto/res/update-inspection-targets-res.dto';
 import { InspectionTargetsGroupedByRoomResDto } from './dto/res/find-all-inspection-target-infos-res.dto';
+import { DownloadInspectionDocumentsResDto } from './dto/res/download-inspection-documents-res.dto';
 import { BulkUpdateCleaningServiceDto } from './dto/req/bulk-update-cleaning-service.dto';
 import { ApplicationListResDto } from 'src/application/dto/res/application-res.dto';
 import { ApplicationListQueryDto } from 'src/schedule/dto/req/application-list-query.dto';
@@ -382,6 +382,7 @@ export class ScheduleController {
   })
   @ApiOkResponse({
     description: 'Inspection documents successfully downloaded',
+    type: DownloadInspectionDocumentsResDto,
   })
   @ApiBadRequestResponse({
     description: 'schedule UUID is wrong',
@@ -393,17 +394,9 @@ export class ScheduleController {
   @UseGuards(AdminGuard)
   @Get(':uuid/documents')
   async downloadInspectionDocuments(
-    @Res({ passthrough: true }) res: Response,
     @Param('uuid', ParseUUIDPipe) scheduleUuid: string,
-  ): Promise<StreamableFile> {
-    const { pages, buffer } =
-      await this.scheduleService.downloadInspectionDocuments(scheduleUuid);
-    res.setHeader('Content-Length', buffer.length.toString());
-    res.setHeader('X-Total-Pages', pages.toString());
-    return new StreamableFile(buffer, {
-      type: 'application/pdf',
-      disposition: 'attachment',
-    });
+  ): Promise<DownloadInspectionDocumentsResDto> {
+    return await this.scheduleService.downloadInspectionDocuments(scheduleUuid);
   }
 
   @ApiOperation({
