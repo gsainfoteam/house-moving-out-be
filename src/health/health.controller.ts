@@ -36,7 +36,7 @@ export class HealthController {
   async check() {
     return await this.health.check([
       () => this.prisma.pingCheck('database', this.databaseService),
-      () => this.memory.checkRSS('memory_rss', 1024 * 1024 * 200),
+      () => this.memory.checkRSS('memory_rss', 1024 * 1024 * 300),
     ]);
   }
 
