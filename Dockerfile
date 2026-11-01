@@ -16,7 +16,8 @@ RUN --mount=type=secret,id=NODE_AUTH_TOKEN,env=NODE_AUTH_TOKEN bun install --pro
 FROM installer AS builder
 COPY . .
 COPY --from=prod /usr/src/app/generated ./generated
-RUN --mount=type=secret,id=NODE_AUTH_TOKEN,env=NODE_AUTH_TOKEN bun install && bun run build
+RUN --mount=type=secret,id=NODE_AUTH_TOKEN,env=NODE_AUTH_TOKEN bun install
+RUN bun run build
 
 # copy production dependencies and source code into final image
 FROM base AS release
