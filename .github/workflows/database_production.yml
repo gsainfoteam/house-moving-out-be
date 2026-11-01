@@ -10,6 +10,9 @@ jobs:
     environment: production
     name: Migrate Database
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
 
     steps:
       - name: Checkout Repository
@@ -20,6 +23,8 @@ jobs:
 
       - name: Install Prisma
         run: bun install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Migrate Database
         run: bunx prisma migrate deploy

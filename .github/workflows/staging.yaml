@@ -57,6 +57,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          secrets: |
+            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
   deploy:
     name: Update Git Repository
