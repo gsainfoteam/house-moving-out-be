@@ -8,7 +8,6 @@ import { InspectorRepository } from './repositories/inspector.repository';
 import { MoveOutScheduleRepository } from './repositories/move-out-schedule.repository';
 import { SemesterRepository } from './repositories/semester.repository';
 import { UserConsentRepository } from './repositories/user-consent.repository';
-import { UserRefreshTokenRepository } from './repositories/user-refresh-token.repository';
 import { UserRepository } from './repositories/user.repository';
 import { ArticleRepository } from './repositories/article.repository';
 import { DatabaseService } from './database.service';
@@ -30,7 +29,6 @@ import { MoveOutScheduleOnInspectorRepository } from './repositories';
     MoveOutScheduleRepository,
     SemesterRepository,
     UserConsentRepository,
-    UserRefreshTokenRepository,
     UserRepository,
     ArticleRepository,
     MoveOutScheduleOnInspectorRepository,
@@ -47,7 +45,6 @@ import { MoveOutScheduleOnInspectorRepository } from './repositories';
     MoveOutScheduleRepository,
     SemesterRepository,
     UserConsentRepository,
-    UserRefreshTokenRepository,
     UserRepository,
     ArticleRepository,
     MoveOutScheduleOnInspectorRepository,

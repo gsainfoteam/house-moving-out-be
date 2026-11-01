@@ -1,31 +1,25 @@
 import { Module } from '@nestjs/common';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { ConfigModule } from '@nestjs/config';
-import { InfoteamAccountModule } from '@lib/infoteam-account';
-import { JwtModule } from '@nestjs/jwt';
-import { AdminGuard } from './guard/admin.guard';
-import { SuperAdminGuard } from './guard/superadmin.guard';
-import { UserGuard } from './guard/user.guard';
-import { UserStrategy } from './guard/user.strategy';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
-import { DatabaseModule } from '@lib/database';
+import { DatabaseModule, DatabaseService } from '@lib/database';
+import { AccountModule, accountOptions } from './account';
+import { AuthService } from './auth.service';
+
+@Module({
+  imports: [ConfigModule, HttpModule, DatabaseModule],
+  providers: [AuthService],
+  exports: [AuthService],
+})
+class AuthServiceModule {}
 
 @Module({
   imports: [
-    ConfigModule,
-    InfoteamAccountModule,
-    JwtModule.register({}),
-    HttpModule,
-    DatabaseModule,
-  ],
-  controllers: [AuthController],
-  providers: [
-    AuthService,
-    AdminGuard,
-    SuperAdminGuard,
-    UserGuard,
-    UserStrategy,
+    AccountModule.forRootAsync({
+      isGlobal: true,
+      imports: [AuthServiceModule, DatabaseModule],
+      inject: [ConfigService, AuthService, DatabaseService],
+      useFactory: accountOptions,
+    }),
   ],
 })
 export class AuthModule {}

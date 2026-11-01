@@ -1,11 +1,10 @@
 import 'dotenv/config';
 import { readFile, writeFile } from 'node:fs/promises';
-import { randomUUID, randomBytes, createHmac } from 'node:crypto';
+import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, Role } from 'generated/prisma/client';
 import ms, { StringValue } from 'ms';
-import jwt from 'jsonwebtoken';
 import { EncryptionService } from '../libs/database/src/encryption.service';
 import { ENCRYPTION_PURPOSE } from '../libs/database/src/constants/encryption.constants';
 
@@ -166,16 +165,20 @@ async function readInputUsers(inputPath: string): Promise<InputUser[]> {
   return users;
 }
 
-function generateOpaqueToken(): string {
-  return randomBytes(32).toString('base64').replace(/[+/=]/g, '');
+// account-nest 가 refresh token 을 저장하는 방식과 같아야 /auth/refresh 가 이 행을 찾는다
+function hashRefreshToken(token: string): string {
+  return createHash('sha256').update(token).digest('base64url');
 }
 
-function generateSessionId(): string {
-  return randomBytes(16).toString('hex');
-}
-
-function hashRefreshToken(token: string, hmacSecret: string): string {
-  return createHmac('sha256', hmacSecret).update(token).digest('hex');
+// access token 은 SDK 만 서명할 수 있으므로, 심어 둔 refresh token 을 서버에서 교환한다
+async function exchangeRefreshToken(apiUrl: string, refreshToken: string) {
+  const res = await fetch(`${apiUrl}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  if (!res.ok) throw new Error(`POST /auth/refresh failed: ${res.status}`);
+  return (await res.json()) as { access_token: string; refresh_token: string };
 }
 
 async function main() {
@@ -187,15 +190,7 @@ async function main() {
   const prisma = new PrismaClient({ adapter });
 
   const encryptionService = new EncryptionService(configService);
-  const refreshTokenHmacSecret = configService.getOrThrow<string>(
-    'REFRESH_TOKEN_HMAC_SECRET',
-  );
-
-  const userJwtSecret = configService.getOrThrow<string>('USER_JWT_SECRET');
-  const userJwtExpire =
-    configService.getOrThrow<StringValue>('USER_JWT_EXPIRE');
-  const userJwtAudience = configService.getOrThrow<string>('USER_JWT_AUDIENCE');
-  const userJwtIssuer = configService.getOrThrow<string>('USER_JWT_ISSUER');
+  const apiUrl = configService.getOrThrow<string>('API_URL');
   const userRefreshTokenExpire = configService.getOrThrow<StringValue>(
     'USER_REFRESH_TOKEN_EXPIRE',
   );
@@ -308,37 +303,28 @@ async function main() {
               },
             });
 
-        await prisma.userRefreshToken.deleteMany({
-          where: { userUuid: user.uuid },
+        await prisma.accountSession.deleteMany({
+          where: { subject: user.uuid },
         });
 
-        const refreshToken = generateOpaqueToken();
-        const sessionId = generateSessionId();
-        const hashedToken = hashRefreshToken(
-          refreshToken,
-          refreshTokenHmacSecret,
-        );
+        const seededToken = randomBytes(32).toString('base64url');
+        const sessionId = randomUUID();
         const refreshTokenExpiredAt = new Date(
           Date.now() + ms(userRefreshTokenExpire),
         );
 
-        await prisma.userRefreshToken.create({
+        await prisma.accountSession.create({
           data: {
-            userUuid: user.uuid,
-            refreshToken: hashedToken,
+            tokenHash: hashRefreshToken(seededToken),
             sessionId,
-            expiredAt: refreshTokenExpiredAt,
+            subject: user.uuid,
+            claims: {},
+            expiresAt: refreshTokenExpiredAt,
           },
-          select: { uuid: true },
         });
 
-        const accessToken = jwt.sign({ sessionId }, userJwtSecret, {
-          subject: user.uuid,
-          expiresIn: userJwtExpire,
-          algorithm: 'HS256',
-          audience: userJwtAudience,
-          issuer: userJwtIssuer,
-        });
+        const { access_token: accessToken, refresh_token: refreshToken } =
+          await exchangeRefreshToken(apiUrl, seededToken);
 
         return {
           wasCreated,

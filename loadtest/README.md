@@ -36,7 +36,7 @@ UPDATE inspection_target SET inspection_count = 0;
 
 ### Recommended: generate users and JWTs with the seed script
 
-Run from the project root with `.env` loaded (especially `DATABASE_URL` and JWT/encryption variables).
+Run from the project root with `.env` loaded (especially `DATABASE_URL`, encryption variables and `API_URL`). The API at `API_URL` must be running and use the same DB: the script seeds a session row per user and exchanges it at `POST /auth/refresh` for an access token.
 
 ```bash
 # Default: 50 users, tokens → loadtest/k6/tokens.json

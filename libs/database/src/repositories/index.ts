@@ -7,7 +7,6 @@ export * from './inspector.repository';
 export * from './move-out-schedule.repository';
 export * from './semester.repository';
 export * from './user-consent.repository';
-export * from './user-refresh-token.repository';
 export * from './user.repository';
 export * from './article.repository';
 export * from './move-out-schedule-on-inspector.repository';

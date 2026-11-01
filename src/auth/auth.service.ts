@@ -1,16 +1,14 @@
-import { InfoteamAccountService } from '@lib/infoteam-account';
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConsentType, User } from 'generated/prisma/client';
-import * as crypto from 'crypto';
-import { IssueTokenType } from './types/jwt-token.type';
 import { ConfigService } from '@nestjs/config';
-import ms, { StringValue } from 'ms';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { ConsentRequiredException } from './exceptions/consent-required.exception';
 import {
   UserConsent,
@@ -23,7 +21,6 @@ import {
 import {
   DatabaseService,
   UserRepository,
-  UserRefreshTokenRepository,
   UserConsentRepository,
   PrismaTransaction,
 } from '@lib/database';
@@ -33,44 +30,22 @@ import { firstValueFrom, TimeoutError, throwError } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
 import { AxiosError } from 'axios';
 import { UserLoginDto } from './dto/req/user-login.dto';
+import type { IdpUser } from './account';
 
 @Loggable()
 @Injectable()
 export class AuthService {
-  private readonly userJwtSecret: string;
-  private readonly userJwtExpire: StringValue;
-  private readonly userJwtAudience: string;
-  private readonly userJwtIssuer: string;
-  private readonly userRefreshTokenExpire: StringValue;
-  private readonly refreshTokenHmacSecret: string;
   private readonly policyApiUrl: string;
   private readonly ServiceNameForPolicyVersion: string;
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly infoteamAccountService: InfoteamAccountService,
-    private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly databaseService: DatabaseService,
     private readonly httpService: HttpService,
     private readonly userRepository: UserRepository,
-    private readonly userRefreshTokenRepository: UserRefreshTokenRepository,
     private readonly userConsentRepository: UserConsentRepository,
   ) {
-    this.userJwtSecret =
-      this.configService.getOrThrow<string>('USER_JWT_SECRET');
-    this.userJwtExpire =
-      this.configService.getOrThrow<StringValue>('USER_JWT_EXPIRE');
-    this.userJwtAudience =
-      this.configService.getOrThrow<string>('USER_JWT_AUDIENCE');
-    this.userJwtIssuer =
-      this.configService.getOrThrow<string>('USER_JWT_ISSUER');
-    this.userRefreshTokenExpire = this.configService.getOrThrow<StringValue>(
-      'USER_REFRESH_TOKEN_EXPIRE',
-    );
-    this.refreshTokenHmacSecret = this.configService.getOrThrow<string>(
-      'REFRESH_TOKEN_HMAC_SECRET',
-    );
     this.policyApiUrl = this.configService.getOrThrow<string>('POLICY_API_URL');
     this.ServiceNameForPolicyVersion = this.configService.getOrThrow<string>(
       'SERVICE_NAME_FOR_POLICY_VERSION',
@@ -122,23 +97,31 @@ export class AuthService {
     };
   }
 
-  async userLogin(auth: string, body?: UserLoginDto): Promise<IssueTokenType> {
-    const token = auth.split(' ')[1];
-    if (!token) throw new UnauthorizedException();
-    const userinfo = await this.infoteamAccountService.getUserInfo(token);
+  async resolveSession(
+    idpUser: IdpUser,
+    body: Record<string, unknown>,
+  ): Promise<{ subject: string }> {
+    if (!idpUser.isPhoneNumberVerified) {
+      throw new UnauthorizedException('Phone number not verified');
+    }
+    if (!idpUser.isStudentIdVerified) {
+      throw new UnauthorizedException('Student ID not verified');
+    }
 
-    const consentData: ConsentData = {
-      agreedToTerms: body?.agreedToTerms,
-      agreedToPrivacy: body?.agreedToPrivacy,
-      termsVersion: body?.termsVersion,
-      privacyVersion: body?.privacyVersion,
-    };
-
+    const consentData = await this.parseConsentData(body);
     const latestPolicyVersions = await this.getLatestPolicyVersions();
 
-    const { user, refreshToken, sessionId, expiredAt } =
-      await this.databaseService.$transaction(async (tx: PrismaTransaction) => {
-        const user = await this.userRepository.upsertUserInTx(userinfo, tx);
+    const user = await this.databaseService.$transaction(
+      async (tx: PrismaTransaction) => {
+        const user = await this.userRepository.upsertUserInTx(
+          {
+            name: idpUser.name,
+            email: idpUser.email,
+            studentNumber: idpUser.studentId,
+            phoneNumber: idpUser.phoneNumber,
+          },
+          tx,
+        );
 
         await this.validateAndHandleConsentsInTransaction(
           user,
@@ -147,49 +130,30 @@ export class AuthService {
           tx,
         );
 
-        await this.userRefreshTokenRepository.deleteAllUserRefreshTokensInTx(
-          user.uuid,
-          tx,
-        );
-
-        const token = this.generateOpaqueToken();
-        const sessionId = this.generateSessionId();
-        const hashedToken = this.hashRefreshToken(token);
-        const expiredAt = new Date(
-          Date.now() + ms(this.userRefreshTokenExpire),
-        );
-        await this.userRefreshTokenRepository.setUserRefreshTokenInTx(
-          user.uuid,
-          hashedToken,
-          sessionId,
-          expiredAt,
-          tx,
-        );
-
-        return {
-          user,
-          refreshToken: token,
-          sessionId,
-          expiredAt,
-        };
-      });
-
-    const accessToken = this.jwtService.sign(
-      { sessionId },
-      {
-        subject: user.uuid,
-        secret: this.userJwtSecret,
-        expiresIn: this.userJwtExpire,
-        algorithm: 'HS256',
-        audience: this.userJwtAudience,
-        issuer: this.userJwtIssuer,
+        return user;
       },
     );
 
+    return { subject: user.uuid };
+  }
+
+  // SDK 는 로그인 body 를 검증하지 않고 넘기므로, 전역 ValidationPipe 가 하던 검증을 여기서 한다
+  private async parseConsentData(
+    body: Record<string, unknown>,
+  ): Promise<ConsentData> {
+    const dto = plainToInstance(UserLoginDto, body);
+    const errors = await validate(dto, { whitelist: true });
+    if (errors.length > 0) {
+      throw new BadRequestException(
+        errors.flatMap((error) => Object.values(error.constraints ?? {})),
+      );
+    }
+
     return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      refreshTokenExpiredAt: expiredAt,
+      agreedToTerms: dto.agreedToTerms,
+      agreedToPrivacy: dto.agreedToPrivacy,
+      termsVersion: dto.termsVersion,
+      privacyVersion: dto.privacyVersion,
     };
   }
 
@@ -393,67 +357,5 @@ export class AuthService {
         tx,
       );
     }
-  }
-
-  private generateOpaqueToken(): string {
-    return crypto.randomBytes(32).toString('base64').replace(/[+/=]/g, '');
-  }
-
-  private generateSessionId(): string {
-    return crypto.randomBytes(16).toString('hex');
-  }
-
-  private hashRefreshToken(token: string): string {
-    return crypto
-      .createHmac('sha256', this.refreshTokenHmacSecret)
-      .update(token)
-      .digest('hex');
-  }
-
-  async findUser(uuid: string): Promise<User> {
-    return this.userRepository.findUser(uuid);
-  }
-
-  async findUserRefreshTokenBySessionId(userUuid: string, sessionId: string) {
-    return this.userRefreshTokenRepository.findUserRefreshTokenBySessionId(
-      userUuid,
-      sessionId,
-    );
-  }
-
-  async userRefresh(refreshToken: string): Promise<IssueTokenType> {
-    const hashedToken = this.hashRefreshToken(refreshToken);
-    const { userUuid, sessionId, expiredAt } =
-      await this.userRefreshTokenRepository.findUserByRefreshToken(hashedToken);
-
-    await this.userRefreshTokenRepository.deleteUserRefreshToken(hashedToken);
-
-    const newRefreshToken = this.generateOpaqueToken();
-    const newHashedToken = this.hashRefreshToken(newRefreshToken);
-    await this.userRefreshTokenRepository.setUserRefreshToken(
-      userUuid,
-      newHashedToken,
-      sessionId,
-      expiredAt,
-    );
-    return {
-      access_token: this.jwtService.sign(
-        { sessionId },
-        {
-          subject: userUuid,
-          secret: this.userJwtSecret,
-          expiresIn: this.userJwtExpire,
-          algorithm: 'HS256',
-          audience: this.userJwtAudience,
-          issuer: this.userJwtIssuer,
-        },
-      ),
-      refresh_token: newRefreshToken,
-      refreshTokenExpiredAt: expiredAt,
-    };
-  }
-
-  async userLogout(userUuid: string): Promise<void> {
-    await this.userRefreshTokenRepository.deleteAllUserRefreshTokens(userUuid);
   }
 }

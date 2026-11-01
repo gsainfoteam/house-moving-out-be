@@ -3,23 +3,18 @@ import {
   ForbiddenException,
   ExecutionContext,
 } from '@nestjs/common';
-import { Role } from 'generated/prisma/client';
+import { Role, User } from 'generated/prisma/client';
 import { UserGuard } from './user.guard';
 
 @Injectable()
 export class SuperAdminGuard extends UserGuard {
-  handleRequest<TUser extends { role: Role }>(
-    err: unknown,
-    user: TUser,
-    info: unknown,
-    context: ExecutionContext,
-    status: unknown,
-  ): TUser {
-    super.handleRequest(err, user, info, context, status);
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    await super.canActivate(context);
+    const { user } = context.switchToHttp().getRequest<{ user: User }>();
     if (user.role !== Role.SUPERADMIN) {
       throw new ForbiddenException('user is not superadmin');
     }
 
-    return user;
+    return true;
   }
 }
