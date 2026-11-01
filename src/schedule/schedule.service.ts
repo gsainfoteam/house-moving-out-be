@@ -28,7 +28,6 @@ import {
   InspectionTargetInfoRepository,
   SemesterRepository,
   InspectionApplicationRepository,
-  InspectorRepository,
   PrismaTransaction,
 } from '@lib/database';
 import { User } from 'generated/prisma/client';
