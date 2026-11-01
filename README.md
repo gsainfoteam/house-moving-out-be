@@ -27,10 +27,11 @@
 
 ## Project setup
 
-`@gsainfoteam` packages are installed from GitHub Packages, so export a GitHub token with the `read:packages` scope first (`gh auth token` works if you are logged in to `gh`).
+`@gsainfoteam` packages are installed from GitHub Packages, so export a GitHub token with the `read:packages` scope first.
 
 ```bash
-$ export NODE_AUTH_TOKEN=<token>
+$ gh auth refresh -s read:packages
+$ export NODE_AUTH_TOKEN=$(gh auth token)
 $ bun install
 ```
 
