@@ -27,7 +27,7 @@
     "@aws-sdk/client-secrets-manager": "^3.1048.0",
     "@aws-sdk/s3-request-presigner": "^3.992.0",
     "@codegenie/serverless-express": "^4.17.1",
-    "@gsainfoteam/account-nest": "^0.5.0",
+    "@gsainfoteam/account-nest": "^0.5.1",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -55,7 +55,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
-    "@gsainfoteam/account-testing": "^0.5.0",
+    "@gsainfoteam/account-testing": "^0.5.1",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
