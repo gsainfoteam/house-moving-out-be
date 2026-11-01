@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import expressBasicAuth from 'express-basic-auth';
 import { AppModule } from './app.module';
+import { ConsentRequiredErrorDto } from './auth/dto/res/consent-required-error.dto';
 
 export const makeApp = async () => {
   const app = await NestFactory.create(AppModule);
@@ -80,7 +81,9 @@ export const makeApp = async () => {
       'user',
     )
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    extraModels: [ConsentRequiredErrorDto],
+  });
   SwaggerModule.setup('api', app, document, {
     swaggerOptions: {
       displayRequestDuration: true,
