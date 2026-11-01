@@ -54,7 +54,6 @@ let app: INestApplication<App>;
 let users: Map<string, User>;
 let consents: { userUuid: string; consentType: ConsentType; version: string }[];
 
-// 서비스 DB 대신 학번으로 사용자를 찾는 upsert 동작만 흉내 낸다
 const userRepository = {
   upsertUserInTx: jest.fn(
     (info: Pick<User, 'name' | 'studentNumber'>): Promise<User> => {

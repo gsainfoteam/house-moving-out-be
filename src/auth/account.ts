@@ -29,11 +29,10 @@ export const accountOptions = (
     secret: config.getOrThrow<string>('SESSION_SECRET'),
     store: {
       ...prismaSessionStore(db.accountSession),
-      // 로그아웃하거나 다른 기기에서 로그인하면 기존 access token 을 바로 막던 동작을 유지한다
+      // 없으면 로그아웃한 세션의 access token 이 만료될 때까지 계속 통과한다
       isActive: async (sessionId: string) =>
         (await db.accountSession.count({ where: { sessionId } })) > 0,
     },
-    // 로그인하면 같은 사용자의 다른 세션을 끝내던 동작을 유지한다
     onLogin: 'replace' as const,
     accessTtl: seconds(config.getOrThrow<StringValue>('USER_JWT_EXPIRE')),
     refreshTtl: seconds(
