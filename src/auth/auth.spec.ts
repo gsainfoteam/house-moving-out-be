@@ -160,7 +160,6 @@ beforeAll(async () => {
   }).compile();
 
   app = moduleRef.createNestApplication({ logger: false });
-  // app.ts 와 같은 전역 pipe 가 SDK 의 로그인 body 를 건드리지 않는지 함께 본다
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

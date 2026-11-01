@@ -137,7 +137,6 @@ export class AuthService {
     return { subject: user.uuid };
   }
 
-  // SDK 는 로그인 body 를 검증하지 않고 넘기므로, 전역 ValidationPipe 가 하던 검증을 여기서 한다
   private async parseConsentData(
     body: Record<string, unknown>,
   ): Promise<ConsentData> {

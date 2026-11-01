@@ -165,12 +165,10 @@ async function readInputUsers(inputPath: string): Promise<InputUser[]> {
   return users;
 }
 
-// account-nest 가 refresh token 을 저장하는 방식과 같아야 /auth/refresh 가 이 행을 찾는다
 function hashRefreshToken(token: string): string {
   return createHash('sha256').update(token).digest('base64url');
 }
 
-// access token 은 SDK 만 서명할 수 있으므로, 심어 둔 refresh token 을 서버에서 교환한다
 async function exchangeRefreshToken(apiUrl: string, refreshToken: string) {
   const res = await fetch(`${apiUrl}/auth/refresh`, {
     method: 'POST',

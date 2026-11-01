@@ -101,7 +101,6 @@ model User {
   @@map("user")
 }
 
-// account-sdk 로 옮기기 전 배포가 아직 읽을 수 있어 남겨 둔다. 배포가 끝나면 다음 마이그레이션에서 지운다
 model UserRefreshToken {
   uuid         String   @id @default(uuid()) @db.Uuid
   userUuid     String   @map("user_uuid") @db.Uuid

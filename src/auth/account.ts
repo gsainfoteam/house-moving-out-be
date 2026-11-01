@@ -29,7 +29,6 @@ export const accountOptions = (
     secret: config.getOrThrow<string>('SESSION_SECRET'),
     store: {
       ...prismaSessionStore(db.accountSession),
-      // 없으면 로그아웃한 세션의 access token 이 만료될 때까지 계속 통과한다
       isActive: async (sessionId: string) =>
         (await db.accountSession.count({ where: { sessionId } })) > 0,
     },
