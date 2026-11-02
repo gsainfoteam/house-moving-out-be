@@ -50,7 +50,7 @@ export const handler: Handler = async (
   if (!cachedServer) {
     const config = Object.fromEntries(
       await Promise.all(
-        ['DATABASE_URL', 'USER_JWT_SECRET', 'REFRESH_TOKEN_HMAC_SECRET'].map(
+        ['DATABASE_URL', 'ACCOUNT_CLIENT_SECRET', 'SESSION_SECRET'].map(
           async (param) => [param, await getParameter(`/moving-out/${param}`)],
         ),
       ),
